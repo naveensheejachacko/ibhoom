@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Approval - ECommerce Platform</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="logo">
+            <h2><i class="fas fa-store"></i> ECommerce Admin</h2>
+        </div>
+        <nav class="nav-menu">
+            <a href="admin-dashboard.html" class="nav-item">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a href="category-management.html" class="nav-item">
+                <i class="fas fa-tags"></i> Categories
+            </a>
+            <a href="product-approval.html" class="nav-item active">
+                <i class="fas fa-box"></i> Products
+            </a>
+            <a href="seller-management.html" class="nav-item">
+                <i class="fas fa-users"></i> Sellers
+            </a>
+            <a href="user-management.html" class="nav-item">
+                <i class="fas fa-user-friends"></i> Users
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-chart-bar"></i> Analytics
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-cog"></i> Settings
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <header class="header">
+            <h1>Product Management</h1>
+            <div class="header-actions">
+                <button class="btn btn-secondary">
+                    <i class="fas fa-download"></i> Export Products
+                </button>
+            </div>
+        </header>
+
+        <!-- Product Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>23</h3>
+                    <p>Pending Approval</p>
+                    <span class="stat-change neutral">Awaiting review</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>2,456</h3>
+                    <p>Approved Products</p>
+                    <span class="stat-change positive">+18% this month</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-eye-slash"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>45</h3>
+                    <p>Hidden Products</p>
+                    <span class="stat-change neutral">Admin hidden</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>156</h3>
+                    <p>Rejected Products</p>
+                    <span class="stat-change negative">This month</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="filters-section">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search products by name, SKU, or seller...">
+            </div>
+            <div class="filter-buttons">
+                <button class="filter-btn active">All Products</button>
+                <button class="filter-btn">Pending Approval</button>
+                <button class="filter-btn">Approved</button>
+                <button class="filter-btn">Hidden</button>
+                <button class="filter-btn">Rejected</button>
+            </div>
+            <div class="additional-filters">
+                <select class="filter-select">
+                    <option value="">All Categories</option>
+                    <option value="electronics">Electronics</option>
+                    <option value="fashion">Fashion</option>
+                    <option value="sports">Sports</option>
+                </select>
+                <select class="filter-select">
+                    <option value="">All Sellers</option>
+                    <option value="techstore">TechStore</option>
+                    <option value="fashionhub">Fashion Hub</option>
+                    <option value="sportsworld">SportsWorld</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Products Table -->
+        <div class="content-card">
+            <div class="table-header">
+                <h3>Products List</h3>
+                <div class="table-actions">
+                    <button class="btn btn-secondary">
+                        <i class="fas fa-filter"></i> Advanced Filters
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>
+                                <input type="checkbox" id="selectAll">
+                            </th>
+                            <th>Product</th>
+                            <th>Seller</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Submitted</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="product-pending">
+                            <td><input type="checkbox" class="product-checkbox"></td>
+                            <td>
+                                <div class="product-info">
+                                    <img src="https://via.placeholder.com/60" alt="Product">
+                                    <div>
+                                        <h4>iPhone 15 Pro Max 256GB</h4>
+                                        <p>SKU: IPH15PM256</p>
+                                        <small>New flagship smartphone with titanium design</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>TechStore Electronics</td>
+                            <td>Electronics > Smartphones</td>
+                            <td>$1,199.00</td>
+                            <td>2 days ago</td>
+                            <td><span class="status pending">Pending Review</span></td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-icon" title="View Details" onclick="viewProduct('PRD-001')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn-icon btn-success" title="Approve Product" onclick="approveProduct('PRD-001')">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="btn-icon btn-danger" title="Reject Product" onclick="rejectProduct('PRD-001')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="product-pending">
+                            <td><input type="checkbox" class="product-checkbox"></td>
+                            <td>
+                                <div class="product-info">
+                                    <img src="https://via.placeholder.com/60" alt="Product">
+                                    <div>
+                                        <h4>Nike Air Jordan 1 Retro</h4>
+                                        <p>SKU: NAJ1RETRO</p>
+                                        <small>Classic basketball sneakers in various colorways</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>SportsWorld</td>
+                            <td>Sports > Footwear</td>
+                            <td>$170.00</td>
+                            <td>1 day ago</td>
+                            <td><span class="status pending">Pending Review</span></td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-icon" title="View Details" onclick="viewProduct('PRD-002')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn-icon btn-success" title="Approve Product" onclick="approveProduct('PRD-002')">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="btn-icon btn-danger" title="Reject Product" onclick="rejectProduct('PRD-002')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="product-approved">
+                            <td><input type="checkbox" class="product-checkbox"></td>
+                            <td>
+                                <div class="product-info">
+                                    <img src="https://via.placeholder.com/60" alt="Product">
+                                    <div>
+                                        <h4>MacBook Pro 14" M3</h4>
+                                        <p>SKU: MBP14M3</p>
+                                        <small>Professional laptop with M3 chip</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>TechStore Electronics</td>
+                            <td>Electronics > Laptops</td>
+                            <td>$1,999.00</td>
+                            <td>5 days ago</td>
+                            <td><span class="status approved">Live</span></td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-icon" title="View Details" onclick="viewProduct('PRD-003')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn-icon" title="Hide Product" onclick="hideProduct('PRD-003')">
+                                        <i class="fas fa-eye-slash"></i>
+                                    </button>
+                                    <button class="btn-icon" title="Edit Product">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="product-hidden">
+                            <td><input type="checkbox" class="product-checkbox"></td>
+                            <td>
+                                <div class="product-info">
+                                    <img src="https://via.placeholder.com/60" alt="Product">
+                                    <div>
+                                        <h4>Samsung Galaxy S24 Ultra</h4>
+                                        <p>SKU: SGS24ULTRA</p>
+                                        <small>Premium Android smartphone</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>TechStore Electronics</td>
+                            <td>Electronics > Smartphones</td>
+                            <td>$1,299.00</td>
+                            <td>1 week ago</td>
+                            <td><span class="status hidden">Hidden</span></td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-icon" title="View Details" onclick="viewProduct('PRD-004')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn-icon btn-success" title="Show Product" onclick="showProduct('PRD-004')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn-icon btn-danger" title="Delete Product">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="bulk-actions">
+                <select id="bulkAction">
+                    <option value="">Bulk Actions</option>
+                    <option value="approve">Approve Selected</option>
+                    <option value="reject">Reject Selected</option>
+                    <option value="hide">Hide Selected</option>
+                    <option value="show">Show Selected</option>
+                    <option value="delete">Delete Selected</option>
+                </select>
+                <button class="btn btn-secondary" onclick="executeBulkAction()">Apply</button>
+            </div>
+
+            <div class="pagination">
+                <button class="btn btn-secondary">Previous</button>
+                <span>Page 1 of 15</span>
+                <button class="btn btn-secondary">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Details Modal -->
+    <div id="productModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>Product Details</h3>
+                <span class="close" onclick="closeModal('productModal')">&times;</span>
+            </div>
+            <div class="product-details-grid">
+                <div class="product-images">
+                    <div class="main-image">
+                        <img src="https://via.placeholder.com/400" alt="Product" id="mainProductImage">
+                    </div>
+                    <div class="thumbnail-images">
+                        <img src="https://via.placeholder.com/80" alt="Thumbnail" onclick="changeMainImage(this)">
+                        <img src="https://via.placeholder.com/80" alt="Thumbnail" onclick="changeMainImage(this)">
+                        <img src="https://via.placeholder.com/80" alt="Thumbnail" onclick="changeMainImage(this)">
+                    </div>
+                </div>
+                <div class="product-info-detailed">
+                    <h2>iPhone 15 Pro Max 256GB</h2>
+                    <p class="product-price">$1,199.00</p>
+                    <div class="product-meta">
+                        <p><strong>SKU:</strong> IPH15PM256</p>
+                        <p><strong>Category:</strong> Electronics > Smartphones</p>
+                        <p><strong>Seller:</strong> TechStore Electronics</p>
+                        <p><strong>Submitted:</strong> 2 days ago</p>
+                    </div>
+                    <div class="product-description">
+                        <h4>Description</h4>
+                        <p>The iPhone 15 Pro Max features a titanium design, A17 Pro chip, and advanced camera system with Action Button and USB-C connectivity.</p>
+                    </div>
+                    <div class="product-specs">
+                        <h4>Specifications</h4>
+                        <ul>
+                            <li>Display: 6.7" Super Retina XDR</li>
+                            <li>Chip: A17 Pro</li>
+                            <li>Storage: 256GB</li>
+                            <li>Camera: 48MP Main, 12MP Ultra Wide</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-success" onclick="approveProduct('current')">Approve Product</button>
+                <button class="btn btn-danger" onclick="rejectProduct('current')">Reject Product</button>
+                <button class="btn btn-secondary" onclick="closeModal('productModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Product Modal -->
+    <div id="rejectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Reject Product</h3>
+                <span class="close" onclick="closeModal('rejectModal')">&times;</span>
+            </div>
+            <form class="modal-form">
+                <p>Please provide a reason for rejecting this product:</p>
+                <div class="form-group">
+                    <label for="rejectReason">Rejection Reason *</label>
+                    <textarea id="rejectReason" rows="4" placeholder="Explain why this product is being rejected..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="notifySeller" checked>
+                        Send notification to seller
+                    </label>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('rejectModal')">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Reject Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function viewProduct(productId) {
+            // In a real app, you'd fetch product data and populate the modal
+            openModal('productModal');
+        }
+
+        function approveProduct(productId) {
+            if (confirm('Are you sure you want to approve this product?')) {
+                // Handle approval logic
+                console.log('Approving product:', productId);
+                // Update UI to show approved status
+            }
+        }
+
+        function rejectProduct(productId) {
+            openModal('rejectModal');
+        }
+
+        function hideProduct(productId) {
+            if (confirm('Are you sure you want to hide this product from the store?')) {
+                // Handle hide logic
+                console.log('Hiding product:', productId);
+            }
+        }
+
+        function showProduct(productId) {
+            if (confirm('Are you sure you want to show this product in the store?')) {
+                // Handle show logic
+                console.log('Showing product:', productId);
+            }
+        }
+
+        function changeMainImage(thumbnail) {
+            document.getElementById('mainProductImage').src = thumbnail.src.replace('80', '400');
+        }
+
+        function executeBulkAction() {
+            const action = document.getElementById('bulkAction').value;
+            const selectedProducts = document.querySelectorAll('.product-checkbox:checked');
+            
+            if (!action) {
+                alert('Please select an action');
+                return;
+            }
+            
+            if (selectedProducts.length === 0) {
+                alert('Please select at least one product');
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to ${action} ${selectedProducts.length} selected product(s)?`)) {
+                // Handle bulk action
+                console.log('Bulk action:', action, 'Products:', selectedProducts.length);
+            }
+        }
+
+        // Select all checkbox functionality
+        document.getElementById('selectAll').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.product-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+        });
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html> 

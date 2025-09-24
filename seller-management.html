@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seller Management - ECommerce Platform</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="logo">
+            <h2><i class="fas fa-store"></i> ECommerce Admin</h2>
+        </div>
+        <nav class="nav-menu">
+            <a href="admin-dashboard.html" class="nav-item">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a href="category-management.html" class="nav-item">
+                <i class="fas fa-tags"></i> Categories
+            </a>
+            <a href="product-approval.html" class="nav-item">
+                <i class="fas fa-box"></i> Products
+            </a>
+            <a href="seller-management.html" class="nav-item active">
+                <i class="fas fa-users"></i> Sellers
+            </a>
+            <a href="user-management.html" class="nav-item">
+                <i class="fas fa-user-friends"></i> Users
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-chart-bar"></i> Analytics
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-cog"></i> Settings
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <header class="header">
+            <h1>Seller Management</h1>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="openModal('commissionModal')">
+                    <i class="fas fa-percentage"></i> Set Commission Rates
+                </button>
+            </div>
+        </header>
+
+        <!-- Filters and Search -->
+        <div class="filters-section">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search sellers...">
+            </div>
+            <div class="filter-buttons">
+                <button class="filter-btn active">All Sellers</button>
+                <button class="filter-btn">Active</button>
+                <button class="filter-btn">Blocked</button>
+                <button class="filter-btn">Pending Approval</button>
+            </div>
+        </div>
+
+        <!-- Sellers Table -->
+        <div class="content-card">
+            <div class="table-header">
+                <h3>Sellers List</h3>
+                <div class="table-actions">
+                    <button class="btn btn-secondary">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Seller</th>
+                            <th>Business Name</th>
+                            <th>Products</th>
+                            <th>Commission Rate</th>
+                            <th>Total Sales</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="seller-info">
+                                    <img src="https://via.placeholder.com/40" alt="Seller">
+                                    <div>
+                                        <h4>John Smith</h4>
+                                        <p>john@techstore.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>TechStore Electronics</td>
+                            <td>156</td>
+                            <td>
+                                <span class="commission-rate">8.5%</span>
+                                <button class="btn-icon" onclick="editCommission('seller1')" title="Edit Commission">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                            <td>$45,230</td>
+                            <td><span class="status active">Active</span></td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-icon" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn-icon" title="Block Seller">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
+                                    <button class="btn-icon" title="Send Message">
+                                        <i class="fas fa-envelope"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="seller-info">
+                                    <img src="https://via.placeholder.com/40" alt="Seller">
+                                    <div>
+                                        <h4>Sarah Johnson</h4>
+                                        <p>sarah@fashionhub.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>Fashion Hub</td>
+                            <td>89</td>
+                            <td>
+                                <span class="commission-rate">10.0%</span>
+                                <button class="btn-icon" onclick="editCommission('seller2')" title="Edit Commission">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                            <td>$32,150</td>
+                            <td><span class="status active">Active</span></td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-icon" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn-icon" title="Block Seller">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
+                                    <button class="btn-icon" title="Send Message">
+                                        <i class="fas fa-envelope"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="seller-info">
+                                    <img src="https://via.placeholder.com/40" alt="Seller">
+                                    <div>
+                                        <h4>Mike Wilson</h4>
+                                        <p>mike@sportsworld.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>SportsWorld</td>
+                            <td>234</td>
+                            <td>
+                                <span class="commission-rate">7.5%</span>
+                                <button class="btn-icon" onclick="editCommission('seller3')" title="Edit Commission">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                            <td>$67,890</td>
+                            <td><span class="status blocked">Blocked</span></td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-icon" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn-icon btn-success" title="Unblock Seller">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="btn-icon" title="Send Message">
+                                        <i class="fas fa-envelope"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination">
+                <button class="btn btn-secondary">Previous</button>
+                <span>Page 1 of 5</span>
+                <button class="btn btn-secondary">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Commission Settings Modal -->
+    <div id="commissionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Commission Rate Settings</h3>
+                <span class="close" onclick="closeModal('commissionModal')">&times;</span>
+            </div>
+            <form class="modal-form">
+                <div class="form-group">
+                    <label for="defaultCommission">Default Commission Rate (%)</label>
+                    <input type="number" id="defaultCommission" value="8.5" step="0.1" min="0" max="100">
+                </div>
+                <div class="form-group">
+                    <label for="categoryCommission">Category-based Commission</label>
+                    <div class="commission-rules">
+                        <div class="commission-rule">
+                            <select>
+                                <option>Electronics</option>
+                                <option>Fashion</option>
+                                <option>Sports</option>
+                            </select>
+                            <input type="number" value="8.0" step="0.1" min="0" max="100">
+                            <span>%</span>
+                            <button type="button" class="btn-icon btn-danger">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        <div class="commission-rule">
+                            <select>
+                                <option>Fashion</option>
+                                <option>Electronics</option>
+                                <option>Sports</option>
+                            </select>
+                            <input type="number" value="10.0" step="0.1" min="0" max="100">
+                            <span>%</span>
+                            <button type="button" class="btn-icon btn-danger">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-small">
+                        <i class="fas fa-plus"></i> Add Category Rule
+                    </button>
+                </div>
+                <div class="form-group">
+                    <label for="volumeCommission">Volume-based Commission</label>
+                    <div class="commission-rules">
+                        <div class="commission-rule">
+                            <span>Sales > $</span>
+                            <input type="number" value="10000" min="0">
+                            <span>Commission:</span>
+                            <input type="number" value="7.0" step="0.1" min="0" max="100">
+                            <span>%</span>
+                            <button type="button" class="btn-icon btn-danger">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-small">
+                        <i class="fas fa-plus"></i> Add Volume Rule
+                    </button>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('commissionModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Commission Settings</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Individual Commission Modal -->
+    <div id="editCommissionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Commission Rate</h3>
+                <span class="close" onclick="closeModal('editCommissionModal')">&times;</span>
+            </div>
+            <form class="modal-form">
+                <div class="form-group">
+                    <label for="sellerName">Seller</label>
+                    <input type="text" id="sellerName" readonly value="TechStore Electronics">
+                </div>
+                <div class="form-group">
+                    <label for="currentCommission">Current Commission Rate (%)</label>
+                    <input type="number" id="currentCommission" value="8.5" step="0.1" min="0" max="100">
+                </div>
+                <div class="form-group">
+                    <label for="reason">Reason for Change</label>
+                    <textarea id="reason" rows="3" placeholder="Enter reason for commission change"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editCommissionModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Commission</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function editCommission(sellerId) {
+            // In a real app, you'd fetch seller data and populate the modal
+            openModal('editCommissionModal');
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html> 

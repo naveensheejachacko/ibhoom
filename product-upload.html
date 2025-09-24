@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Product - Seller Portal</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Seller Sidebar Navigation -->
+    <div class="sidebar seller-sidebar">
+        <div class="logo">
+            <h2><i class="fas fa-store"></i> Seller Portal</h2>
+        </div>
+        <nav class="nav-menu">
+            <a href="seller-dashboard.html" class="nav-item">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a href="product-upload.html" class="nav-item active">
+                <i class="fas fa-plus-circle"></i> Add Product
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-box"></i> My Products
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-shopping-cart"></i> Orders
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-chart-line"></i> Analytics
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-dollar-sign"></i> Earnings
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-cog"></i> Settings
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <header class="header">
+            <h1>Add New Product</h1>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="history.back()">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </button>
+            </div>
+        </header>
+
+        <!-- Product Upload Form -->
+        <form class="product-form">
+            <div class="form-grid">
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <h3><i class="fas fa-info-circle"></i> Basic Information</h3>
+                    <div class="form-group">
+                        <label for="productName">Product Name *</label>
+                        <input type="text" id="productName" placeholder="Enter product name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="productDescription">Description *</label>
+                        <textarea id="productDescription" rows="4" placeholder="Describe your product in detail" required></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="category">Category *</label>
+                            <select id="category" required>
+                                <option value="">Select Category</option>
+                                <option value="electronics">Electronics</option>
+                                <option value="fashion">Fashion</option>
+                                <option value="sports">Sports</option>
+                                <option value="home">Home & Garden</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="subcategory">Subcategory *</label>
+                            <select id="subcategory" required>
+                                <option value="">Select Subcategory</option>
+                                <option value="smartphones">Smartphones</option>
+                                <option value="laptops">Laptops</option>
+                                <option value="accessories">Accessories</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="brand">Brand</label>
+                        <input type="text" id="brand" placeholder="Enter brand name">
+                    </div>
+                </div>
+
+                <!-- Pricing -->
+                <div class="form-section">
+                    <h3><i class="fas fa-dollar-sign"></i> Pricing</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="price">Price *</label>
+                            <input type="number" id="price" step="0.01" min="0" placeholder="0.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="comparePrice">Compare at Price</label>
+                            <input type="number" id="comparePrice" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="cost">Cost per Item</label>
+                            <input type="number" id="cost" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="sku">SKU</label>
+                            <input type="text" id="sku" placeholder="Product SKU">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inventory -->
+                <div class="form-section">
+                    <h3><i class="fas fa-warehouse"></i> Inventory</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="quantity">Quantity *</label>
+                            <input type="number" id="quantity" min="0" placeholder="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="trackQuantity">
+                                <input type="checkbox" id="trackQuantity" checked>
+                                Track quantity
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="lowStockThreshold">Low stock threshold</label>
+                        <input type="number" id="lowStockThreshold" min="0" placeholder="5">
+                    </div>
+                </div>
+
+                <!-- Shipping -->
+                <div class="form-section">
+                    <h3><i class="fas fa-shipping-fast"></i> Shipping</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="weight">Weight (kg)</label>
+                            <input type="number" id="weight" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="requiresShipping">
+                                <input type="checkbox" id="requiresShipping" checked>
+                                This product requires shipping
+                            </label>
+                        </div>
+                    </div>
+                    <div class="dimensions-group">
+                        <label>Dimensions (cm)</label>
+                        <div class="form-row">
+                            <input type="number" id="length" step="0.01" min="0" placeholder="Length">
+                            <input type="number" id="width" step="0.01" min="0" placeholder="Width">
+                            <input type="number" id="height" step="0.01" min="0" placeholder="Height">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Images -->
+            <div class="form-section full-width">
+                <h3><i class="fas fa-images"></i> Product Images</h3>
+                <div class="image-upload-area">
+                    <div class="upload-zone" id="uploadZone">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Drag and drop images here, or <span class="upload-link">browse</span></p>
+                        <input type="file" id="imageInput" multiple accept="image/*" hidden>
+                        <small>Upload up to 10 images. First image will be the main product image.</small>
+                    </div>
+                    <div class="image-preview" id="imagePreview">
+                        <!-- Uploaded images will appear here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Variants -->
+            <div class="form-section full-width">
+                <h3><i class="fas fa-list"></i> Product Variants</h3>
+                <div class="variants-section">
+                    <div class="variant-options">
+                        <button type="button" class="btn btn-secondary" onclick="addVariantOption()">
+                            <i class="fas fa-plus"></i> Add Variant Option
+                        </button>
+                    </div>
+                    <div id="variantList">
+                        <!-- Variants will be added here dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEO Settings -->
+            <div class="form-section full-width">
+                <h3><i class="fas fa-search"></i> SEO Settings</h3>
+                <div class="form-group">
+                    <label for="metaTitle">Meta Title</label>
+                    <input type="text" id="metaTitle" placeholder="SEO title for search engines">
+                </div>
+                <div class="form-group">
+                    <label for="metaDescription">Meta Description</label>
+                    <textarea id="metaDescription" rows="3" placeholder="SEO description for search engines"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="tags">Tags</label>
+                    <input type="text" id="tags" placeholder="Enter tags separated by commas">
+                </div>
+            </div>
+
+            <!-- Status -->
+            <div class="form-section">
+                <h3><i class="fas fa-toggle-on"></i> Product Status</h3>
+                <div class="form-group">
+                    <label for="status">Status</label>
+                    <select id="status">
+                        <option value="draft">Draft</option>
+                        <option value="pending" selected>Pending Review</option>
+                    </select>
+                    <small>Products must be approved by admin before going live</small>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary">Save as Draft</button>
+                <button type="submit" class="btn btn-primary">Submit for Review</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Image Upload Functionality
+        const uploadZone = document.getElementById('uploadZone');
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('imagePreview');
+
+        uploadZone.addEventListener('click', () => imageInput.click());
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        imageInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            Array.from(files).forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const imageContainer = document.createElement('div');
+                        imageContainer.className = 'image-container';
+                        imageContainer.innerHTML = `
+                            <img src="${e.target.result}" alt="Product Image">
+                            <button type="button" class="remove-image" onclick="removeImage(this)">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        `;
+                        imagePreview.appendChild(imageContainer);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        function removeImage(button) {
+            button.parentElement.remove();
+        }
+
+        // Variant Management
+        let variantCount = 0;
+
+        function addVariantOption() {
+            variantCount++;
+            const variantHtml = `
+                <div class="variant-option" id="variant-${variantCount}">
+                    <div class="variant-header">
+                        <input type="text" placeholder="Option name (e.g., Size, Color)" class="variant-name">
+                        <button type="button" class="btn-icon btn-danger" onclick="removeVariant(${variantCount})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="variant-values">
+                        <input type="text" placeholder="Option values (e.g., Small, Medium, Large)" class="variant-values-input">
+                        <small>Separate multiple values with commas</small>
+                    </div>
+                </div>
+            `;
+            document.getElementById('variantList').insertAdjacentHTML('beforeend', variantHtml);
+        }
+
+        function removeVariant(id) {
+            document.getElementById(`variant-${id}`).remove();
+        }
+
+        // Category change handler
+        document.getElementById('category').addEventListener('change', function() {
+            const subcategorySelect = document.getElementById('subcategory');
+            subcategorySelect.innerHTML = '<option value="">Select Subcategory</option>';
+            
+            // This would be populated based on the selected category
+            // For demo purposes, showing static options
+            if (this.value === 'electronics') {
+                subcategorySelect.innerHTML += `
+                    <option value="smartphones">Smartphones</option>
+                    <option value="laptops">Laptops</option>
+                    <option value="accessories">Accessories</option>
+                `;
+            } else if (this.value === 'fashion') {
+                subcategorySelect.innerHTML += `
+                    <option value="mens-clothing">Men's Clothing</option>
+                    <option value="womens-clothing">Women's Clothing</option>
+                    <option value="footwear">Footwear</option>
+                `;
+            }
+        });
+    </script>
+</body>
+</html> 

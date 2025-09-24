@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - ECommerce Platform</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="logo">
+            <h2><i class="fas fa-store"></i> ECommerce Admin</h2>
+        </div>
+        <nav class="nav-menu">
+            <a href="admin-dashboard.html" class="nav-item">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a href="category-management.html" class="nav-item">
+                <i class="fas fa-tags"></i> Categories
+            </a>
+            <a href="product-approval.html" class="nav-item">
+                <i class="fas fa-box"></i> Products
+            </a>
+            <a href="seller-management.html" class="nav-item">
+                <i class="fas fa-users"></i> Sellers
+            </a>
+            <a href="user-management.html" class="nav-item active">
+                <i class="fas fa-user-friends"></i> Users
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-chart-bar"></i> Analytics
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-cog"></i> Settings
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <header class="header">
+            <h1>User Management</h1>
+            <div class="header-actions">
+                <button class="btn btn-secondary">
+                    <i class="fas fa-download"></i> Export Users
+                </button>
+            </div>
+        </header>
+
+        <!-- User Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>1,247</h3>
+                    <p>Total Users</p>
+                    <span class="stat-change positive">+12% this month</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>1,156</h3>
+                    <p>Active Users</p>
+                    <span class="stat-change positive">+8% this month</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-user-times"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>91</h3>
+                    <p>Blocked Users</p>
+                    <span class="stat-change negative">+15 this week</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>45</h3>
+                    <p>New This Week</p>
+                    <span class="stat-change positive">+20% vs last week</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="filters-section">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search users by name, email, or ID...">
+            </div>
+            <div class="filter-buttons">
+                <button class="filter-btn active">All Users</button>
+                <button class="filter-btn">Active</button>
+                <button class="filter-btn">Blocked</button>
+                <button class="filter-btn">New Registrations</button>
+            </div>
+            <div class="date-filter">
+                <input type="date" id="startDate">
+                <span>to</span>
+                <input type="date" id="endDate">
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="content-card">
+            <div class="table-header">
+                <h3>Users List</h3>
+                <div class="table-actions">
+                    <button class="btn btn-secondary">
+                        <i class="fas fa-filter"></i> Advanced Filters
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>
+                                <input type="checkbox" id="selectAll">
+                            </th>
+                            <th>User</th>
+                            <th>Registration Date</th>
+                            <th>Orders</th>
+                            <th>Total Spent</th>
+                            <th>Last Active</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><input type="checkbox" class="user-checkbox"></td>
+                            <td>
+                                <div class="user-info">
+                                    <img src="https://via.placeholder.com/40" alt="User">
+                                    <div>
+                                        <h4>John Doe</h4>
+                                        <p>john.doe@email.com</p>
+                                        <small>ID: USR-001</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>Jan 15, 2024</td>
+                            <td>23</td>
+                            <td>$1,245.50</td>
+                            <td>2 hours ago</td>
+                            <td><span class="status active">Active</span></td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-icon" title="View Profile" onclick="viewUser('USR-001')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn-icon" title="Block User" onclick="blockUser('USR-001')">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
+                                    <button class="btn-icon" title="Send Message" onclick="messageUser('USR-001')">
+                                        <i class="fas fa-envelope"></i>
+                                    </button>
+                                    <button class="btn-icon btn-danger" title="Delete User">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><input type="checkbox" class="user-checkbox"></td>
+                            <td>
+                                <div class="user-info">
+                                    <img src="https://via.placeholder.com/40" alt="User">
+                                    <div>
+                                        <h4>Jane Smith</h4>
+                                        <p>jane.smith@email.com</p>
+                                        <small>ID: USR-002</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>Feb 03, 2024</td>
+                            <td>15</td>
+                            <td>$892.30</td>
+                            <td>1 day ago</td>
+                            <td><span class="status active">Active</span></td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-icon" title="View Profile" onclick="viewUser('USR-002')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn-icon" title="Block User" onclick="blockUser('USR-002')">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
+                                    <button class="btn-icon" title="Send Message" onclick="messageUser('USR-002')">
+                                        <i class="fas fa-envelope"></i>
+                                    </button>
+                                    <button class="btn-icon btn-danger" title="Delete User">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="user-blocked">
+                            <td><input type="checkbox" class="user-checkbox"></td>
+                            <td>
+                                <div class="user-info">
+                                    <img src="https://via.placeholder.com/40" alt="User">
+                                    <div>
+                                        <h4>Bob Johnson</h4>
+                                        <p>bob.johnson@email.com</p>
+                                        <small>ID: USR-003</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>Mar 12, 2024</td>
+                            <td>3</td>
+                            <td>$156.20</td>
+                            <td>1 week ago</td>
+                            <td><span class="status blocked">Blocked</span></td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-icon" title="View Profile" onclick="viewUser('USR-003')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn-icon btn-success" title="Unblock User" onclick="unblockUser('USR-003')">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="btn-icon" title="Send Message" onclick="messageUser('USR-003')">
+                                        <i class="fas fa-envelope"></i>
+                                    </button>
+                                    <button class="btn-icon btn-danger" title="Delete User">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="bulk-actions">
+                <select id="bulkAction">
+                    <option value="">Bulk Actions</option>
+                    <option value="block">Block Selected</option>
+                    <option value="unblock">Unblock Selected</option>
+                    <option value="delete">Delete Selected</option>
+                    <option value="export">Export Selected</option>
+                </select>
+                <button class="btn btn-secondary" onclick="executeBulkAction()">Apply</button>
+            </div>
+
+            <div class="pagination">
+                <button class="btn btn-secondary">Previous</button>
+                <span>Page 1 of 25</span>
+                <button class="btn btn-secondary">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Details Modal -->
+    <div id="userModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>User Details</h3>
+                <span class="close" onclick="closeModal('userModal')">&times;</span>
+            </div>
+            <div class="user-details-grid">
+                <div class="user-profile-section">
+                    <div class="profile-header">
+                        <img src="https://via.placeholder.com/80" alt="User">
+                        <div class="profile-info">
+                            <h4>John Doe</h4>
+                            <p>john.doe@email.com</p>
+                            <span class="status active">Active</span>
+                        </div>
+                    </div>
+                    <div class="profile-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Total Orders</span>
+                            <span class="stat-value">23</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Total Spent</span>
+                            <span class="stat-value">$1,245.50</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Member Since</span>
+                            <span class="stat-value">Jan 15, 2024</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="user-activity-section">
+                    <h4>Recent Activity</h4>
+                    <div class="activity-list">
+                        <div class="activity-item">
+                            <i class="fas fa-shopping-cart"></i>
+                            <div class="activity-content">
+                                <p>Placed order #ORD-12345</p>
+                                <span class="activity-time">2 hours ago</span>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <i class="fas fa-sign-in-alt"></i>
+                            <div class="activity-content">
+                                <p>Logged in</p>
+                                <span class="activity-time">3 hours ago</span>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <i class="fas fa-heart"></i>
+                            <div class="activity-content">
+                                <p>Added item to wishlist</p>
+                                <span class="activity-time">1 day ago</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-danger" onclick="blockUser('current')">Block User</button>
+                <button class="btn btn-secondary" onclick="messageUser('current')">Send Message</button>
+                <button class="btn btn-secondary" onclick="closeModal('userModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Block User Confirmation Modal -->
+    <div id="blockModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Block User</h3>
+                <span class="close" onclick="closeModal('blockModal')">&times;</span>
+            </div>
+            <form class="modal-form">
+                <p>Are you sure you want to block this user?</p>
+                <div class="form-group">
+                    <label for="blockReason">Reason for blocking</label>
+                    <textarea id="blockReason" rows="3" placeholder="Enter reason for blocking this user" required></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('blockModal')">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Block User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function viewUser(userId) {
+            // In a real app, you'd fetch user data and populate the modal
+            openModal('userModal');
+        }
+
+        function blockUser(userId) {
+            openModal('blockModal');
+        }
+
+        function unblockUser(userId) {
+            if (confirm('Are you sure you want to unblock this user?')) {
+                // Handle unblock logic
+                console.log('Unblocking user:', userId);
+            }
+        }
+
+        function messageUser(userId) {
+            // Open messaging interface
+            console.log('Messaging user:', userId);
+        }
+
+        function executeBulkAction() {
+            const action = document.getElementById('bulkAction').value;
+            const selectedUsers = document.querySelectorAll('.user-checkbox:checked');
+            
+            if (!action) {
+                alert('Please select an action');
+                return;
+            }
+            
+            if (selectedUsers.length === 0) {
+                alert('Please select at least one user');
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to ${action} ${selectedUsers.length} selected user(s)?`)) {
+                // Handle bulk action
+                console.log('Bulk action:', action, 'Users:', selectedUsers.length);
+            }
+        }
+
+        // Select all checkbox functionality
+        document.getElementById('selectAll').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.user-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+        });
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html> 

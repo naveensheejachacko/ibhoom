@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Category Management - ECommerce Platform</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="logo">
+            <h2><i class="fas fa-store"></i> ECommerce Admin</h2>
+        </div>
+        <nav class="nav-menu">
+            <a href="admin-dashboard.html" class="nav-item">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a href="category-management.html" class="nav-item active">
+                <i class="fas fa-tags"></i> Categories
+            </a>
+            <a href="product-approval.html" class="nav-item">
+                <i class="fas fa-box"></i> Products
+            </a>
+            <a href="seller-management.html" class="nav-item">
+                <i class="fas fa-users"></i> Sellers
+            </a>
+            <a href="user-management.html" class="nav-item">
+                <i class="fas fa-user-friends"></i> Users
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-chart-bar"></i> Analytics
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-cog"></i> Settings
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <header class="header">
+            <h1>Category Management</h1>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="openModal('addCategoryModal')">
+                    <i class="fas fa-plus"></i> Add Category
+                </button>
+            </div>
+        </header>
+
+        <!-- Category Tree -->
+        <div class="content-card">
+            <div class="card-header">
+                <h3>Category Hierarchy</h3>
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search categories...">
+                </div>
+            </div>
+            
+            <div class="category-tree">
+                <!-- Electronics Category -->
+                <div class="category-item">
+                    <div class="category-header">
+                        <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                        <span class="category-name">Electronics</span>
+                        <div class="category-actions">
+                            <button class="btn-icon" onclick="openModal('addSubcategoryModal')" title="Add Subcategory">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="btn-icon" onclick="openModal('editCategoryModal')" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-icon btn-danger" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="subcategories">
+                        <div class="subcategory-item">
+                            <span class="subcategory-name">Smartphones</span>
+                            <div class="category-actions">
+                                <button class="btn-icon" onclick="openModal('addSubcategoryModal')" title="Add Subcategory">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <button class="btn-icon" onclick="openModal('editCategoryModal')" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn-icon btn-danger" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            <div class="sub-subcategories">
+                                <div class="sub-subcategory-item">
+                                    <span>Android Phones</span>
+                                    <div class="category-actions">
+                                        <button class="btn-icon" onclick="openModal('editCategoryModal')" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn-icon btn-danger" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="sub-subcategory-item">
+                                    <span>iPhones</span>
+                                    <div class="category-actions">
+                                        <button class="btn-icon" onclick="openModal('editCategoryModal')" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn-icon btn-danger" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="subcategory-item">
+                            <span class="subcategory-name">Laptops</span>
+                            <div class="category-actions">
+                                <button class="btn-icon" onclick="openModal('addSubcategoryModal')" title="Add Subcategory">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <button class="btn-icon" onclick="openModal('editCategoryModal')" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn-icon btn-danger" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fashion Category -->
+                <div class="category-item">
+                    <div class="category-header">
+                        <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+                        <span class="category-name">Fashion</span>
+                        <div class="category-actions">
+                            <button class="btn-icon" onclick="openModal('addSubcategoryModal')" title="Add Subcategory">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="btn-icon" onclick="openModal('editCategoryModal')" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-icon btn-danger" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="subcategories">
+                        <div class="subcategory-item">
+                            <span class="subcategory-name">Men's Clothing</span>
+                            <div class="category-actions">
+                                <button class="btn-icon" onclick="openModal('addSubcategoryModal')" title="Add Subcategory">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <button class="btn-icon" onclick="openModal('editCategoryModal')" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn-icon btn-danger" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="subcategory-item">
+                            <span class="subcategory-name">Women's Clothing</span>
+                            <div class="category-actions">
+                                <button class="btn-icon" onclick="openModal('addSubcategoryModal')" title="Add Subcategory">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <button class="btn-icon" onclick="openModal('editCategoryModal')" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn-icon btn-danger" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Category Modal -->
+    <div id="addCategoryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Category</h3>
+                <span class="close" onclick="closeModal('addCategoryModal')">&times;</span>
+            </div>
+            <form class="modal-form">
+                <div class="form-group">
+                    <label for="categoryName">Category Name</label>
+                    <input type="text" id="categoryName" placeholder="Enter category name">
+                </div>
+                <div class="form-group">
+                    <label for="categoryDescription">Description</label>
+                    <textarea id="categoryDescription" rows="3" placeholder="Enter category description"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="categoryIcon">Icon</label>
+                    <input type="text" id="categoryIcon" placeholder="Font Awesome icon class (e.g., fas fa-laptop)">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addCategoryModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Subcategory Modal -->
+    <div id="addSubcategoryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Subcategory</h3>
+                <span class="close" onclick="closeModal('addSubcategoryModal')">&times;</span>
+            </div>
+            <form class="modal-form">
+                <div class="form-group">
+                    <label for="parentCategory">Parent Category</label>
+                    <select id="parentCategory">
+                        <option value="">Select parent category</option>
+                        <option value="electronics">Electronics</option>
+                        <option value="fashion">Fashion</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="subcategoryName">Subcategory Name</label>
+                    <input type="text" id="subcategoryName" placeholder="Enter subcategory name">
+                </div>
+                <div class="form-group">
+                    <label for="subcategoryDescription">Description</label>
+                    <textarea id="subcategoryDescription" rows="3" placeholder="Enter subcategory description"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addSubcategoryModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Subcategory</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html> 

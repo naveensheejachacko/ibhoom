@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seller Dashboard - ECommerce Platform</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Seller Sidebar Navigation -->
+    <div class="sidebar seller-sidebar">
+        <div class="logo">
+            <h2><i class="fas fa-store"></i> Seller Portal</h2>
+        </div>
+        <nav class="nav-menu">
+            <a href="seller-dashboard.html" class="nav-item active">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a href="product-upload.html" class="nav-item">
+                <i class="fas fa-plus-circle"></i> Add Product
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-box"></i> My Products
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-shopping-cart"></i> Orders
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-chart-line"></i> Analytics
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-dollar-sign"></i> Earnings
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-cog"></i> Settings
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <header class="header">
+            <h1>Seller Dashboard</h1>
+            <div class="header-actions">
+                <div class="notification-icon">
+                    <i class="fas fa-bell"></i>
+                    <span class="badge">2</span>
+                </div>
+                <div class="seller-profile">
+                    <img src="https://via.placeholder.com/40" alt="Seller">
+                    <span>TechStore Electronics</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <button class="action-card" onclick="location.href='product-upload.html'">
+                <i class="fas fa-plus-circle"></i>
+                <span>Add New Product</span>
+            </button>
+            <button class="action-card">
+                <i class="fas fa-chart-bar"></i>
+                <span>View Analytics</span>
+            </button>
+            <button class="action-card">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Manage Orders</span>
+            </button>
+            <button class="action-card">
+                <i class="fas fa-dollar-sign"></i>
+                <span>Check Earnings</span>
+            </button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-box"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>156</h3>
+                    <p>Total Products</p>
+                    <span class="stat-change positive">+12 this month</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>8</h3>
+                    <p>Pending Approval</p>
+                    <span class="stat-change neutral">Awaiting review</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>234</h3>
+                    <p>Total Orders</p>
+                    <span class="stat-change positive">+18% this month</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>$45,230</h3>
+                    <p>Total Earnings</p>
+                    <span class="stat-change positive">+22% this month</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="content-grid">
+            <!-- Pending Products -->
+            <div class="content-card">
+                <h3>Products Pending Approval</h3>
+                <div class="pending-products">
+                    <div class="pending-item">
+                        <img src="https://via.placeholder.com/60" alt="Product">
+                        <div class="pending-details">
+                            <h4>iPhone 15 Pro Max 256GB</h4>
+                            <p>Submitted: 2 days ago</p>
+                            <span class="status pending">Under Review</span>
+                        </div>
+                        <div class="pending-actions">
+                            <button class="btn btn-secondary btn-small">Edit</button>
+                        </div>
+                    </div>
+                    <div class="pending-item">
+                        <img src="https://via.placeholder.com/60" alt="Product">
+                        <div class="pending-details">
+                            <h4>MacBook Pro 14" M3</h4>
+                            <p>Submitted: 1 day ago</p>
+                            <span class="status pending">Under Review</span>
+                        </div>
+                        <div class="pending-actions">
+                            <button class="btn btn-secondary btn-small">Edit</button>
+                        </div>
+                    </div>
+                    <div class="pending-item rejected">
+                        <img src="https://via.placeholder.com/60" alt="Product">
+                        <div class="pending-details">
+                            <h4>Samsung Galaxy S24 Ultra</h4>
+                            <p>Submitted: 3 days ago</p>
+                            <span class="status rejected">Rejected</span>
+                            <p class="rejection-reason">Incomplete product description</p>
+                        </div>
+                        <div class="pending-actions">
+                            <button class="btn btn-primary btn-small">Resubmit</button>
+                        </div>
+                    </div>
+                </div>
+                <a href="#" class="view-all">View All Pending Products</a>
+            </div>
+
+            <!-- Recent Orders -->
+            <div class="content-card">
+                <h3>Recent Orders</h3>
+                <div class="orders-list">
+                    <div class="order-item">
+                        <div class="order-details">
+                            <h4>Order #ORD-001234</h4>
+                            <p>iPhone 14 Pro - Space Black</p>
+                            <span class="order-time">2 hours ago</span>
+                        </div>
+                        <div class="order-status">
+                            <span class="status processing">Processing</span>
+                            <span class="order-amount">$999.00</span>
+                        </div>
+                    </div>
+                    <div class="order-item">
+                        <div class="order-details">
+                            <h4>Order #ORD-001235</h4>
+                            <p>MacBook Air M2 - Silver</p>
+                            <span class="order-time">4 hours ago</span>
+                        </div>
+                        <div class="order-status">
+                            <span class="status shipped">Shipped</span>
+                            <span class="order-amount">$1,199.00</span>
+                        </div>
+                    </div>
+                    <div class="order-item">
+                        <div class="order-details">
+                            <h4>Order #ORD-001236</h4>
+                            <p>AirPods Pro 2nd Gen</p>
+                            <span class="order-time">1 day ago</span>
+                        </div>
+                        <div class="order-status">
+                            <span class="status delivered">Delivered</span>
+                            <span class="order-amount">$249.00</span>
+                        </div>
+                    </div>
+                </div>
+                <a href="#" class="view-all">View All Orders</a>
+            </div>
+        </div>
+
+        <!-- Performance Chart -->
+        <div class="content-card">
+            <h3>Sales Performance</h3>
+            <div class="chart-container">
+                <div class="chart-placeholder">
+                    <i class="fas fa-chart-line chart-icon"></i>
+                    <p>Sales chart would be displayed here</p>
+                    <small>Integration with Chart.js or similar library required</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

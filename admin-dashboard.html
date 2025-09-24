@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - ECommerce Platform</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="logo">
+            <h2><i class="fas fa-store"></i> ECommerce Admin</h2>
+        </div>
+        <nav class="nav-menu">
+            <a href="admin-dashboard.html" class="nav-item active">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a href="category-management.html" class="nav-item">
+                <i class="fas fa-tags"></i> Categories
+            </a>
+            <a href="product-approval.html" class="nav-item">
+                <i class="fas fa-box"></i> Products
+            </a>
+            <a href="seller-management.html" class="nav-item">
+                <i class="fas fa-users"></i> Sellers
+            </a>
+            <a href="user-management.html" class="nav-item">
+                <i class="fas fa-user-friends"></i> Users
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-chart-bar"></i> Analytics
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-cog"></i> Settings
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <header class="header">
+            <h1>Dashboard Overview</h1>
+            <div class="header-actions">
+                <div class="notification-icon">
+                    <i class="fas fa-bell"></i>
+                    <span class="badge">3</span>
+                </div>
+                <div class="admin-profile">
+                    <img src="https://via.placeholder.com/40" alt="Admin">
+                    <span>Admin User</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>1,247</h3>
+                    <p>Total Users</p>
+                    <span class="stat-change positive">+12% this month</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-store"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>89</h3>
+                    <p>Active Sellers</p>
+                    <span class="stat-change positive">+5% this month</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-box"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>2,456</h3>
+                    <p>Total Products</p>
+                    <span class="stat-change positive">+18% this month</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>$45,230</h3>
+                    <p>Commission Earned</p>
+                    <span class="stat-change positive">+22% this month</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="content-grid">
+            <div class="content-card">
+                <h3>Pending Approvals</h3>
+                <div class="approval-list">
+                    <div class="approval-item">
+                        <img src="https://via.placeholder.com/50" alt="Product">
+                        <div class="approval-details">
+                            <h4>iPhone 15 Pro Max</h4>
+                            <p>Submitted by: TechStore</p>
+                            <span class="status pending">Pending Review</span>
+                        </div>
+                        <div class="approval-actions">
+                            <button class="btn btn-approve">Approve</button>
+                            <button class="btn btn-reject">Reject</button>
+                        </div>
+                    </div>
+                    <div class="approval-item">
+                        <img src="https://via.placeholder.com/50" alt="Product">
+                        <div class="approval-details">
+                            <h4>Nike Air Jordan</h4>
+                            <p>Submitted by: SportsWorld</p>
+                            <span class="status pending">Pending Review</span>
+                        </div>
+                        <div class="approval-actions">
+                            <button class="btn btn-approve">Approve</button>
+                            <button class="btn btn-reject">Reject</button>
+                        </div>
+                    </div>
+                </div>
+                <a href="product-approval.html" class="view-all">View All Pending Products</a>
+            </div>
+
+            <div class="content-card">
+                <h3>Recent Activities</h3>
+                <div class="activity-list">
+                    <div class="activity-item">
+                        <i class="fas fa-user-plus"></i>
+                        <div class="activity-content">
+                            <p><strong>New seller registered:</strong> Fashion Hub</p>
+                            <span class="activity-time">2 hours ago</span>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <i class="fas fa-box"></i>
+                        <div class="activity-content">
+                            <p><strong>Product approved:</strong> Samsung Galaxy S24</p>
+                            <span class="activity-time">4 hours ago</span>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <i class="fas fa-ban"></i>
+                        <div class="activity-content">
+                            <p><strong>User blocked:</strong> user@spam.com</p>
+                            <span class="activity-time">6 hours ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

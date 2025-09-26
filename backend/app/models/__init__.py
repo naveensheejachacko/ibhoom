@@ -15,3 +15,4 @@ __all__ = [
     "Order", "OrderItem", "OrderStatus",
     "CommissionSetting", "CommissionType"
 ]
+

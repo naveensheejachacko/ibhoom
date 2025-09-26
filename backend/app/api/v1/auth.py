@@ -60,8 +60,7 @@ async def register_customer(user_data: UserCreate, db: Session = Depends(get_db)
             detail="Email already registered"
         )
     
-    # Force role to customer
-    user_data.role = UserRole.CUSTOMER
+    # Role is automatically set to customer
     
     # Create user
     db_user = User(
@@ -70,7 +69,7 @@ async def register_customer(user_data: UserCreate, db: Session = Depends(get_db)
         first_name=user_data.first_name,
         last_name=user_data.last_name,
         phone=user_data.phone,
-        role=user_data.role,
+        role=UserRole.CUSTOMER,
         is_verified=True  # Auto-verify for demo
     )
     
@@ -91,8 +90,7 @@ async def register_seller(seller_data: SellerRegister, db: Session = Depends(get
             detail="Email already registered"
         )
     
-    # Force role to seller
-    seller_data.role = UserRole.SELLER
+    # Role is automatically set to seller (no need to modify seller_data)
     
     # Create user
     db_user = User(
@@ -101,7 +99,7 @@ async def register_seller(seller_data: SellerRegister, db: Session = Depends(get
         first_name=seller_data.first_name,
         last_name=seller_data.last_name,
         phone=seller_data.phone,
-        role=seller_data.role,
+        role=UserRole.SELLER,
         is_verified=True  # Auto-verify for demo
     )
     
@@ -137,8 +135,7 @@ async def register_admin(user_data: UserCreate, db: Session = Depends(get_db)):
             detail="Email already registered"
         )
     
-    # Force role to admin
-    user_data.role = UserRole.ADMIN
+    # Role is automatically set to admin
     
     # Create admin user
     db_user = User(
@@ -147,7 +144,7 @@ async def register_admin(user_data: UserCreate, db: Session = Depends(get_db)):
         first_name=user_data.first_name,
         last_name=user_data.last_name,
         phone=user_data.phone,
-        role=user_data.role,
+        role=UserRole.ADMIN,
         is_verified=True
     )
     

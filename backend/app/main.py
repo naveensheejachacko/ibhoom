@@ -32,6 +32,18 @@ app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads"
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 
+# Import and include admin router
+from .api.v1.admin.router import router as admin_router
+app.include_router(admin_router, prefix="/api/v1/admin", tags=["Admin"])
+
+# Import and include seller router
+from .api.v1.seller.router import router as seller_router
+app.include_router(seller_router, prefix="/api/v1/seller", tags=["Seller"])
+
+# Import and include customer router
+from .api.v1.customer.router import router as customer_router
+app.include_router(customer_router, prefix="/api/v1/customer", tags=["Customer"])
+
 @app.on_event("startup")
 async def startup_event():
     """Create database tables on startup"""

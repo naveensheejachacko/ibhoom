@@ -8,11 +8,17 @@ from ..core.database import Base
 
 class OrderStatus(str, enum.Enum):
     PENDING = "pending"
-    CONFIRMED = "confirmed"
-    COLLECTED = "collected"
-    OUT_FOR_DELIVERY = "out_for_delivery"
+    PROCESSING = "processing"
+    SHIPPED = "shipped"
     DELIVERED = "delivered"
     CANCELLED = "cancelled"
+
+
+class PaymentStatus(str, enum.Enum):
+    COD_PENDING = "cod_pending"
+    COD_COLLECTED = "cod_collected"
+    PAID = "paid"
+    REFUNDED = "refunded"
 
 
 class Order(Base):
@@ -25,16 +31,20 @@ class Order(Base):
     total_seller_amount = Column(DECIMAL(10, 2), nullable=False)  # Total amount sellers get
     total_commission_amount = Column(DECIMAL(10, 2), nullable=False)  # Total commission admin gets
     status = Column(Enum(OrderStatus), default=OrderStatus.PENDING)
+    payment_status = Column(Enum(PaymentStatus), default=PaymentStatus.COD_PENDING)
     delivery_address = Column(Text, nullable=False)
-    customer_phone = Column(String(20), nullable=False)
-    customer_name = Column(String(255), nullable=False)
+    delivery_city = Column(String(100), nullable=False)
+    delivery_state = Column(String(100), nullable=False) 
+    delivery_pincode = Column(String(10), nullable=False)
+    phone = Column(String(20), nullable=False)
     notes = Column(Text)
+    admin_notes = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     customer = relationship("User", back_populates="orders")
-    order_items = relationship("OrderItem", back_populates="order")
+    items = relationship("OrderItem", back_populates="order")
     
     def __repr__(self):
         return f"<Order {self.order_number}>"
@@ -46,10 +56,8 @@ class OrderItem(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     order_id = Column(String, ForeignKey("orders.id"), nullable=False)
     product_id = Column(String, ForeignKey("products.id"), nullable=False)
-    variant_id = Column(String, ForeignKey("product_variants.id"))
-    seller_id = Column(String, ForeignKey("sellers.id"), nullable=False)
+    product_variant_id = Column(String, ForeignKey("product_variants.id"))
     product_name = Column(String(255), nullable=False)
-    variant_details = Column(Text)
     quantity = Column(Integer, nullable=False)
     seller_unit_price = Column(DECIMAL(10, 2), nullable=False)  # Price seller gets per unit
     customer_unit_price = Column(DECIMAL(10, 2), nullable=False)  # Price customer pays per unit
@@ -61,10 +69,9 @@ class OrderItem(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships
-    order = relationship("Order", back_populates="order_items")
-    product = relationship("Product", back_populates="order_items")
-    variant = relationship("ProductVariant", back_populates="order_items")
-    seller = relationship("Seller", back_populates="order_items")
+    order = relationship("Order", back_populates="items")
+    product = relationship("Product")
+    variant = relationship("ProductVariant")
     
     def __repr__(self):
         return f"<OrderItem {self.order_id}-{self.product_name}>" 

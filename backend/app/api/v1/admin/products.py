@@ -30,7 +30,37 @@ async def get_all_products(
         category_id=category_id, seller_id=seller_id, status=status,
         min_price=min_price, max_price=max_price, search=search
     )
-    return products
+    
+    # Add seller information to each product
+    result = []
+    for product in products:
+        # Get seller information
+        seller_name = "Unknown Seller"
+        seller_email = "unknown@example.com"
+        
+        if product.seller:
+            seller_name = f"{product.seller.user.first_name} {product.seller.user.last_name}"
+            seller_email = product.seller.user.email
+        
+        product_dict = {
+            "id": product.id,
+            "name": product.name,
+            "slug": product.slug,
+            "seller_id": product.seller_id,
+            "category_id": product.category_id,
+            "seller_price": float(product.seller_price),
+            "customer_price": float(product.customer_price),
+            "commission_rate": float(product.commission_rate),
+            "stock_quantity": product.stock_quantity,
+            "status": product.status,
+            "created_at": product.created_at,
+            "images": product.images,
+            "seller_name": seller_name,
+            "seller_email": seller_email
+        }
+        result.append(product_dict)
+    
+    return result
 
 
 @router.get("/pending", response_model=List[ProductListResponse])

@@ -168,6 +168,9 @@ class ProductListResponse(BaseModel):
     stock_quantity: int
     status: ProductStatus
     created_at: datetime
+    images: List[ProductImageResponse] = []
+    seller_name: Optional[str] = None
+    seller_email: Optional[str] = None
     
     class Config:
         from_attributes = True
@@ -175,7 +178,8 @@ class ProductListResponse(BaseModel):
 
 class ProductApprovalUpdate(BaseModel):
     status: ProductStatus
-    admin_notes: Optional[str] = None
+    admin_notes: Optional[str] = None  # This will be stored in rejection_reason field
+    commission_rate: Optional[float] = None
 
 
 class ProductFilters(BaseModel):

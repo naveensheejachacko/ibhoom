@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -127,6 +127,19 @@ const Login: React.FC = () => {
               <p className="font-medium">Admin: admin@marketplace.com / admin123</p>
               <p className="font-medium">Seller: seller@example.com / password123</p>
             </div>
+          </div>
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-secondary-600">
+              Don't have an account?{' '}
+              <Link to="/register/seller" className="font-medium text-primary-600 hover:text-primary-500">
+                Register as Seller
+              </Link>
+              {' or '}
+              <Link to="/register/admin" className="font-medium text-primary-600 hover:text-primary-500">
+                Register as Admin
+              </Link>
+            </p>
           </div>
         </form>
       </div>

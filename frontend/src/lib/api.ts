@@ -51,6 +51,16 @@ export const authApi = {
     const response = await api.get('/api/v1/auth/me');
     return response.data;
   },
+
+  registerSeller: async (data: any) => {
+    const response = await api.post('/api/v1/auth/register/seller', data);
+    return response.data;
+  },
+
+  registerAdmin: async (data: any) => {
+    const response = await api.post('/api/v1/auth/register/admin', data);
+    return response.data;
+  },
 };
 
 // Admin API

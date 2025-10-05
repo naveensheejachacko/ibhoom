@@ -26,7 +26,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onApprove, onReject,
         <div className="flex-1">
           <h3 className="font-semibold text-secondary-900 mb-2">{product.name}</h3>
           <p className="text-sm text-secondary-600 mb-2">
-            by {product.seller?.first_name} {product.seller?.last_name}
+            by {product.seller_name || product.seller?.first_name} {product.seller?.last_name || ''} ({product.seller_email || product.seller?.user?.email || ''})
           </p>
           <p className="text-sm text-secondary-500 line-clamp-2">{product.description}</p>
         </div>
@@ -95,6 +95,9 @@ const Products: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [actionNotes, setActionNotes] = useState('');
+  const [commissionRate, setCommissionRate] = useState(0);
+  const [modalAction, setModalAction] = useState<'approve' | 'reject' | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -135,27 +138,36 @@ const Products: React.FC = () => {
 
   const handleApprove = (product: Product) => {
     setSelectedProduct(product);
+    setModalAction('approve');
+    setCommissionRate(product.commission_rate);
+    setActionNotes('');
     setShowModal(true);
   };
 
   const handleReject = (product: Product) => {
     setSelectedProduct(product);
+    setModalAction('reject');
+    setCommissionRate(product.commission_rate);
+    setActionNotes('');
     setShowModal(true);
   };
 
   const handleModalSubmit = async () => {
-    if (!selectedProduct) return;
+    if (!selectedProduct || !modalAction) return;
 
     try {
-      const status = selectedProduct.status === 'pending' ? 'approved' : 'rejected';
+      const status = modalAction === 'approve' ? 'approved' : 'rejected';
       await adminApi.approveProduct(selectedProduct.id, {
         status,
-        admin_notes: actionNotes
+        admin_notes: actionNotes,
+        commission_rate: commissionRate
       });
       
       setShowModal(false);
       setActionNotes('');
+      setCommissionRate(0);
       setSelectedProduct(null);
+      setModalAction(null);
       fetchProducts();
     } catch (error) {
       console.error('Error updating product:', error);
@@ -163,8 +175,8 @@ const Products: React.FC = () => {
   };
 
   const handleView = (product: Product) => {
-    // In a real app, this would navigate to a detailed view
-    console.log('View product:', product);
+    setSelectedProduct(product);
+    setShowDetailsModal(true);
   };
 
   if (isLoading) {
@@ -244,12 +256,33 @@ const Products: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold text-secondary-900 mb-4">
-              {selectedProduct.status === 'pending' ? 'Approve' : 'Reject'} Product
+              {modalAction === 'approve' ? 'Approve' : 'Reject'} Product
             </h3>
             
             <p className="text-secondary-600 mb-4">
               Product: <span className="font-medium">{selectedProduct.name}</span>
             </p>
+            
+            {modalAction === 'approve' && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  Commission Rate (%)
+                </label>
+                <input
+                  type="number"
+                  value={commissionRate}
+                  onChange={(e) => setCommissionRate(parseFloat(e.target.value) || 0)}
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  className="input-field"
+                  placeholder="Enter commission rate"
+                />
+                <p className="text-xs text-secondary-500 mt-1">
+                  Current rate: {selectedProduct.commission_rate}%
+                </p>
+              </div>
+            )}
             
             <div className="mb-4">
               <label className="block text-sm font-medium text-secondary-700 mb-2">
@@ -276,6 +309,98 @@ const Products: React.FC = () => {
               >
                 Confirm
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Product Details Modal */}
+      {showDetailsModal && selectedProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-secondary-900">
+                Product Details
+              </h3>
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="text-secondary-400 hover:text-secondary-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700">Product Name</label>
+                  <p className="text-secondary-900">{selectedProduct.name}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700">Status</label>
+                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                    selectedProduct.status === 'approved' ? 'bg-green-100 text-green-800' :
+                    selectedProduct.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {selectedProduct.status}
+                  </span>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700">Seller Price</label>
+                  <p className="text-secondary-900">₹{selectedProduct.seller_price}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700">Customer Price</label>
+                  <p className="text-secondary-900">₹{selectedProduct.customer_price}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700">Commission Rate</label>
+                  <p className="text-secondary-900">{selectedProduct.commission_rate}%</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700">Stock Quantity</label>
+                  <p className="text-secondary-900">{selectedProduct.stock_quantity}</p>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-secondary-700">Description</label>
+                <p className="text-secondary-900 mt-1 whitespace-pre-wrap">{selectedProduct.description || 'No description provided'}</p>
+              </div>
+              
+              {selectedProduct.tags && (
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700">Tags</label>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {JSON.parse(selectedProduct.tags).map((tag: string, index: number) => (
+                      <span key={index} className="inline-flex px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedProduct.images && selectedProduct.images.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700">Product Images</label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
+                    {selectedProduct.images.map((image: any, index: number) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={image.image_url}
+                          alt={image.alt_text || `Product image ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg border"
+                        />
+                        <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2 rounded-b-lg">
+                          {image.alt_text || `Image ${index + 1}`}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

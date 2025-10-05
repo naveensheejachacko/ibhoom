@@ -40,7 +40,29 @@ async def get_my_products(
         seller_id=current_user.seller.id,
         status=status, search=search
     )
-    return products
+    
+    # Add seller information to each product
+    result = []
+    for product in products:
+        product_dict = {
+            "id": product.id,
+            "name": product.name,
+            "slug": product.slug,
+            "seller_id": product.seller_id,
+            "category_id": product.category_id,
+            "seller_price": float(product.seller_price),
+            "customer_price": float(product.customer_price),
+            "commission_rate": float(product.commission_rate),
+            "stock_quantity": product.stock_quantity,
+            "status": product.status,
+            "created_at": product.created_at,
+            "images": product.images,
+            "seller_name": f"{current_user.first_name} {current_user.last_name}",
+            "seller_email": current_user.email
+        }
+        result.append(product_dict)
+    
+    return result
 
 
 @router.get("/{product_id}", response_model=ProductResponse)
@@ -103,7 +125,7 @@ async def get_pending_products_count(
     products = product_service.get_products(
         db, seller_id=current_user.seller.id, status=ProductStatus.PENDING, limit=1000
     )
-    return {"pending_count": len(products)}
+    return {"count": len(products)}
 
 
 @router.get("/approved/count")
@@ -115,4 +137,4 @@ async def get_approved_products_count(
     products = product_service.get_products(
         db, seller_id=current_user.seller.id, status=ProductStatus.APPROVED, limit=1000
     )
-    return {"approved_count": len(products)} 
+    return {"count": len(products)} 

@@ -36,6 +36,8 @@ export interface Product {
   seller: Seller;
   images: ProductImage[];
   variants: ProductVariant[];
+  seller_name?: string;
+  seller_email?: string;
 }
 
 export interface ProductImage {

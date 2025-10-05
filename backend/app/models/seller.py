@@ -24,7 +24,6 @@ class Seller(Base):
     # Relationships
     user = relationship("User", back_populates="seller")
     products = relationship("Product", back_populates="seller")
-    order_items = relationship("OrderItem", back_populates="seller")
     
     def __repr__(self):
         return f"<Seller {self.business_name}>" 

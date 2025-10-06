@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "12345678-1234-5678-9012-123456789abc",
-		"name": "Local Vendor Marketplace - Complete API",
+		"name": " Marketplace - Complete API",
 		"description": "Complete API collection for Local Vendor Marketplace with Admin, Seller, and Customer endpoints",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "12345678"

@@ -151,6 +151,9 @@ class ProductResponse(ProductBase):
     updated_at: datetime
     images: List[ProductImageResponse] = []
     variants: List[ProductVariantResponse] = []
+    reviews: List[dict] = []  # Will contain review stats
+    average_rating: Optional[float] = None
+    total_reviews: int = 0
     
     class Config:
         from_attributes = True

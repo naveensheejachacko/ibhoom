@@ -46,6 +46,7 @@ class Product(Base):
     variants = relationship("ProductVariant", back_populates="product")
     images = relationship("ProductImage", back_populates="product")
     order_items = relationship("OrderItem", back_populates="product")
+    reviews = relationship("ProductReview", back_populates="product")
     
     def __repr__(self):
         return f"<Product {self.name}>"

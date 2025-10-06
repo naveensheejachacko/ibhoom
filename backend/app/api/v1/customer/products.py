@@ -196,3 +196,4 @@ async def get_product_details(
     return product
 
 
+

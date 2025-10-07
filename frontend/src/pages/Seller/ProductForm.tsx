@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Upload, X, Plus, Minus } from 'lucide-react';
 import { sellerApi } from '../../lib/api';
+import DynamicCategorySelector from '../../components/DynamicCategorySelector';
 
 interface ProductFormData {
   name: string;
@@ -60,9 +61,6 @@ const ProductForm: React.FC = () => {
   });
 
   const [categories, setCategories] = useState<Category[]>([]);
-  const [parentCategoryId, setParentCategoryId] = useState<string>('');
-  const [childCategoryId, setChildCategoryId] = useState<string>('');
-  const [subCategoryId, setSubCategoryId] = useState<string>('');
   const [variants, setVariants] = useState<VariantRow[]>([]);
   const [categoryAttributes, setCategoryAttributes] = useState<any[]>([]);
   const [tagInput, setTagInput] = useState('');
@@ -93,24 +91,10 @@ const ProductForm: React.FC = () => {
     }
   };
 
-  // Derived category levels
-  const rootCategories = useMemo(() => categories.filter(c => !c.parent_id), [categories]);
-  const childCategories = useMemo(
-    () => categories.filter(c => c.parent_id === parentCategoryId),
-    [categories, parentCategoryId]
-  );
-  const subChildCategories = useMemo(
-    () => categories.filter(c => c.parent_id === childCategoryId),
-    [categories, childCategoryId]
-  );
-
-  // When deepest level changes, sync to formData.category_id
+  // Load category attributes when category changes
   useEffect(() => {
-    const deepest = subCategoryId || childCategoryId || parentCategoryId || '';
-    setFormData(prev => ({ ...prev, category_id: deepest }));
-    if (deepest) {
-      // Load category attributes for variant builder
-      fetch(`http://localhost:8000/api/v1/customer/categories/${deepest}/attributes`, {
+    if (formData.category_id) {
+      fetch(`http://localhost:8000/api/v1/customer/categories/${formData.category_id}/attributes`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token') || ''}`
         }
@@ -121,7 +105,7 @@ const ProductForm: React.FC = () => {
     } else {
       setCategoryAttributes([]);
     }
-  }, [parentCategoryId, childCategoryId, subCategoryId]);
+  }, [formData.category_id]);
 
   const loadProduct = async () => {
     if (!id) return;
@@ -380,48 +364,12 @@ const ProductForm: React.FC = () => {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">
-                Category * (choose deepest applicable)
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <select
-                  value={parentCategoryId}
-                  onChange={(e) => { setParentCategoryId(e.target.value); setChildCategoryId(''); setSubCategoryId(''); }}
-                  className="input-field"
-                >
-                  <option value="">Parent</option>
-                  {rootCategories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
-                <select
-                  value={childCategoryId}
-                  onChange={(e) => { setChildCategoryId(e.target.value); setSubCategoryId(''); }}
-                  className="input-field"
-                  disabled={!parentCategoryId}
-                >
-                  <option value="">Child</option>
-                  {childCategories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
-                <select
-                  value={subCategoryId}
-                  onChange={(e) => setSubCategoryId(e.target.value)}
-                  className="input-field"
-                  disabled={!childCategoryId}
-                >
-                  <option value="">Sub-child</option>
-                  {subChildCategories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
-              </div>
-              {formData.category_id === '' && (
-                <p className="text-xs text-red-600 mt-1">Please select a category.</p>
-              )}
-            </div>
+            <DynamicCategorySelector
+              categories={categories}
+              selectedCategoryId={formData.category_id}
+              onCategorySelect={(categoryId) => setFormData(prev => ({ ...prev, category_id: categoryId }))}
+              error={formData.category_id === '' ? 'Please select a category.' : undefined}
+            />
           </div>
 
           {/* Pricing Information */}

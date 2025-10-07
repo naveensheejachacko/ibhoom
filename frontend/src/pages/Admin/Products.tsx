@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Eye, Check, X, Search, Filter } from 'lucide-react';
+import { Package, Eye, Check, X, Search, Filter, Ban, Trash2, AlertTriangle } from 'lucide-react';
 import { adminApi } from '../../lib/api';
 import { Product } from '../../types/api';
 
@@ -8,14 +8,18 @@ interface ProductCardProps {
   onApprove: (product: Product) => void;
   onReject: (product: Product) => void;
   onView: (product: Product) => void;
+  onBlock: (product: Product) => void;
+  onUnblock: (product: Product) => void;
+  onDelete: (product: Product) => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onApprove, onReject, onView }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, onApprove, onReject, onView, onBlock, onUnblock, onDelete }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
       case 'approved': return 'bg-green-100 text-green-800';
       case 'rejected': return 'bg-red-100 text-red-800';
+      case 'blocked': return 'bg-orange-100 text-orange-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -78,6 +82,44 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onApprove, onReject,
             >
               <Check className="w-4 h-4" />
               <span className="text-sm">Approve</span>
+            </button>
+          </div>
+        )}
+
+        {product.status === 'approved' && (
+          <div className="flex space-x-2">
+            <button
+              onClick={() => onBlock(product)}
+              className="flex items-center space-x-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors"
+            >
+              <Ban className="w-4 h-4" />
+              <span className="text-sm">Block</span>
+            </button>
+            <button
+              onClick={() => onDelete(product)}
+              className="flex items-center space-x-1 px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="text-sm">Delete</span>
+            </button>
+          </div>
+        )}
+
+        {product.status === 'blocked' && (
+          <div className="flex space-x-2">
+            <button
+              onClick={() => onUnblock(product)}
+              className="flex items-center space-x-1 px-3 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
+            >
+              <Check className="w-4 h-4" />
+              <span className="text-sm">Unblock</span>
+            </button>
+            <button
+              onClick={() => onDelete(product)}
+              className="flex items-center space-x-1 px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="text-sm">Delete</span>
             </button>
           </div>
         )}
@@ -179,6 +221,45 @@ const Products: React.FC = () => {
     setShowDetailsModal(true);
   };
 
+  const handleBlock = async (product: Product) => {
+    if (window.confirm('Are you sure you want to block this product?')) {
+      try {
+        await adminApi.approveProduct(product.id, {
+          status: 'blocked',
+          admin_notes: 'Product blocked by admin'
+        });
+        fetchProducts();
+      } catch (error) {
+        console.error('Error blocking product:', error);
+      }
+    }
+  };
+
+  const handleUnblock = async (product: Product) => {
+    if (window.confirm('Are you sure you want to unblock this product?')) {
+      try {
+        await adminApi.approveProduct(product.id, {
+          status: 'approved',
+          admin_notes: 'Product unblocked by admin'
+        });
+        fetchProducts();
+      } catch (error) {
+        console.error('Error unblocking product:', error);
+      }
+    }
+  };
+
+  const handleDelete = async (product: Product) => {
+    if (window.confirm('Are you sure you want to permanently delete this product? This action cannot be undone.')) {
+      try {
+        await adminApi.deleteProduct(product.id);
+        fetchProducts();
+      } catch (error) {
+        console.error('Error deleting product:', error);
+      }
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -225,6 +306,7 @@ const Products: React.FC = () => {
               <option value="pending">Pending</option>
               <option value="approved">Approved</option>
               <option value="rejected">Rejected</option>
+              <option value="blocked">Blocked</option>
             </select>
           </div>
         </div>
@@ -246,6 +328,9 @@ const Products: React.FC = () => {
               onApprove={handleApprove}
               onReject={handleReject}
               onView={handleView}
+              onBlock={handleBlock}
+              onUnblock={handleUnblock}
+              onDelete={handleDelete}
             />
           ))}
         </div>

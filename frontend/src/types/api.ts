@@ -23,7 +23,7 @@ export interface Product {
   commission_amount: number;
   customer_price: number;
   stock_quantity: number;
-  status: 'draft' | 'pending' | 'approved' | 'rejected' | 'archived';
+  status: 'draft' | 'pending' | 'approved' | 'rejected' | 'blocked' | 'archived';
   tags: string;
   weight?: number;
   dimensions?: string;

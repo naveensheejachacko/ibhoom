@@ -11,6 +11,7 @@ class ProductStatus(str, enum.Enum):
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
+    BLOCKED = "blocked"
     HIDDEN = "hidden"
 
 

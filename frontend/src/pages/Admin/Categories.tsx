@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { FolderTree, Plus, Edit2, Trash2 } from 'lucide-react';
 import { adminApi } from '../../lib/api';
 import { Category } from '../../types/api';
@@ -13,6 +13,18 @@ const Categories: React.FC = () => {
     description: '',
     parent_id: '',
   });
+
+  // Flatten tree for parent selector with indentation
+  const flattenCategories = (nodes: Category[], depth = 0): { id: string; label: string }[] => {
+    const out: { id: string; label: string }[] = [];
+    nodes.forEach((n) => {
+      out.push({ id: n.id, label: `${'\u00A0'.repeat(depth * 2)}${depth > 0 ? '└ ' : ''}${n.name}` });
+      if ((n as any).children && (n as any).children.length > 0) {
+        out.push(...flattenCategories((n as any).children, depth + 1));
+      }
+    });
+    return out;
+  };
 
   useEffect(() => {
     fetchCategories();
@@ -70,7 +82,7 @@ const Categories: React.FC = () => {
 
   const renderCategoryTree = (categories: Category[], level = 0) => {
     return categories.map((category) => (
-      <div key={category.id} className={`ml-${level * 4}`}>
+      <div key={category.id} style={{ marginLeft: level * 16 }}>
         <div className="flex items-center justify-between p-3 border border-secondary-200 rounded-lg mb-2">
           <div className="flex items-center space-x-3">
             <FolderTree className="w-5 h-5 text-secondary-600" />
@@ -102,6 +114,8 @@ const Categories: React.FC = () => {
       </div>
     ));
   };
+
+  const rootCategories = useMemo(() => categories.filter(c => !(c as any).parent_id), [categories]);
 
   if (isLoading) {
     return (
@@ -161,6 +175,22 @@ const Categories: React.FC = () => {
                 />
               </div>
               
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  Parent Category (optional)
+                </label>
+                <select
+                  value={formData.parent_id}
+                  onChange={(e) => setFormData({ ...formData, parent_id: e.target.value })}
+                  className="input-field"
+                >
+                  <option value="">None (create root category)</option>
+                  {flattenCategories(categories).map((opt) => (
+                    <option key={opt.id} value={opt.id}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-secondary-700 mb-2">
                   Description

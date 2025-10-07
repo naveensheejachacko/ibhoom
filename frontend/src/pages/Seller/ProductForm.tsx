@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Upload, X, Plus, Minus } from 'lucide-react';
 import { sellerApi } from '../../lib/api';
@@ -23,6 +23,13 @@ interface ProductImage {
   image_url: string;
   alt_text: string;
   sort_order: number;
+}
+
+interface VariantRow {
+  variant_name: string; // e.g., "Red / M" or "64 GB / Blue"
+  sku: string;
+  seller_price: number;
+  stock_quantity: number;
 }
 
 interface Category {
@@ -53,6 +60,11 @@ const ProductForm: React.FC = () => {
   });
 
   const [categories, setCategories] = useState<Category[]>([]);
+  const [parentCategoryId, setParentCategoryId] = useState<string>('');
+  const [childCategoryId, setChildCategoryId] = useState<string>('');
+  const [subCategoryId, setSubCategoryId] = useState<string>('');
+  const [variants, setVariants] = useState<VariantRow[]>([]);
+  const [categoryAttributes, setCategoryAttributes] = useState<any[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -80,6 +92,36 @@ const ProductForm: React.FC = () => {
       setError('Failed to load categories. Please try again.');
     }
   };
+
+  // Derived category levels
+  const rootCategories = useMemo(() => categories.filter(c => !c.parent_id), [categories]);
+  const childCategories = useMemo(
+    () => categories.filter(c => c.parent_id === parentCategoryId),
+    [categories, parentCategoryId]
+  );
+  const subChildCategories = useMemo(
+    () => categories.filter(c => c.parent_id === childCategoryId),
+    [categories, childCategoryId]
+  );
+
+  // When deepest level changes, sync to formData.category_id
+  useEffect(() => {
+    const deepest = subCategoryId || childCategoryId || parentCategoryId || '';
+    setFormData(prev => ({ ...prev, category_id: deepest }));
+    if (deepest) {
+      // Load category attributes for variant builder
+      fetch(`http://localhost:8000/api/v1/customer/categories/${deepest}/attributes`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token') || ''}`
+        }
+      })
+        .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
+        .then(json => setCategoryAttributes(json.attributes || []))
+        .catch(() => setCategoryAttributes([]));
+    } else {
+      setCategoryAttributes([]);
+    }
+  }, [parentCategoryId, childCategoryId, subCategoryId]);
 
   const loadProduct = async () => {
     if (!id) return;
@@ -216,7 +258,13 @@ const ProductForm: React.FC = () => {
       const productData = {
         ...formData,
         customer_price: calculateCustomerPrice(),
-        tags: JSON.stringify(formData.tags)
+        tags: JSON.stringify(formData.tags),
+        variants: variants.map(v => ({
+          variant_name: v.variant_name,
+          sku: v.sku,
+          seller_price: v.seller_price,
+          stock_quantity: v.stock_quantity
+        }))
       };
 
       if (isEdit) {
@@ -333,24 +381,46 @@ const ProductForm: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="category_id" className="block text-sm font-medium text-secondary-700 mb-2">
-                Category *
+              <label className="block text-sm font-medium text-secondary-700 mb-2">
+                Category * (choose deepest applicable)
               </label>
-              <select
-                id="category_id"
-                name="category_id"
-                required
-                value={formData.category_id}
-                onChange={handleInputChange}
-                className="input-field"
-              >
-                <option value="">Select a category</option>
-                {categories.map(category => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <select
+                  value={parentCategoryId}
+                  onChange={(e) => { setParentCategoryId(e.target.value); setChildCategoryId(''); setSubCategoryId(''); }}
+                  className="input-field"
+                >
+                  <option value="">Parent</option>
+                  {rootCategories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+                <select
+                  value={childCategoryId}
+                  onChange={(e) => { setChildCategoryId(e.target.value); setSubCategoryId(''); }}
+                  className="input-field"
+                  disabled={!parentCategoryId}
+                >
+                  <option value="">Child</option>
+                  {childCategories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+                <select
+                  value={subCategoryId}
+                  onChange={(e) => setSubCategoryId(e.target.value)}
+                  className="input-field"
+                  disabled={!childCategoryId}
+                >
+                  <option value="">Sub-child</option>
+                  {subChildCategories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+              {formData.category_id === '' && (
+                <p className="text-xs text-red-600 mt-1">Please select a category.</p>
+              )}
             </div>
           </div>
 
@@ -527,6 +597,85 @@ const ProductForm: React.FC = () => {
                       placeholder="Alt text for image"
                       className="w-full text-xs px-2 py-1 border rounded"
                     />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Variants - basic builder */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium text-secondary-900">Variants (optional)</h3>
+            <button
+              type="button"
+              onClick={() => setVariants(prev => ([...prev, { variant_name: '', sku: '', seller_price: formData.seller_price, stock_quantity: 0 }]))}
+              className="btn-secondary"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+
+          {categoryAttributes.length > 0 && (
+            <p className="text-sm text-secondary-600">
+              Suggested attributes for this category: {categoryAttributes.map(a => a.name).join(', ')}
+            </p>
+          )}
+
+          {variants.length > 0 && (
+            <div className="space-y-3">
+              {variants.map((v, idx) => (
+                <div key={idx} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                  <div className="md:col-span-4">
+                    <label className="block text-sm font-medium text-secondary-700 mb-2">Variant Name</label>
+                    <input
+                      type="text"
+                      value={v.variant_name}
+                      onChange={e => setVariants(prev => prev.map((row, i) => i === idx ? { ...row, variant_name: e.target.value } : row))}
+                      className="input-field"
+                      placeholder="e.g., Red / 64 GB or Blue / M"
+                    />
+                  </div>
+                  <div className="md:col-span-3">
+                    <label className="block text-sm font-medium text-secondary-700 mb-2">SKU</label>
+                    <input
+                      type="text"
+                      value={v.sku}
+                      onChange={e => setVariants(prev => prev.map((row, i) => i === idx ? { ...row, sku: e.target.value } : row))}
+                      className="input-field"
+                      placeholder="Variant SKU"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-secondary-700 mb-2">Price (₹)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={v.seller_price}
+                      onChange={e => setVariants(prev => prev.map((row, i) => i === idx ? { ...row, seller_price: parseFloat(e.target.value || '0') } : row))}
+                      className="input-field"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-secondary-700 mb-2">Stock</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={v.stock_quantity}
+                      onChange={e => setVariants(prev => prev.map((row, i) => i === idx ? { ...row, stock_quantity: parseInt(e.target.value || '0', 10) } : row))}
+                      className="input-field"
+                    />
+                  </div>
+                  <div className="md:col-span-1 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setVariants(prev => prev.filter((_, i) => i !== idx))}
+                      className="btn-secondary"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               ))}

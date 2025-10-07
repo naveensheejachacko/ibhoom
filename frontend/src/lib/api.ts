@@ -128,6 +128,11 @@ export const adminApi = {
     return response.data;
   },
   
+  deleteProduct: async (id: string) => {
+    const response = await api.delete(`/api/v1/admin/products/${id}`);
+    return response.data;
+  },
+  
   // Users
   getUsers: async (params?: any) => {
     const response = await api.get('/api/v1/admin/users', { params });
@@ -136,6 +141,11 @@ export const adminApi = {
   
   getSellers: async (params?: any) => {
     const response = await api.get('/api/v1/admin/users/sellers', { params });
+    return response.data;
+  },
+  
+  updateSellerStatus: async (sellerId: string, data: any) => {
+    const response = await api.put(`/api/v1/admin/users/sellers/${sellerId}/status`, data);
     return response.data;
   },
   

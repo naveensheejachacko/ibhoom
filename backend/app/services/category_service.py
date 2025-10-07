@@ -27,6 +27,9 @@ def calculate_level(db: Session, parent_id: Optional[str]) -> int:
 
 def create_category(db: Session, category: CategoryCreate) -> Category:
     """Create a new category"""
+    # Normalize empty string parent_id to None
+    if category.parent_id == "":
+        category.parent_id = None
     # Generate unique slug
     base_slug = generate_slug(category.name)
     slug = base_slug
@@ -123,6 +126,10 @@ def update_category(db: Session, category_id: str, category_update: CategoryUpda
         return None
     
     update_data = category_update.dict(exclude_unset=True)
+
+    # Normalize empty string parent_id to None on update
+    if "parent_id" in update_data and update_data["parent_id"] == "":
+        update_data["parent_id"] = None
     
     # Handle slug regeneration if name changed
     if "name" in update_data:

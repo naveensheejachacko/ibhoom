@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FolderTree, Plus, Edit2, Trash2 } from 'lucide-react';
 import { adminApi } from '../../lib/api';
+import { useToast } from '../../components/Toast';
 import { Category } from '../../types/api';
 
 const Categories: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
+  const toast = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -30,13 +32,36 @@ const Categories: React.FC = () => {
     fetchCategories();
   }, []);
 
+  const buildTreeFromFlat = (flat: any[]): Category[] => {
+    const idToNode: Record<string, any> = {};
+    flat.forEach((c) => (idToNode[c.id] = { ...c, children: [] }));
+    const roots: any[] = [];
+    flat.forEach((c) => {
+      const node = idToNode[c.id];
+      const pid = (c as any).parent_id || null;
+      if (pid && idToNode[pid]) {
+        idToNode[pid].children.push(node);
+      } else {
+        roots.push(node);
+      }
+    });
+    return roots as Category[];
+  };
+
   const fetchCategories = async () => {
     try {
       setIsLoading(true);
       const data = await adminApi.getCategoryTree();
-      setCategories(data);
+      if (Array.isArray(data) && data.length > 0) {
+        setCategories(data);
+      } else {
+        // Fallback: build tree client-side from flat list
+        const flat = await adminApi.getCategories();
+        setCategories(buildTreeFromFlat(flat));
+      }
     } catch (error) {
       console.error('Error fetching categories:', error);
+      toast.show('Failed to load categories for admin. Showing nothing.', { type: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -115,7 +140,7 @@ const Categories: React.FC = () => {
     ));
   };
 
-  const rootCategories = useMemo(() => categories.filter(c => !(c as any).parent_id), [categories]);
+  // Render uses pre-built tree in `categories`
 
   if (isLoading) {
     return (

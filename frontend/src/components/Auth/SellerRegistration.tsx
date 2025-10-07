@@ -115,8 +115,12 @@ const SellerRegistration: React.FC = () => {
     <div className="min-h-screen bg-secondary-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl w-full space-y-8">
         <div className="text-center">
-          <div className="mx-auto w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center">
-            <span className="text-white font-bold text-xl">LV</span>
+          <div className="mx-auto w-34 h-32 flex items-center justify-center">
+            <img 
+              src="/ibhoom-logo.png" 
+              alt="ibhoom" 
+              className="w-full h-full object-contain"
+            />
           </div>
           <h2 className="mt-6 text-3xl font-bold text-secondary-900">
             Seller Registration

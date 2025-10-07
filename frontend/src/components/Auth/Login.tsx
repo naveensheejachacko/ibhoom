@@ -44,12 +44,16 @@ const Login: React.FC = () => {
     <div className="min-h-screen bg-secondary-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <div className="mx-auto w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center">
-            <span className="text-white font-bold text-xl">LV</span>
+          <div className="mx-auto w-34 h-32 flex items-center justify-center">
+            <img 
+              src="/ibhoom-logo.png" 
+              alt="ibhoom" 
+              className="w-full h-full object-contain"
+            />
           </div>
-          <h2 className="mt-6 text-3xl font-bold text-secondary-900">
-            Local Vendor Marketplace
-          </h2>
+          {/* <h2 className="mt-6 text-3xl font-bold text-secondary-900">
+            ibhoom
+          </h2> */}
           <p className="mt-2 text-sm text-secondary-600">
             Sign in to your account
           </p>
@@ -121,13 +125,13 @@ const Login: React.FC = () => {
             </button>
           </div>
 
-          <div className="mt-6 text-center">
+          {/* <div className="mt-6 text-center">
             <div className="text-sm text-secondary-600">
               <p className="mb-2">Demo Credentials:</p>
-              <p className="font-medium">Admin: admin@marketplace.com / admin123</p>
+              <p className="font-medium">Admin: admin@gmail.com / admin123</p>
               <p className="font-medium">Seller: seller@example.com / password123</p>
             </div>
-          </div>
+          </div> */}
 
           <div className="mt-6 text-center">
             <p className="text-sm text-secondary-600">

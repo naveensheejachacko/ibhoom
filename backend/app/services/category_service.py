@@ -28,7 +28,7 @@ def calculate_level(db: Session, parent_id: Optional[str]) -> int:
 def create_category(db: Session, category: CategoryCreate) -> Category:
     """Create a new category"""
     # Normalize empty string parent_id to None
-    if category.parent_id == "":
+    if hasattr(category, 'parent_id') and category.parent_id == "":
         category.parent_id = None
     # Generate unique slug
     base_slug = generate_slug(category.name)

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Search, Filter, MoreVertical, UserCheck, UserX, Mail, Phone, Calendar } from 'lucide-react';
 import { adminApi } from '../../lib/api';
+import { useToast } from '../../components/Toast';
 
 interface User {
   id: string;
@@ -15,6 +16,7 @@ interface User {
 }
 
 const UsersPage: React.FC = () => {
+  const toast = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -43,13 +45,14 @@ const UsersPage: React.FC = () => {
       setUsers(users.map(user => 
         user.id === userId ? { ...user, is_active: !currentStatus } : user
       ));
+      toast.show(currentStatus ? 'User deactivated' : 'User activated', { type: 'success' });
     } catch (error: any) {
       console.error('Error updating user status:', error);
       if (error.response?.status === 404) {
-        alert('User not found. Please refresh the page to get the latest data.');
+        toast.show('User not found. Refreshing list...', { type: 'warning' });
         fetchUsers(); // Refresh the user list
       } else {
-        alert('Failed to update user status. Please try again.');
+        toast.show('Failed to update user status. Please try again.', { type: 'error' });
       }
     }
   };

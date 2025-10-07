@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserCheck, Search, Building, MapPin, Phone, Mail, Calendar, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { adminApi } from '../../lib/api';
+import { useToast } from '../../components/Toast';
 
 interface Seller {
   id: string;
@@ -23,6 +24,7 @@ interface Seller {
 }
 
 const Sellers: React.FC = () => {
+  const toast = useToast();
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -51,13 +53,14 @@ const Sellers: React.FC = () => {
       setSellers(sellers.map(seller => 
         seller.id === sellerId ? { ...seller, is_approved: !currentStatus } : seller
       ));
+      toast.show(!currentStatus ? 'Seller approved' : 'Seller approval revoked', { type: 'success' });
     } catch (error: any) {
       console.error('Error updating seller approval:', error);
       if (error.response?.status === 404) {
-        alert('Seller not found. Please refresh the page to get the latest data.');
+        toast.show('Seller not found. Refreshing list...', { type: 'warning' });
         fetchSellers();
       } else {
-        alert('Failed to update seller approval. Please try again.');
+        toast.show('Failed to update seller approval. Please try again.', { type: 'error' });
       }
     }
   };
@@ -73,13 +76,14 @@ const Sellers: React.FC = () => {
           user: { ...seller.user, is_active: !currentStatus }
         } : seller
       ));
+      toast.show(currentStatus ? 'Seller deactivated' : 'Seller activated', { type: 'success' });
     } catch (error: any) {
       console.error('Error updating user status:', error);
       if (error.response?.status === 404) {
-        alert('Seller not found. Please refresh the page to get the latest data.');
+        toast.show('Seller not found. Refreshing list...', { type: 'warning' });
         fetchSellers();
       } else {
-        alert('Failed to update seller status. Please try again.');
+        toast.show('Failed to update seller status. Please try again.', { type: 'error' });
       }
     }
   };

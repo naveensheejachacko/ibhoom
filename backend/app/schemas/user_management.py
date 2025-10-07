@@ -27,7 +27,7 @@ class SellerListResponse(BaseModel):
     city: str
     state: str
     pincode: str
-    is_verified: bool
+    is_approved: bool
     user: UserListResponse
     
     class Config:
@@ -40,7 +40,7 @@ class UserStatusUpdate(BaseModel):
 
 
 class SellerStatusUpdate(BaseModel):
-    is_verified: Optional[bool] = None
+    is_approved: Optional[bool] = None
 
 
 class UserStats(BaseModel):

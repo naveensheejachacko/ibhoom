@@ -11,6 +11,7 @@ class ProductStatus(str, enum.Enum):
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
+    BLOCKED = "blocked"
     HIDDEN = "hidden"
 
 
@@ -21,6 +22,7 @@ class Product(Base):
     seller_id = Column(String, ForeignKey("sellers.id"), nullable=False)
     category_id = Column(String, ForeignKey("categories.id"), nullable=False)
     name = Column(String(255), nullable=False)
+    slug = Column(String(255), unique=True, index=True)
     description = Column(Text)
     short_description = Column(String(500))
     sku = Column(String(100), unique=True, index=True)
@@ -28,6 +30,7 @@ class Product(Base):
     commission_rate = Column(DECIMAL(5, 2), nullable=False)  # Commission % for this product
     commission_amount = Column(DECIMAL(10, 2), nullable=False)  # Calculated commission
     customer_price = Column(DECIMAL(10, 2), nullable=False)  # Final price customer pays
+    stock_quantity = Column(Integer, default=0)
     status = Column(Enum(ProductStatus), default=ProductStatus.DRAFT)
     approval_date = Column(DateTime)
     rejection_reason = Column(Text)
@@ -44,6 +47,7 @@ class Product(Base):
     variants = relationship("ProductVariant", back_populates="product")
     images = relationship("ProductImage", back_populates="product")
     order_items = relationship("OrderItem", back_populates="product")
+    reviews = relationship("ProductReview", back_populates="product")
     
     def __repr__(self):
         return f"<Product {self.name}>"

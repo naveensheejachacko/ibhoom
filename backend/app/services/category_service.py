@@ -27,6 +27,9 @@ def calculate_level(db: Session, parent_id: Optional[str]) -> int:
 
 def create_category(db: Session, category: CategoryCreate) -> Category:
     """Create a new category"""
+    # Normalize empty string parent_id to None
+    if hasattr(category, 'parent_id') and category.parent_id == "":
+        category.parent_id = None
     # Generate unique slug
     base_slug = generate_slug(category.name)
     slug = base_slug
@@ -87,25 +90,24 @@ def get_categories(db: Session, skip: int = 0, limit: int = 100, parent_id: Opti
 
 
 def get_category_tree(db: Session, parent_id: Optional[str] = None) -> List[Category]:
-    """Get hierarchical category tree"""
-    categories = get_categories(db, parent_id=parent_id, limit=1000)
-    
-    # Build tree structure
-    category_dict = {}
-    for category in categories:
-        category.children = []
-        category_dict[category.id] = category
-    
-    # Get children for each category
-    for category in categories:
-        children = get_categories(db, parent_id=category.id, limit=1000)
-        for child in children:
-            child.children = []
-            category.children.append(child)
-            # Recursively get children
-            _build_tree_recursive(db, child)
-    
-    return categories
+    """Get hierarchical category tree without duplicates"""
+    if parent_id is None:
+        # Start from root categories only
+        roots = (
+            db.query(Category)
+            .filter(Category.is_active == True)
+            .filter(Category.parent_id == None)
+            .order_by(Category.sort_order, Category.name)
+            .all()
+        )
+    else:
+        roots = get_categories(db, parent_id=parent_id, limit=1000)
+
+    for root in roots:
+        root.children = []
+        _build_tree_recursive(db, root)
+
+    return roots
 
 
 def _build_tree_recursive(db: Session, category: Category):
@@ -124,6 +126,10 @@ def update_category(db: Session, category_id: str, category_update: CategoryUpda
         return None
     
     update_data = category_update.dict(exclude_unset=True)
+
+    # Normalize empty string parent_id to None on update
+    if "parent_id" in update_data and update_data["parent_id"] == "":
+        update_data["parent_id"] = None
     
     # Handle slug regeneration if name changed
     if "name" in update_data:

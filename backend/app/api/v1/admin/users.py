@@ -30,8 +30,9 @@ async def get_user_stats(
     active_sellers = db.query(User).filter(
         User.role == UserRole.SELLER, User.is_active == True
     ).count()
+    # Count sellers approved (mapped from Seller.is_approved)
     verified_sellers = db.query(User).join(Seller).filter(
-        User.role == UserRole.SELLER, Seller.is_verified == True
+        User.role == UserRole.SELLER, Seller.is_approved == True
     ).count()
     
     total_customers = db.query(User).filter(User.role == UserRole.CUSTOMER).count()
@@ -98,8 +99,9 @@ async def get_sellers(
     """Get sellers with filtering (Admin only)"""
     query = db.query(Seller).join(User)
     
+    # Backward-compat param: map is_verified to Seller.is_approved
     if is_verified is not None:
-        query = query.filter(Seller.is_verified == is_verified)
+        query = query.filter(Seller.is_approved == is_verified)
     
     if is_active is not None:
         query = query.filter(User.is_active == is_active)
@@ -139,7 +141,7 @@ async def update_user_status(
     """Update user status (Admin only)"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User with ID {user_id} not found")
     
     # Prevent admin from deactivating themselves
     if user.id == current_user.id and status_update.is_active is False:
@@ -167,8 +169,9 @@ async def update_seller_status(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Seller not found")
     
     update_data = status_update.dict(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(seller, field, value)
+    # Map is_approved field (schema uses is_approved)
+    if "is_approved" in update_data:
+        seller.is_approved = update_data["is_approved"]
     
     db.commit()
     db.refresh(seller)

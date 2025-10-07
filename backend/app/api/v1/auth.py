@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session
+from typing import List
 from ...core.database import get_db
 from ...core.security import create_access_token, create_refresh_token, verify_password, get_password_hash
 from ...models import User, Seller, UserRole
@@ -46,7 +47,8 @@ async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
-        "token_type": "bearer"
+        "token_type": "bearer",
+        "user": user
     }
 
 
@@ -161,4 +163,12 @@ from ...core.dependencies import get_current_user
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
     """Get current user information"""
-    return current_user 
+    return current_user
+
+
+@router.get("/categories", response_model=List[dict])
+async def get_public_categories(db: Session = Depends(get_db)):
+    """Get all active categories (public endpoint for product creation)"""
+    from ...models.category import Category
+    categories = db.query(Category).filter(Category.is_active == True).order_by(Category.name).all()
+    return [{"id": cat.id, "name": cat.name, "parent_id": cat.parent_id} for cat in categories] 

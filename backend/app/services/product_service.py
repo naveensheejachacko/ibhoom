@@ -4,6 +4,7 @@ from ..models.product import Product, ProductVariant, ProductImage, ProductVaria
 from ..models.category import Category
 from ..models.seller import Seller
 from ..schemas.product import ProductCreate, ProductUpdate, ProductApprovalUpdate
+from .commission_service import get_commission_rate, calculate_commission
 import uuid
 import re
 from datetime import datetime
@@ -55,8 +56,6 @@ def create_product(db: Session, product: ProductCreate, seller_id: str) -> Produ
         customer_price=commission_calc.customer_price,
         stock_quantity=product.stock_quantity,
         tags=product.tags,
-        weight=product.weight,
-        dimensions=product.dimensions,
         meta_title=product.meta_title,
         meta_description=product.meta_description,
         status=ProductStatus.PENDING
@@ -218,8 +217,20 @@ def approve_product(db: Session, product_id: str, approval: ProductApprovalUpdat
         return None
     
     db_product.status = approval.status
-    db_product.admin_notes = approval.admin_notes
+    db_product.rejection_reason = approval.admin_notes
     db_product.updated_at = datetime.utcnow()
+    
+    # Update commission rate if provided
+    if approval.commission_rate is not None:
+        db_product.commission_rate = approval.commission_rate
+        # Recalculate commission amount and customer price
+        from .commission_service import calculate_commission
+        commission_calc = calculate_commission(
+            db_product.seller_price, 
+            approval.commission_rate
+        )
+        db_product.commission_amount = commission_calc.commission_amount
+        db_product.customer_price = commission_calc.customer_price
     
     db.commit()
     db.refresh(db_product)

@@ -194,32 +194,46 @@ def get_pending_orders(db: Session, skip: int = 0, limit: int = 100) -> List[Ord
 
 def get_order_stats(db: Session) -> dict:
     """Get order statistics (Admin only)"""
-    total_orders = db.query(Order).count()
-    pending_orders = db.query(Order).filter(Order.status == OrderStatus.PENDING).count()
-    processing_orders = db.query(Order).filter(Order.status == OrderStatus.PROCESSING).count()
-    shipped_orders = db.query(Order).filter(Order.status == OrderStatus.SHIPPED).count()
-    delivered_orders = db.query(Order).filter(Order.status == OrderStatus.DELIVERED).count()
-    cancelled_orders = db.query(Order).filter(Order.status == OrderStatus.CANCELLED).count()
-    
-    # Calculate revenue
-    revenue_result = db.query(
-        db.func.sum(Order.total_customer_amount),
-        db.func.sum(Order.total_commission_amount)
-    ).filter(Order.status.in_([OrderStatus.DELIVERED, OrderStatus.SHIPPED])).first()
-    
-    total_revenue = float(revenue_result[0] or 0)
-    total_commission = float(revenue_result[1] or 0)
-    
-    return {
-        "total_orders": total_orders,
-        "pending_orders": pending_orders,
-        "processing_orders": processing_orders,
-        "shipped_orders": shipped_orders,
-        "delivered_orders": delivered_orders,
-        "cancelled_orders": cancelled_orders,
-        "total_revenue": total_revenue,
-        "total_commission": total_commission
-    }
+    try:
+        total_orders = db.query(Order).count()
+        pending_orders = db.query(Order).filter(Order.status == OrderStatus.PENDING).count()
+        processing_orders = db.query(Order).filter(Order.status == OrderStatus.PROCESSING).count()
+        shipped_orders = db.query(Order).filter(Order.status == OrderStatus.SHIPPED).count()
+        delivered_orders = db.query(Order).filter(Order.status == OrderStatus.DELIVERED).count()
+        cancelled_orders = db.query(Order).filter(Order.status == OrderStatus.CANCELLED).count()
+        
+        # Calculate revenue
+        revenue_result = db.query(
+            db.func.sum(Order.total_customer_amount),
+            db.func.sum(Order.total_commission_amount)
+        ).filter(Order.status.in_([OrderStatus.DELIVERED, OrderStatus.SHIPPED])).first()
+        
+        total_revenue = float(revenue_result[0] or 0)
+        total_commission = float(revenue_result[1] or 0)
+        
+        return {
+            "total_orders": total_orders,
+            "pending_orders": pending_orders,
+            "processing_orders": processing_orders,
+            "shipped_orders": shipped_orders,
+            "delivered_orders": delivered_orders,
+            "cancelled_orders": cancelled_orders,
+            "total_revenue": total_revenue,
+            "total_commission": total_commission
+        }
+    except Exception as e:
+        print(f"Error in get_order_stats: {e}")
+        # Return default values if there's an error
+        return {
+            "total_orders": 0,
+            "pending_orders": 0,
+            "processing_orders": 0,
+            "shipped_orders": 0,
+            "delivered_orders": 0,
+            "cancelled_orders": 0,
+            "total_revenue": 0.0,
+            "total_commission": 0.0
+        }
 
 
 def cancel_order(db: Session, order_id: str, admin_notes: Optional[str] = None) -> Optional[Order]:

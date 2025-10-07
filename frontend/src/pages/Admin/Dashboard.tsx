@@ -48,8 +48,10 @@ const Dashboard: React.FC = () => {
         setUserStats(userStatsData);
         setOrderStats(orderStatsData);
       } catch (err: any) {
-        setError('Failed to load dashboard data');
-        console.error('Dashboard error:', err);
+        console.error('Dashboard error details:', err);
+        console.error('Error response:', err.response?.data);
+        console.error('Error status:', err.response?.status);
+        setError(`Failed to load dashboard data: ${err.response?.data?.detail || err.message || 'Unknown error'}`);
       } finally {
         setIsLoading(false);
       }

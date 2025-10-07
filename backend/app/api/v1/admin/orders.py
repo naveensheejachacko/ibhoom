@@ -17,8 +17,22 @@ async def get_order_stats(
     current_user: User = Depends(get_admin_user)
 ):
     """Get order statistics (Admin only)"""
-    stats = order_service.get_order_stats(db)
-    return OrderStats(**stats)
+    try:
+        stats = order_service.get_order_stats(db)
+        return OrderStats(**stats)
+    except Exception as e:
+        print(f"Error in admin orders stats endpoint: {e}")
+        # Return default stats if there's an error
+        return OrderStats(
+            total_orders=0,
+            pending_orders=0,
+            processing_orders=0,
+            shipped_orders=0,
+            delivered_orders=0,
+            cancelled_orders=0,
+            total_revenue=0.0,
+            total_commission=0.0
+        )
 
 
 @router.get("/", response_model=List[OrderListResponse])

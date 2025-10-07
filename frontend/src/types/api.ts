@@ -62,6 +62,19 @@ export interface ProductVariant {
   is_active: boolean;
 }
 
+export interface User {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone?: string;
+  role: string;
+  is_active: boolean;
+  is_verified: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Order {
   id: string;
   customer_id: string;
@@ -106,11 +119,13 @@ export interface Commission {
 
 export interface Statistics {
   total_users: number;
-  total_sellers: number;
-  total_customers: number;
   active_users: number;
+  verified_users: number;
+  total_sellers: number;
+  active_sellers: number;
   verified_sellers: number;
-  pending_seller_verification: number;
+  total_customers: number;
+  active_customers: number;
 }
 
 export interface OrderStats {
@@ -121,7 +136,7 @@ export interface OrderStats {
   delivered_orders: number;
   cancelled_orders: number;
   total_revenue: number;
-  pending_payment: number;
+  total_commission: number;
 }
 
 export interface Seller {

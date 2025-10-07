@@ -47,7 +47,12 @@ app.include_router(customer_router, prefix="/api/v1/customer", tags=["Customer"]
 @app.on_event("startup")
 async def startup_event():
     """Create database tables on startup"""
-    create_database()
+    try:
+        create_database()
+        print("✅ Database initialized successfully")
+    except Exception as e:
+        print(f"❌ Database initialization failed: {e}")
+        # Don't fail the startup if database already exists
 
 @app.get("/")
 async def root():

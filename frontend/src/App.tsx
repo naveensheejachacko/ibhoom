@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
@@ -21,6 +20,7 @@ import AdminCommissions from './pages/Admin/Commissions';
 import SellerDashboard from './pages/Seller/Dashboard';
 import SellerProducts from './pages/Seller/Products';
 import SellerProductForm from './pages/Seller/ProductForm';
+import ProfileSettings from './pages/Seller/ProfileSettings';
 
 function App() {
   return (
@@ -64,6 +64,7 @@ function App() {
                       <Route path="products" element={<SellerProducts />} />
                       <Route path="products/new" element={<SellerProductForm />} />
                       <Route path="products/edit/:id" element={<SellerProductForm />} />
+                      <Route path="profile" element={<ProfileSettings />} />
                     </Routes>
                   </SellerLayout>
                 </ProtectedRoute>

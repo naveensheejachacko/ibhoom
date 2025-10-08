@@ -246,6 +246,21 @@ export const sellerApi = {
     const response = await api.get('/api/v1/seller/products/approved/count');
     return response.data;
   },
+
+  // Profile
+  updateProfile: async (formData: FormData) => {
+    const response = await api.put('/api/v1/seller/profile', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  updatePassword: async (data: { current_password: string; new_password: string }) => {
+    const response = await api.put('/api/v1/seller/password', data);
+    return response.data;
+  },
 };
 
 export default api; 

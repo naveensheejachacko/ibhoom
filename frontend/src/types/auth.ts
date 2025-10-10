@@ -9,6 +9,8 @@ export interface User {
   is_verified: boolean;
   created_at: string;
   updated_at: string;
+  pincode?: string;
+  profile_picture?: string;
 }
 
 export interface Seller extends User {
@@ -37,6 +39,7 @@ export interface AuthContextType {
   token: string | null;
   login: (credentials: LoginRequest) => Promise<void>;
   logout: () => void;
+  updateUser: (user: User) => void;
   isLoading: boolean;
   isAuthenticated: boolean;
 } 

@@ -22,6 +22,8 @@ class User(Base):
     first_name = Column(String(100))
     last_name = Column(String(100))
     phone = Column(String(20))
+    pincode = Column(String(10))
+    profile_picture = Column(String(500))
     role = Column(Enum(UserRole), nullable=False)
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)

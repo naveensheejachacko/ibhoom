@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
@@ -16,11 +15,13 @@ import AdminOrders from './pages/Admin/Orders';
 import AdminUsers from './pages/Admin/Users';
 import AdminSellers from './pages/Admin/Sellers';
 import AdminCommissions from './pages/Admin/Commissions';
+import AdminAttributes from './pages/Admin/Attributes';
 
 // Seller Pages
 import SellerDashboard from './pages/Seller/Dashboard';
 import SellerProducts from './pages/Seller/Products';
 import SellerProductForm from './pages/Seller/ProductForm';
+import ProfileSettings from './pages/Seller/ProfileSettings';
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
                       <Route index element={<AdminDashboard />} />
                       <Route path="products" element={<AdminProducts />} />
                       <Route path="categories" element={<AdminCategories />} />
+                      <Route path="attributes" element={<AdminAttributes />} />
                       <Route path="orders" element={<AdminOrders />} />
                       <Route path="users" element={<AdminUsers />} />
                       <Route path="sellers" element={<AdminSellers />} />
@@ -64,6 +66,7 @@ function App() {
                       <Route path="products" element={<SellerProducts />} />
                       <Route path="products/new" element={<SellerProductForm />} />
                       <Route path="products/edit/:id" element={<SellerProductForm />} />
+                      <Route path="profile" element={<ProfileSettings />} />
                     </Routes>
                   </SellerLayout>
                 </ProtectedRoute>

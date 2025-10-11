@@ -33,19 +33,16 @@ class ProductVariantAttributeCreate(ProductVariantAttributeBase):
 
 class ProductVariantAttributeResponse(ProductVariantAttributeBase):
     id: str
-    attribute_name: str
-    attribute_value: str
     
     class Config:
         from_attributes = True
 
 
 class ProductVariantBase(BaseModel):
+    variant_name: Optional[str] = None
     sku: Optional[str] = None
     seller_price: float
     stock_quantity: int = 0
-    weight: Optional[float] = None
-    dimensions: Optional[str] = None
     
     @validator('seller_price')
     def validate_seller_price(cls, v):
@@ -68,8 +65,6 @@ class ProductVariantUpdate(BaseModel):
     sku: Optional[str] = None
     seller_price: Optional[float] = None
     stock_quantity: Optional[int] = None
-    weight: Optional[float] = None
-    dimensions: Optional[str] = None
     
     @validator('seller_price')
     def validate_seller_price(cls, v):
@@ -83,7 +78,9 @@ class ProductVariantResponse(ProductVariantBase):
     commission_rate: float
     commission_amount: float
     customer_price: float
-    attributes: List[ProductVariantAttributeResponse] = []
+    is_active: bool = True
+    # Don't include attributes in response to avoid validation issues
+    # attributes: List[ProductVariantAttributeResponse] = []
     
     class Config:
         from_attributes = True
@@ -96,8 +93,6 @@ class ProductBase(BaseModel):
     seller_price: float
     stock_quantity: int = 0
     tags: Optional[str] = None  # JSON string for SQLite compatibility
-    weight: Optional[float] = None
-    dimensions: Optional[str] = None
     meta_title: Optional[str] = None
     meta_description: Optional[str] = None
     

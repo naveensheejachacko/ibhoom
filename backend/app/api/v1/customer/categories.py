@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from ....core.database import get_db
-from ....core.dependencies import get_customer_user
+from ....core.dependencies import get_current_user
 from ....models.user import User
 from ....models.category import Category
 from ....models.attribute import CategoryAttribute, Attribute, AttributeValue
@@ -14,9 +14,12 @@ router = APIRouter()
 async def get_category_attributes(
     category_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_customer_user)
+    current_user: Optional[User] = Depends(get_current_user)
 ) -> Dict[str, Any]:
-    """Return attributes applicable to a category, including values and variant flags."""
+    """Return attributes applicable to a category, including values and variant flags.
+    
+    Accessible by: Customers, Sellers (for product creation), and Admins.
+    """
     category = db.query(Category).filter(Category.id == category_id).first()
     if not category:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")

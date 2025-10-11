@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
+import os
 
 
 class Settings(BaseSettings):
@@ -18,7 +19,18 @@ class Settings(BaseSettings):
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
     # CORS Configuration
-    BACKEND_CORS_ORIGINS: list = ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:5173", "http://127.0.0.1:3000"]
+    BACKEND_CORS_ORIGINS: list = [
+        "http://localhost:3000", 
+        "http://localhost:5173", 
+        "http://127.0.0.1:5173", 
+        "http://127.0.0.1:3000"
+    ]
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Override CORS origins from environment if provided
+        if os.getenv("BACKEND_CORS_ORIGINS"):
+            self.BACKEND_CORS_ORIGINS = os.getenv("BACKEND_CORS_ORIGINS").split(",")
     
     # File Upload Configuration
     UPLOAD_DIR: str = "uploads"

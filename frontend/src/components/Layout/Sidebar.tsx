@@ -10,7 +10,9 @@ import {
   FolderTree,
   Percent,
   UserCheck,
-  PackageCheck
+  PackageCheck,
+  User,
+  List
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -24,6 +26,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
   const adminNavItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
     { icon: FolderTree, label: 'Categories', path: '/admin/categories' },
+    { icon: List, label: 'Attributes', path: '/admin/attributes' },
     { icon: PackageCheck, label: 'Product Approvals', path: '/admin/products' },
     { icon: ShoppingCart, label: 'Orders', path: '/admin/orders' },
     { icon: Users, label: 'Users', path: '/admin/users' },
@@ -36,6 +39,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/seller' },
     { icon: Package, label: 'My Products', path: '/seller/products' },
     { icon: PackageCheck, label: 'Add Product', path: '/seller/products/new' },
+    { icon: User, label: 'Profile', path: '/seller/profile' },
     { icon: Settings, label: 'Settings', path: '/seller/settings' },
   ];
 
@@ -50,8 +54,8 @@ const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
     <div className="w-64 bg-white border-r border-secondary-200 min-h-screen">
       <div className="p-6">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">LV</span>
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+            <img src="/ibhoom-logo.png" alt="ibhoom logo" className="w-10 h-10 object-contain" />
           </div>
           <div>
             <h1 className="font-bold text-lg text-secondary-900">Local Vendor</h1>

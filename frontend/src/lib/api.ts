@@ -207,6 +207,74 @@ export const adminApi = {
     const response = await api.delete(`/api/v1/admin/commissions/${id}`);
     return response.data;
   },
+
+  // Attributes
+  getAttributes: async () => {
+    const response = await api.get('/api/v1/admin/attributes');
+    return response.data;
+  },
+
+  getAttribute: async (id: string) => {
+    const response = await api.get(`/api/v1/admin/attributes/${id}`);
+    return response.data;
+  },
+
+  createAttribute: async (data: any) => {
+    const response = await api.post('/api/v1/admin/attributes', data);
+    return response.data;
+  },
+
+  updateAttribute: async (id: string, data: any) => {
+    const response = await api.put(`/api/v1/admin/attributes/${id}`, data);
+    return response.data;
+  },
+
+  deleteAttribute: async (id: string) => {
+    const response = await api.delete(`/api/v1/admin/attributes/${id}`);
+    return response.data;
+  },
+
+  // Attribute Values
+  getAttributeValues: async (attributeId: string) => {
+    const response = await api.get(`/api/v1/admin/attributes/${attributeId}/values`);
+    return response.data;
+  },
+
+  createAttributeValue: async (data: any) => {
+    const response = await api.post('/api/v1/admin/attributes/values', data);
+    return response.data;
+  },
+
+  updateAttributeValue: async (id: string, data: any) => {
+    const response = await api.put(`/api/v1/admin/attributes/values/${id}`, data);
+    return response.data;
+  },
+
+  deleteAttributeValue: async (id: string) => {
+    const response = await api.delete(`/api/v1/admin/attributes/values/${id}`);
+    return response.data;
+  },
+
+  // Category Attributes
+  getCategoryAttributes: async (categoryId: string) => {
+    const response = await api.get(`/api/v1/admin/attributes/category-attributes/${categoryId}`);
+    return response.data;
+  },
+
+  createCategoryAttribute: async (data: any) => {
+    const response = await api.post('/api/v1/admin/attributes/category-attributes', data);
+    return response.data;
+  },
+
+  updateCategoryAttribute: async (id: string, data: any) => {
+    const response = await api.put(`/api/v1/admin/attributes/category-attributes/${id}`, data);
+    return response.data;
+  },
+
+  deleteCategoryAttribute: async (id: string) => {
+    const response = await api.delete(`/api/v1/admin/attributes/category-attributes/${id}`);
+    return response.data;
+  },
 };
 
 // Seller API
@@ -218,22 +286,22 @@ export const sellerApi = {
   },
   
   getProduct: async (id: string) => {
-    const response = await api.get(`/api/v1/seller/products/${id}`);
+    const response = await api.get(`/api/v1/seller/products/${id}/`);
     return response.data;
   },
   
   createProduct: async (data: any) => {
-    const response = await api.post('/api/v1/seller/products', data);
+    const response = await api.post('/api/v1/seller/products/', data);
     return response.data;
   },
   
   updateProduct: async (id: string, data: any) => {
-    const response = await api.put(`/api/v1/seller/products/${id}`, data);
+    const response = await api.put(`/api/v1/seller/products/${id}/`, data);
     return response.data;
   },
   
   deleteProduct: async (id: string) => {
-    const response = await api.delete(`/api/v1/seller/products/${id}`);
+    const response = await api.delete(`/api/v1/seller/products/${id}/`);
     return response.data;
   },
   
@@ -244,6 +312,27 @@ export const sellerApi = {
   
   getApprovedCount: async () => {
     const response = await api.get('/api/v1/seller/products/approved/count');
+    return response.data;
+  },
+
+  
+  // Profile
+  getProfile: async () => {
+    const response = await api.get('/api/v1/seller/profile/');
+    return response.data;
+  },
+
+  updateProfile: async (formData: FormData) => {
+    const response = await api.put('/api/v1/seller/profile/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  updatePassword: async (data: { current_password: string; new_password: string }) => {
+    const response = await api.put('/api/v1/seller/profile/password', data);
     return response.data;
   },
 };

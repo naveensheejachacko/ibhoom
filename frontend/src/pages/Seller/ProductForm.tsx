@@ -31,6 +31,7 @@ interface VariantRow {
   sku: string;
   seller_price: number;
   stock_quantity: number;
+  attributes: { [key: string]: string }; // attribute_id -> attribute_value_id
 }
 
 interface Category {
@@ -67,6 +68,7 @@ const ProductForm: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedVariantAttributes, setSelectedVariantAttributes] = useState<{ [attrId: string]: string[] }>({});
 
   useEffect(() => {
     loadCategories();
@@ -94,14 +96,22 @@ const ProductForm: React.FC = () => {
   // Load category attributes when category changes
   useEffect(() => {
     if (formData.category_id) {
+      console.log('🔍 Fetching attributes for category:', formData.category_id);
       fetch(`http://localhost:8000/api/v1/customer/categories/${formData.category_id}/attributes`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token') || ''}`
         }
       })
         .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
-        .then(json => setCategoryAttributes(json.attributes || []))
-        .catch(() => setCategoryAttributes([]));
+        .then(json => {
+          console.log('✅ Received attributes:', json.attributes);
+          console.log('🎯 Variant attributes:', json.attributes?.filter((a: any) => a.is_variant));
+          setCategoryAttributes(json.attributes || []);
+        })
+        .catch((err) => {
+          console.error('❌ Failed to load attributes:', err);
+          setCategoryAttributes([]);
+        });
     } else {
       setCategoryAttributes([]);
     }
@@ -233,6 +243,78 @@ const ProductForm: React.FC = () => {
     return formData.seller_price + commission;
   };
 
+  // Generate variants based on selected attribute values
+  const generateVariants = () => {
+    const variantAttributes = categoryAttributes.filter(attr => attr.is_variant);
+    
+    if (variantAttributes.length === 0 || Object.keys(selectedVariantAttributes).length === 0) {
+      setVariants([]);
+      return;
+    }
+
+    // Get all selected attributes with values
+    const selectedAttrs = variantAttributes
+      .filter(attr => selectedVariantAttributes[attr.attribute_id]?.length > 0)
+      .map(attr => ({
+        id: attr.attribute_id,
+        name: attr.name,
+        values: selectedVariantAttributes[attr.attribute_id].map(valueId => {
+          const value = attr.values.find((v: any) => v.id === valueId);
+          return { id: valueId, value: value?.value || '' };
+        })
+      }));
+
+    if (selectedAttrs.length === 0) {
+      setVariants([]);
+      return;
+    }
+
+    // Generate all combinations
+    const generateCombinations = (attrs: typeof selectedAttrs, index: number = 0): any[] => {
+      if (index === attrs.length) {
+        return [{ name: [], attributes: {} }];
+      }
+
+      const currentAttr = attrs[index];
+      const restCombinations = generateCombinations(attrs, index + 1);
+      const result: any[] = [];
+
+      currentAttr.values.forEach(value => {
+        restCombinations.forEach(combo => {
+          result.push({
+            name: [value.value, ...combo.name],
+            attributes: { ...combo.attributes, [currentAttr.id]: value.id }
+          });
+        });
+      });
+
+      return result;
+    };
+
+    const combinations = generateCombinations(selectedAttrs);
+    
+    // Create variant rows
+    const newVariants: VariantRow[] = combinations.map(combo => {
+      const variantName = combo.name.join(' / ');
+      return {
+        variant_name: variantName,
+        sku: `${formData.sku || 'SKU'}-${combo.name.join('-').replace(/\s+/g, '-')}`,
+        seller_price: formData.seller_price || 0,
+        stock_quantity: 0,
+        attributes: combo.attributes
+      };
+    });
+
+    setVariants(newVariants);
+  };
+
+  const handleVariantAttributeChange = (attrId: string, valueIds: string[]) => {
+    setSelectedVariantAttributes(prev => ({
+      ...prev,
+      [attrId]: valueIds
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -247,7 +329,11 @@ const ProductForm: React.FC = () => {
           variant_name: v.variant_name,
           sku: v.sku,
           seller_price: v.seller_price,
-          stock_quantity: v.stock_quantity
+          stock_quantity: v.stock_quantity,
+          attributes: Object.keys(v.attributes || {}).map(attrId => ({
+            attribute_id: attrId,
+            attribute_value_id: v.attributes[attrId]
+          }))
         }))
       };
 
@@ -552,84 +638,140 @@ const ProductForm: React.FC = () => {
           )}
         </div>
 
-        {/* Variants - basic builder */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-secondary-900">Variants (optional)</h3>
-            <button
-              type="button"
-              onClick={() => setVariants(prev => ([...prev, { variant_name: '', sku: '', seller_price: formData.seller_price, stock_quantity: 0 }]))}
-              className="btn-secondary"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
+        {/* Variants */}
+        {categoryAttributes.filter(attr => attr.is_variant).length > 0 && (
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="text-lg font-medium text-secondary-900 mb-2">Product Variants</h3>
+              <p className="text-sm text-secondary-600 mb-4">
+                Select attribute values to create product variants. Variants allow different combinations like colors, sizes, storage options, etc.
+              </p>
 
-          {categoryAttributes.length > 0 && (
-            <p className="text-sm text-secondary-600">
-              Suggested attributes for this category: {categoryAttributes.map(a => a.name).join(', ')}
-            </p>
-          )}
+              {/* Variant Attribute Selectors */}
+              <div className="space-y-4">
+                {categoryAttributes
+                  .filter(attr => attr.is_variant)
+                  .map(attr => (
+                    <div key={attr.attribute_id}>
+                      <label className="block text-sm font-medium text-secondary-700 mb-2">
+                        {attr.name} {attr.is_required && <span className="text-red-500">*</span>}
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {attr.values.map((value: any) => {
+                          const isSelected = selectedVariantAttributes[attr.attribute_id]?.includes(value.id);
+                          return (
+                            <button
+                              key={value.id}
+                              type="button"
+                              onClick={() => {
+                                const current = selectedVariantAttributes[attr.attribute_id] || [];
+                                const newValues = isSelected
+                                  ? current.filter(id => id !== value.id)
+                                  : [...current, value.id];
+                                handleVariantAttributeChange(attr.attribute_id, newValues);
+                              }}
+                              className={`px-3 py-2 rounded-lg border-2 transition-colors ${
+                                isSelected
+                                  ? 'border-primary-500 bg-primary-100 text-primary-800'
+                                  : 'border-secondary-300 bg-white text-secondary-700 hover:border-secondary-400'
+                              }`}
+                            >
+                              {value.value}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+              </div>
 
-          {variants.length > 0 && (
-            <div className="space-y-3">
-              {variants.map((v, idx) => (
-                <div key={idx} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                  <div className="md:col-span-4">
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">Variant Name</label>
-                    <input
-                      type="text"
-                      value={v.variant_name}
-                      onChange={e => setVariants(prev => prev.map((row, i) => i === idx ? { ...row, variant_name: e.target.value } : row))}
-                      className="input-field"
-                      placeholder="e.g., Red / 64 GB or Blue / M"
-                    />
-                  </div>
-                  <div className="md:col-span-3">
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">SKU</label>
-                    <input
-                      type="text"
-                      value={v.sku}
-                      onChange={e => setVariants(prev => prev.map((row, i) => i === idx ? { ...row, sku: e.target.value } : row))}
-                      className="input-field"
-                      placeholder="Variant SKU"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">Price (₹)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={v.seller_price}
-                      onChange={e => setVariants(prev => prev.map((row, i) => i === idx ? { ...row, seller_price: parseFloat(e.target.value || '0') } : row))}
-                      className="input-field"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">Stock</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={v.stock_quantity}
-                      onChange={e => setVariants(prev => prev.map((row, i) => i === idx ? { ...row, stock_quantity: parseInt(e.target.value || '0', 10) } : row))}
-                      className="input-field"
-                    />
-                  </div>
-                  <div className="md:col-span-1 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => setVariants(prev => prev.filter((_, i) => i !== idx))}
-                      className="btn-secondary"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+              <button
+                type="button"
+                onClick={generateVariants}
+                className="btn-primary mt-4"
+              >
+                Generate Variants
+              </button>
             </div>
-          )}
-        </div>
+
+            {/* Generated Variants Table */}
+            {variants.length > 0 && (
+              <div>
+                <h4 className="text-md font-medium text-secondary-900 mb-3">
+                  Generated Variants ({variants.length})
+                </h4>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-secondary-200">
+                    <thead className="bg-secondary-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-secondary-700 uppercase tracking-wider">
+                          Variant
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-secondary-700 uppercase tracking-wider">
+                          SKU
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-secondary-700 uppercase tracking-wider">
+                          Your Price (₹)
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-secondary-700 uppercase tracking-wider">
+                          Stock
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-secondary-700 uppercase tracking-wider">
+                          Customer Price (₹)
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-secondary-200">
+                      {variants.map((variant, idx) => {
+                        const commission = (variant.seller_price * formData.commission_rate) / 100;
+                        const customerPrice = variant.seller_price + commission;
+                        
+                        return (
+                          <tr key={idx}>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-secondary-900">
+                              {variant.variant_name}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-secondary-600">
+                              <input
+                                type="text"
+                                value={variant.sku}
+                                onChange={e => setVariants(prev => prev.map((v, i) => i === idx ? { ...v, sku: e.target.value } : v))}
+                                className="input-field w-full"
+                                placeholder="SKU"
+                              />
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-secondary-600">
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={variant.seller_price}
+                                onChange={e => setVariants(prev => prev.map((v, i) => i === idx ? { ...v, seller_price: parseFloat(e.target.value || '0') } : v))}
+                                className="input-field w-24"
+                              />
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-secondary-600">
+                              <input
+                                type="number"
+                                min="0"
+                                value={variant.stock_quantity}
+                                onChange={e => setVariants(prev => prev.map((v, i) => i === idx ? { ...v, stock_quantity: parseInt(e.target.value || '0') } : v))}
+                                className="input-field w-20"
+                              />
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-secondary-600">
+                              ₹{customerPrice.toFixed(2)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* SEO Information */}
         <div className="space-y-4">

@@ -79,17 +79,20 @@ def create_product(db: Session, product: ProductCreate, seller_id: str) -> Produ
     for variant_data in product.variants:
         variant_commission_calc = calculate_commission(variant_data.seller_price, commission_rate)
         
+        # Generate variant SKU if not provided
+        variant_sku = variant_data.sku if variant_data.sku else f"{db_product.slug}-variant-{str(uuid.uuid4())[:8]}"
+        
         variant = ProductVariant(
             id=str(uuid.uuid4()),
             product_id=db_product.id,
-            sku=variant_data.sku,
+            variant_name=getattr(variant_data, 'variant_name', None),
+            sku=variant_sku,
             seller_price=variant_data.seller_price,
             commission_rate=variant_commission_calc.commission_rate,
             commission_amount=variant_commission_calc.commission_amount,
             customer_price=variant_commission_calc.customer_price,
             stock_quantity=variant_data.stock_quantity,
-            weight=variant_data.weight,
-            dimensions=variant_data.dimensions
+            is_active=True  # Set variants as active by default
         )
         db.add(variant)
         db.flush()
@@ -98,7 +101,7 @@ def create_product(db: Session, product: ProductCreate, seller_id: str) -> Produ
         for attr_data in variant_data.attributes:
             variant_attr = ProductVariantAttribute(
                 id=str(uuid.uuid4()),
-                product_variant_id=variant.id,
+                variant_id=variant.id,
                 attribute_id=attr_data.attribute_id,
                 attribute_value_id=attr_data.attribute_value_id
             )
@@ -239,7 +242,7 @@ def approve_product(db: Session, product_id: str, approval: ProductApprovalUpdat
 
 
 def delete_product(db: Session, product_id: str, seller_id: Optional[str] = None) -> bool:
-    """Delete product (soft delete by setting status to inactive)"""
+    """Delete product (soft delete by setting status to hidden)"""
     db_product = db.query(Product).filter(Product.id == product_id).first()
     if not db_product:
         return False
@@ -251,7 +254,7 @@ def delete_product(db: Session, product_id: str, seller_id: Optional[str] = None
     # Check if product has orders (implement when order model is ready)
     
     # Soft delete
-    db_product.status = ProductStatus.INACTIVE
+    db_product.status = ProductStatus.HIDDEN
     db_product.updated_at = datetime.utcnow()
     db.commit()
     

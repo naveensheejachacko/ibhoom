@@ -207,6 +207,74 @@ export const adminApi = {
     const response = await api.delete(`/api/v1/admin/commissions/${id}`);
     return response.data;
   },
+
+  // Attributes
+  getAttributes: async () => {
+    const response = await api.get('/api/v1/admin/attributes');
+    return response.data;
+  },
+
+  getAttribute: async (id: string) => {
+    const response = await api.get(`/api/v1/admin/attributes/${id}`);
+    return response.data;
+  },
+
+  createAttribute: async (data: any) => {
+    const response = await api.post('/api/v1/admin/attributes', data);
+    return response.data;
+  },
+
+  updateAttribute: async (id: string, data: any) => {
+    const response = await api.put(`/api/v1/admin/attributes/${id}`, data);
+    return response.data;
+  },
+
+  deleteAttribute: async (id: string) => {
+    const response = await api.delete(`/api/v1/admin/attributes/${id}`);
+    return response.data;
+  },
+
+  // Attribute Values
+  getAttributeValues: async (attributeId: string) => {
+    const response = await api.get(`/api/v1/admin/attributes/${attributeId}/values`);
+    return response.data;
+  },
+
+  createAttributeValue: async (data: any) => {
+    const response = await api.post('/api/v1/admin/attributes/values', data);
+    return response.data;
+  },
+
+  updateAttributeValue: async (id: string, data: any) => {
+    const response = await api.put(`/api/v1/admin/attributes/values/${id}`, data);
+    return response.data;
+  },
+
+  deleteAttributeValue: async (id: string) => {
+    const response = await api.delete(`/api/v1/admin/attributes/values/${id}`);
+    return response.data;
+  },
+
+  // Category Attributes
+  getCategoryAttributes: async (categoryId: string) => {
+    const response = await api.get(`/api/v1/admin/attributes/category-attributes/${categoryId}`);
+    return response.data;
+  },
+
+  createCategoryAttribute: async (data: any) => {
+    const response = await api.post('/api/v1/admin/attributes/category-attributes', data);
+    return response.data;
+  },
+
+  updateCategoryAttribute: async (id: string, data: any) => {
+    const response = await api.put(`/api/v1/admin/attributes/category-attributes/${id}`, data);
+    return response.data;
+  },
+
+  deleteCategoryAttribute: async (id: string) => {
+    const response = await api.delete(`/api/v1/admin/attributes/category-attributes/${id}`);
+    return response.data;
+  },
 };
 
 // Seller API
@@ -218,22 +286,22 @@ export const sellerApi = {
   },
   
   getProduct: async (id: string) => {
-    const response = await api.get(`/api/v1/seller/products/${id}`);
+    const response = await api.get(`/api/v1/seller/products/${id}/`);
     return response.data;
   },
   
   createProduct: async (data: any) => {
-    const response = await api.post('/api/v1/seller/products', data);
+    const response = await api.post('/api/v1/seller/products/', data);
     return response.data;
   },
   
   updateProduct: async (id: string, data: any) => {
-    const response = await api.put(`/api/v1/seller/products/${id}`, data);
+    const response = await api.put(`/api/v1/seller/products/${id}/`, data);
     return response.data;
   },
   
   deleteProduct: async (id: string) => {
-    const response = await api.delete(`/api/v1/seller/products/${id}`);
+    const response = await api.delete(`/api/v1/seller/products/${id}/`);
     return response.data;
   },
   

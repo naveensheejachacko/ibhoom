@@ -11,7 +11,8 @@ import {
   Percent,
   UserCheck,
   PackageCheck,
-  User
+  User,
+  List
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -25,6 +26,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
   const adminNavItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
     { icon: FolderTree, label: 'Categories', path: '/admin/categories' },
+    { icon: List, label: 'Attributes', path: '/admin/attributes' },
     { icon: PackageCheck, label: 'Product Approvals', path: '/admin/products' },
     { icon: ShoppingCart, label: 'Orders', path: '/admin/orders' },
     { icon: Users, label: 'Users', path: '/admin/users' },

@@ -1,8 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { FolderTree, Plus, Edit2, Trash2 } from 'lucide-react';
+import { FolderTree, Plus, Edit2, Trash2, Settings } from 'lucide-react';
 import { adminApi } from '../../lib/api';
 import { useToast } from '../../components/Toast';
 import { Category } from '../../types/api';
+
+interface Attribute {
+  id: string;
+  name: string;
+  type: string;
+  is_required: boolean;
+  sort_order: number;
+  attribute_values: any[];
+}
+
+interface CategoryAttribute {
+  id: string;
+  category_id: string;
+  attribute_id: string;
+  is_required: boolean;
+  is_variant: boolean;
+  attribute: Attribute;
+}
 
 const Categories: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -14,6 +32,17 @@ const Categories: React.FC = () => {
     name: '',
     description: '',
     parent_id: '',
+  });
+
+  const [showAttributesModal, setShowAttributesModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [allAttributes, setAllAttributes] = useState<Attribute[]>([]);
+  const [categoryAttributes, setCategoryAttributes] = useState<CategoryAttribute[]>([]);
+  const [availableAttributes, setAvailableAttributes] = useState<Attribute[]>([]);
+  const [selectedAttributeId, setSelectedAttributeId] = useState('');
+  const [attributeSettings, setAttributeSettings] = useState({
+    is_required: false,
+    is_variant: false,
   });
 
   // Flatten tree for parent selector with indentation
@@ -105,6 +134,92 @@ const Categories: React.FC = () => {
     }
   };
 
+  const handleManageAttributes = async (category: Category) => {
+    setSelectedCategory(category);
+    try {
+      const [attrs, catAttrs] = await Promise.all([
+        adminApi.getAttributes(),
+        adminApi.getCategoryAttributes(category.id),
+      ]);
+      setAllAttributes(attrs);
+      setCategoryAttributes(catAttrs);
+      
+      // Calculate available attributes (not yet linked)
+      const linkedIds = catAttrs.map((ca: CategoryAttribute) => ca.attribute_id);
+      setAvailableAttributes(attrs.filter((a: Attribute) => !linkedIds.includes(a.id)));
+      
+      setShowAttributesModal(true);
+    } catch (error) {
+      console.error('Error loading attributes:', error);
+      toast.show('Failed to load attributes', { type: 'error' });
+    }
+  };
+
+  const handleAddCategoryAttribute = async () => {
+    if (!selectedCategory || !selectedAttributeId) return;
+
+    try {
+      await adminApi.createCategoryAttribute({
+        category_id: selectedCategory.id,
+        attribute_id: selectedAttributeId,
+        is_required: attributeSettings.is_required,
+        is_variant: attributeSettings.is_variant,
+      });
+      toast.show('Attribute linked successfully', { type: 'success' });
+      setSelectedAttributeId('');
+      setAttributeSettings({ is_required: false, is_variant: false });
+      
+      // Refresh category attributes
+      const catAttrs = await adminApi.getCategoryAttributes(selectedCategory.id);
+      setCategoryAttributes(catAttrs);
+      
+      // Update available attributes
+      const linkedIds = catAttrs.map((ca: CategoryAttribute) => ca.attribute_id);
+      setAvailableAttributes(allAttributes.filter((a: Attribute) => !linkedIds.includes(a.id)));
+    } catch (error: any) {
+      console.error('Error adding attribute:', error);
+      toast.show(error.response?.data?.detail || 'Failed to add attribute', { type: 'error' });
+    }
+  };
+
+  const handleUpdateCategoryAttribute = async (categoryAttributeId: string, updates: any) => {
+    try {
+      await adminApi.updateCategoryAttribute(categoryAttributeId, updates);
+      toast.show('Attribute settings updated', { type: 'success' });
+      
+      // Refresh
+      if (selectedCategory) {
+        const catAttrs = await adminApi.getCategoryAttributes(selectedCategory.id);
+        setCategoryAttributes(catAttrs);
+      }
+    } catch (error: any) {
+      console.error('Error updating attribute:', error);
+      toast.show(error.response?.data?.detail || 'Failed to update attribute', { type: 'error' });
+    }
+  };
+
+  const handleRemoveCategoryAttribute = async (categoryAttributeId: string) => {
+    if (!window.confirm('Remove this attribute from the category?')) return;
+
+    try {
+      await adminApi.deleteCategoryAttribute(categoryAttributeId);
+      toast.show('Attribute removed', { type: 'success' });
+      
+      // Refresh
+      if (selectedCategory) {
+        const catAttrs = await adminApi.getCategoryAttributes(selectedCategory.id);
+        setCategoryAttributes(catAttrs);
+        
+        // Update available attributes
+        const linkedIds = catAttrs.map((ca: CategoryAttribute) => ca.attribute_id);
+        setAvailableAttributes(allAttributes.filter((a: Attribute) => !linkedIds.includes(a.id)));
+      }
+    } catch (error: any) {
+      console.error('Error removing attribute:', error);
+      toast.show(error.response?.data?.detail || 'Failed to remove attribute', { type: 'error' });
+    }
+  };
+
   const renderCategoryTree = (categories: Category[], level = 0) => {
     return categories.map((category) => (
       <div key={category.id} style={{ marginLeft: level * 16 }}>
@@ -117,6 +232,13 @@ const Categories: React.FC = () => {
             </div>
           </div>
           <div className="flex space-x-2">
+            <button
+              onClick={() => handleManageAttributes(category)}
+              className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg"
+              title="Manage Attributes"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
             <button
               onClick={() => handleEdit(category)}
               className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
@@ -244,6 +366,174 @@ const Categories: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Category Attributes Modal */}
+      {showAttributesModal && selectedCategory && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-semibold text-secondary-900">
+                  Manage Attributes: {selectedCategory.name}
+                </h3>
+                <p className="text-sm text-secondary-600 mt-1">
+                  Configure which attributes are available for products in this category
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowAttributesModal(false);
+                  setSelectedCategory(null);
+                }}
+                className="text-secondary-400 hover:text-secondary-600"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Add New Attribute */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <h4 className="font-medium text-secondary-900 mb-3">Add Attribute</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <select
+                    value={selectedAttributeId}
+                    onChange={(e) => setSelectedAttributeId(e.target.value)}
+                    className="input-field"
+                  >
+                    <option value="">Select an attribute...</option>
+                    {availableAttributes.map((attr) => (
+                      <option key={attr.id} value={attr.id}>
+                        {attr.name} ({attr.type})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="attr_required"
+                    checked={attributeSettings.is_required}
+                    onChange={(e) =>
+                      setAttributeSettings({ ...attributeSettings, is_required: e.target.checked })
+                    }
+                    className="rounded border-secondary-300"
+                  />
+                  <label htmlFor="attr_required" className="text-sm">Required</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="attr_variant"
+                    checked={attributeSettings.is_variant}
+                    onChange={(e) =>
+                      setAttributeSettings({ ...attributeSettings, is_variant: e.target.checked })
+                    }
+                    className="rounded border-secondary-300"
+                  />
+                  <label htmlFor="attr_variant" className="text-sm">
+                    Is Variant (affects pricing/inventory)
+                  </label>
+                </div>
+              </div>
+              <button
+                onClick={handleAddCategoryAttribute}
+                disabled={!selectedAttributeId}
+                className="btn-primary mt-3 disabled:opacity-50"
+              >
+                Add Attribute
+              </button>
+            </div>
+
+            {/* Current Attributes */}
+            <div>
+              <h4 className="font-medium text-secondary-900 mb-3">Current Attributes</h4>
+              {categoryAttributes.length === 0 ? (
+                <p className="text-sm text-secondary-500 text-center py-8">
+                  No attributes configured for this category yet
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {categoryAttributes.map((ca) => (
+                    <div
+                      key={ca.id}
+                      className="flex items-center justify-between p-3 border border-secondary-200 rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <h5 className="font-medium text-secondary-900">
+                            {ca.attribute?.name || 'Unknown'}
+                          </h5>
+                          <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                            {ca.attribute?.type}
+                          </span>
+                          {ca.is_required && (
+                            <span className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded">
+                              Required
+                            </span>
+                          )}
+                          {ca.is_variant && (
+                            <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">
+                              Variant
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-secondary-500 mt-1">
+                          {ca.attribute?.attribute_values?.length || 0} value(s) available
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id={`req_${ca.id}`}
+                            checked={ca.is_required}
+                            onChange={(e) =>
+                              handleUpdateCategoryAttribute(ca.id, { is_required: e.target.checked })
+                            }
+                            className="rounded border-secondary-300"
+                          />
+                          <label htmlFor={`req_${ca.id}`} className="text-xs">Req</label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id={`var_${ca.id}`}
+                            checked={ca.is_variant}
+                            onChange={(e) =>
+                              handleUpdateCategoryAttribute(ca.id, { is_variant: e.target.checked })
+                            }
+                            className="rounded border-secondary-300"
+                          />
+                          <label htmlFor={`var_${ca.id}`} className="text-xs">Variant</label>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveCategoryAttribute(ca.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => {
+                  setShowAttributesModal(false);
+                  setSelectedCategory(null);
+                }}
+                className="btn-primary"
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}

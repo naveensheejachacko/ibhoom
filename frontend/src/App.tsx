@@ -15,6 +15,7 @@ import AdminOrders from './pages/Admin/Orders';
 import AdminUsers from './pages/Admin/Users';
 import AdminSellers from './pages/Admin/Sellers';
 import AdminCommissions from './pages/Admin/Commissions';
+import AdminAttributes from './pages/Admin/Attributes';
 
 // Seller Pages
 import SellerDashboard from './pages/Seller/Dashboard';
@@ -43,6 +44,7 @@ function App() {
                       <Route index element={<AdminDashboard />} />
                       <Route path="products" element={<AdminProducts />} />
                       <Route path="categories" element={<AdminCategories />} />
+                      <Route path="attributes" element={<AdminAttributes />} />
                       <Route path="orders" element={<AdminOrders />} />
                       <Route path="users" element={<AdminUsers />} />
                       <Route path="sellers" element={<AdminSellers />} />

@@ -79,7 +79,7 @@ const ProductForm: React.FC = () => {
 
   const loadCategories = async () => {
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/categories`);
       
       if (!response.ok) {
@@ -97,7 +97,7 @@ const ProductForm: React.FC = () => {
   // Load category attributes when category changes
   useEffect(() => {
     if (formData.category_id) {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
       console.log('🔍 Fetching attributes for category:', formData.category_id);
       fetch(`${API_BASE_URL}/api/v1/customer/categories/${formData.category_id}/attributes`, {
         headers: {

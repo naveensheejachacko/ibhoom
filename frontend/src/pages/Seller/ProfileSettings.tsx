@@ -49,7 +49,7 @@ const ProfileSettings: React.FC = () => {
       
       if (user.profile_picture) {
         // Convert relative path to full URL
-        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
         const fullImageUrl = user.profile_picture.startsWith('http') 
           ? user.profile_picture 
           : `${API_BASE_URL}/${user.profile_picture}`;
@@ -104,7 +104,7 @@ const ProfileSettings: React.FC = () => {
         });
         
         if (profileData.profile_picture) {
-          const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+          const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
           const fullImageUrl = profileData.profile_picture.startsWith('http') 
             ? profileData.profile_picture 
             : `${API_BASE_URL}/${profileData.profile_picture}`;
@@ -184,7 +184,7 @@ const ProfileSettings: React.FC = () => {
       
       if (response.data) {
         // Convert profile picture path to full URL if needed
-        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
         const updatedUser = {
           ...response.data,
           profile_picture: response.data.profile_picture 

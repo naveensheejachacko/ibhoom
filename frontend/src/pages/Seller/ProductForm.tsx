@@ -79,7 +79,8 @@ const ProductForm: React.FC = () => {
 
   const loadCategories = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/v1/auth/categories');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/categories`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -96,8 +97,9 @@ const ProductForm: React.FC = () => {
   // Load category attributes when category changes
   useEffect(() => {
     if (formData.category_id) {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       console.log('🔍 Fetching attributes for category:', formData.category_id);
-      fetch(`http://localhost:8000/api/v1/customer/categories/${formData.category_id}/attributes`, {
+      fetch(`${API_BASE_URL}/api/v1/customer/categories/${formData.category_id}/attributes`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token') || ''}`
         }

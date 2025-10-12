@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Package, 
@@ -22,6 +22,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
   const { logout, user } = useAuth();
+  const navigate = useNavigate();
 
   const adminNavItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
@@ -47,7 +48,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
 
   const handleLogout = () => {
     logout();
-    window.location.href = '/login';
+    navigate('/login', { replace: true });
   };
 
   return (

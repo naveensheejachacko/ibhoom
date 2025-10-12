@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
-from typing import Optional
+from typing import Optional, Union
+from pydantic import field_validator
 import os
 
 
@@ -18,19 +19,17 @@ class Settings(BaseSettings):
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
-    # CORS Configuration
-    BACKEND_CORS_ORIGINS: list = [
-        "http://localhost:3000", 
-        "http://localhost:5173", 
-        "http://127.0.0.1:5173", 
-        "http://127.0.0.1:3000"
-    ]
+    # CORS Configuration - Accept string or list
+    BACKEND_CORS_ORIGINS: Union[str, list] = "http://localhost:3000,http://localhost:5173,http://127.0.0.1:5173,http://127.0.0.1:3000"
     
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        # Override CORS origins from environment if provided
-        if os.getenv("BACKEND_CORS_ORIGINS"):
-            self.BACKEND_CORS_ORIGINS = os.getenv("BACKEND_CORS_ORIGINS").split(",")
+    @field_validator('BACKEND_CORS_ORIGINS', mode='before')
+    @classmethod
+    def parse_cors_origins(cls, v):
+        """Parse CORS origins from string or list"""
+        if isinstance(v, str):
+            # Split comma-separated string and strip whitespace
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v
     
     # File Upload Configuration
     UPLOAD_DIR: str = "uploads"

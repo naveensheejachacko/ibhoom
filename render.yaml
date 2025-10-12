@@ -4,6 +4,7 @@ services:
     name: ibhoom-backend
     env: python
     plan: free
+    rootDirectory: backend
     buildCommand: |
       pip install -r requirements.txt
       python init_db.py
@@ -25,8 +26,9 @@ services:
     name: ibhoom-frontend
     env: node
     plan: free
-    buildCommand: cd frontend && npm install && npm run build
-    startCommand: cd frontend && npm start
+    rootDirectory: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production

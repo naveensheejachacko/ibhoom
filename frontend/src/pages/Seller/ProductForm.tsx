@@ -309,7 +309,7 @@ const ProductForm: React.FC = () => {
       const variantName = combo.name.join(' / ');
       return {
         variant_name: variantName,
-        sku: `${formData.sku || 'SKU'}-${combo.name.join('-').replace(/\s+/g, '-')}`,
+        sku: '',  // Leave empty to auto-generate
         seller_price: formData.seller_price || 0,
         stock_quantity: 0,
         attributes: combo.attributes
@@ -447,18 +447,20 @@ const ProductForm: React.FC = () => {
 
             <div>
               <label htmlFor="sku" className="block text-sm font-medium text-secondary-700 mb-2">
-                SKU *
+                SKU (Optional)
               </label>
               <input
                 id="sku"
                 name="sku"
                 type="text"
-                required
                 value={formData.sku}
                 onChange={handleInputChange}
                 className="input-field"
-                placeholder="Product SKU"
+                placeholder="Leave empty to auto-generate"
               />
+              <p className="mt-1 text-xs text-secondary-500">
+                💡 Leave empty and we'll automatically generate a unique SKU for you
+              </p>
             </div>
 
             <DynamicCategorySelector
@@ -734,7 +736,7 @@ const ProductForm: React.FC = () => {
                                 value={variant.sku}
                                 onChange={e => setVariants(prev => prev.map((v, i) => i === idx ? { ...v, sku: e.target.value } : v))}
                                 className="input-field w-full"
-                                placeholder="SKU"
+                                placeholder="Auto-generated"
                               />
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-secondary-600">

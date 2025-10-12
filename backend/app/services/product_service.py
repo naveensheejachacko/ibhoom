@@ -17,6 +17,30 @@ def generate_slug(name: str) -> str:
     return slug.strip('-')
 
 
+def generate_sku(seller_id: str, product_name: str) -> str:
+    """Auto-generate unique SKU for product
+    Format: SELLER-{short_seller_id}-{timestamp}-{random}
+    Example: SELLER-ABC123-1702045678-X9K2
+    """
+    from time import time
+    import random
+    import string
+    
+    # Get short seller ID (first 6 chars)
+    short_seller_id = seller_id[:6].upper()
+    
+    # Get timestamp (last 4 digits)
+    timestamp = str(int(time()))[-4:]
+    
+    # Generate random suffix (4 chars)
+    random_suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+    
+    # Create SKU
+    sku = f"SELLER-{short_seller_id}-{timestamp}-{random_suffix}"
+    
+    return sku
+
+
 def create_product(db: Session, product: ProductCreate, seller_id: str) -> Product:
     """Create a new product"""
     # Validate category exists
@@ -38,6 +62,9 @@ def create_product(db: Session, product: ProductCreate, seller_id: str) -> Produ
         slug = f"{base_slug}-{counter}"
         counter += 1
     
+    # Auto-generate SKU
+    auto_sku = generate_sku(seller_id, product.name)
+    
     # Calculate commission
     commission_rate = get_commission_rate(db, product.category_id, seller_price=product.seller_price)
     commission_calc = calculate_commission(product.seller_price, commission_rate)
@@ -47,6 +74,7 @@ def create_product(db: Session, product: ProductCreate, seller_id: str) -> Produ
         id=str(uuid.uuid4()),
         name=product.name,
         slug=slug,
+        sku=auto_sku,  # Auto-generated SKU
         description=product.description,
         category_id=product.category_id,
         seller_id=seller_id,
@@ -76,11 +104,12 @@ def create_product(db: Session, product: ProductCreate, seller_id: str) -> Produ
         db.add(image)
     
     # Add variants
-    for variant_data in product.variants:
+    for idx, variant_data in enumerate(product.variants, 1):
         variant_commission_calc = calculate_commission(variant_data.seller_price, commission_rate)
         
         # Generate variant SKU if not provided
-        variant_sku = variant_data.sku if variant_data.sku else f"{db_product.slug}-variant-{str(uuid.uuid4())[:8]}"
+        # Format: {product_sku}-V{number}
+        variant_sku = variant_data.sku if variant_data.sku else f"{auto_sku}-V{idx:03d}"
         
         variant = ProductVariant(
             id=str(uuid.uuid4()),

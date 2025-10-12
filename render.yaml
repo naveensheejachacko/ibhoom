@@ -7,7 +7,7 @@ services:
     rootDir: backend
     buildCommand: |
       pip install -r requirements.txt
-      python app/utils/init_db.py
+      python -m app.utils.init_db
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION

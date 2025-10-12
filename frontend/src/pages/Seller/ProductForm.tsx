@@ -499,34 +499,18 @@ const ProductForm: React.FC = () => {
               />
             </div>
 
-            <div>
-              <label htmlFor="commission_rate" className="block text-sm font-medium text-secondary-700 mb-2">
-                Commission Rate (%)
-              </label>
-              <input
-                id="commission_rate"
-                name="commission_rate"
-                type="number"
-                step="0.01"
-                min="0"
-                max="30"
-                value={formData.commission_rate}
-                onChange={handleInputChange}
-                onKeyDown={handleNumericKeyDown}
-                className="input-field"
-                placeholder="8.00"
-              />
-            </div>
-
             <div className="bg-secondary-50 p-4 rounded-lg">
               <label className="block text-sm font-medium text-secondary-700 mb-2">
-                Customer Price (₹)
+                Estimated Customer Price (₹)
               </label>
               <div className="text-lg font-semibold text-secondary-900">
                 ₹{calculateCustomerPrice().toFixed(2)}
               </div>
               <p className="text-sm text-secondary-600 mt-1">
-                Commission: ₹{((formData.seller_price * formData.commission_rate) / 100).toFixed(2)}
+                * Final price will be calculated based on admin-set commission rate
+              </p>
+              <p className="text-sm text-secondary-600">
+                Estimated Commission: ₹{((formData.seller_price * formData.commission_rate) / 100).toFixed(2)} ({formData.commission_rate}%)
               </p>
             </div>
           </div>

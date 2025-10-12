@@ -7,9 +7,11 @@ services:
     rootDir: backend
     buildCommand: |
       pip install -r requirements.txt
-      python init_db.py
+      python app/utils/init_db.py
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
       - key: DATABASE_URL
         value: sqlite:///./marketplace.db
       - key: JWT_SECRET_KEY
@@ -17,7 +19,7 @@ services:
       - key: JWT_ACCESS_TOKEN_EXPIRE_MINUTES
         value: 30
       - key: BACKEND_CORS_ORIGINS
-        value: https://ibhoom-frontend.onrender.com,http://localhost:5173,http://localhost:3000,http://localhost:5174
+        value: https://ibhoom-frontend-o71n.onrender.com,http://localhost:5173,http://localhost:3000,http://localhost:5174
       - key: DEBUG
         value: false
 
@@ -27,7 +29,7 @@ services:
     env: node
     plan: free
     rootDir: frontend
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV

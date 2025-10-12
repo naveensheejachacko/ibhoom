@@ -182,6 +182,15 @@ const ProductForm: React.FC = () => {
     }
   };
 
+  // Auto-select text when focusing on number fields with 0 value
+  const handleNumberFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // If the current value is 0, select all text so typing replaces it
+    if (value === '0' || parseFloat(value) === 0) {
+      e.target.select();
+    }
+  };
+
   const handleAddTag = () => {
     if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
       setFormData(prev => ({
@@ -477,6 +486,7 @@ const ProductForm: React.FC = () => {
                 required
                 value={formData.seller_price}
                 onChange={handleInputChange}
+                onFocus={handleNumberFocus}
                 onKeyDown={handleNumericKeyDown}
                 className="input-field"
                 placeholder="0.00"
@@ -495,6 +505,7 @@ const ProductForm: React.FC = () => {
                 required
                 value={formData.stock_quantity}
                 onChange={handleInputChange}
+                onFocus={handleNumberFocus}
                 onKeyDown={handleNumericKeyDown}
                 className="input-field"
                 placeholder="0"
@@ -733,6 +744,7 @@ const ProductForm: React.FC = () => {
                                 step="0.01"
                                 value={variant.seller_price}
                                 onChange={e => setVariants(prev => prev.map((v, i) => i === idx ? { ...v, seller_price: parseFloat(e.target.value || '0') } : v))}
+                                onFocus={handleNumberFocus}
                                 className="input-field w-24"
                               />
                             </td>
@@ -742,6 +754,7 @@ const ProductForm: React.FC = () => {
                                 min="0"
                                 value={variant.stock_quantity}
                                 onChange={e => setVariants(prev => prev.map((v, i) => i === idx ? { ...v, stock_quantity: parseInt(e.target.value || '0') } : v))}
+                                onFocus={handleNumberFocus}
                                 className="input-field w-20"
                               />
                             </td>

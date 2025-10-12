@@ -132,10 +132,15 @@ def get_products(
     status: Optional[ProductStatus] = None,
     min_price: Optional[float] = None,
     max_price: Optional[float] = None,
-    search: Optional[str] = None
+    search: Optional[str] = None,
+    include_hidden: bool = False
 ) -> List[Product]:
     """Get products with filtering"""
     query = db.query(Product)
+    
+    # By default, exclude hidden (soft-deleted) products
+    if not include_hidden:
+        query = query.filter(Product.status != ProductStatus.HIDDEN)
     
     if category_id:
         query = query.filter(Product.category_id == category_id)
@@ -226,7 +231,7 @@ def approve_product(db: Session, product_id: str, approval: ProductApprovalUpdat
     # Update commission rate if provided
     if approval.commission_rate is not None:
         db_product.commission_rate = approval.commission_rate
-        # Recalculate commission amount and customer price
+        # Recalculate commission amount and customer price for main product
         from .commission_service import calculate_commission
         commission_calc = calculate_commission(
             db_product.seller_price, 
@@ -234,6 +239,13 @@ def approve_product(db: Session, product_id: str, approval: ProductApprovalUpdat
         )
         db_product.commission_amount = commission_calc.commission_amount
         db_product.customer_price = commission_calc.customer_price
+        
+        # Update commission for all variants as well
+        for variant in db_product.variants:
+            variant_calc = calculate_commission(variant.seller_price, approval.commission_rate)
+            variant.commission_rate = variant_calc.commission_rate
+            variant.commission_amount = variant_calc.commission_amount
+            variant.customer_price = variant_calc.customer_price
     
     db.commit()
     db.refresh(db_product)

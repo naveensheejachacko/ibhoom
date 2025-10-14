@@ -54,7 +54,8 @@ const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-lg flex items-center justify-center">
             <img src="/ibhoom-logo.png" alt="ibhoom logo" className="w-10 h-10 object-contain" />
-          </div>
+          </div> // logo change to local vendor
+          //hiqbwcgiyqgyw455445
           <div>
             <h1 className="font-bold text-lg text-secondary-900">Local Vendor</h1>
             <p className="text-xs text-secondary-500 capitalize">{userRole} Panel</p>

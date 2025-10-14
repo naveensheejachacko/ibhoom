@@ -1,7 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Upload, X, Plus, Minus } from 'lucide-react';
 import { sellerApi } from '../../lib/api';
+import * as ReactImageCrop from 'react-image-crop';
+import type { Crop, PixelCrop } from 'react-image-crop';
+import { centerCrop, makeAspectCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
+
+const ReactCrop = (ReactImageCrop as any).default ?? (ReactImageCrop as any);
 import DynamicCategorySelector from '../../components/DynamicCategorySelector';
 
 interface ProductFormData {
@@ -67,6 +73,16 @@ const ProductForm: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Image crop state
+  const [isCropOpen, setIsCropOpen] = useState(false);
+  const fileQueueRef = useRef<File[]>([]);
+  const [currentFile, setCurrentFile] = useState<File | null>(null);
+  const [currentImageUrl, setCurrentImageUrl] = useState<string>('');
+  const [crop, setCrop] = useState<Crop | undefined>(undefined);
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop | undefined>(undefined);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     loadCategories();
@@ -189,27 +205,122 @@ const ProductForm: React.FC = () => {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
+    const imagesOnly = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (imagesOnly.length === 0) return;
+    if (!isCropOpen) {
+      // kick off first item
+      const [first, ...rest] = imagesOnly;
+      setCurrentFile(first);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setCurrentImageUrl(event.target?.result as string);
+        setIsCropOpen(true);
+        fileQueueRef.current = [...fileQueueRef.current, ...rest];
+      };
+      reader.readAsDataURL(first);
+    } else {
+      // if already cropping, enqueue remaining files
+      fileQueueRef.current = [...fileQueueRef.current, ...imagesOnly];
+    }
+  };
 
-    Array.from(files).forEach((file) => {
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const imageUrl = event.target?.result as string;
-          const newImage: ProductImage = {
-            image_url: imageUrl,
-            alt_text: file.name,
-            sort_order: formData.images.length
-          };
-          
-          setFormData(prev => ({
-            ...prev,
-            images: [...prev.images, newImage]
-          }));
-        };
-        reader.readAsDataURL(file);
-      }
-    });
+  const onImageLoad = useCallback((img: HTMLImageElement) => {
+    imgRef.current = img;
+    // Create a centered 1:1 crop at ~80% width
+    const initial = centerCrop(
+      makeAspectCrop({ unit: '%', width: 80 }, 1, img.naturalWidth, img.naturalHeight),
+      img.naturalWidth,
+      img.naturalHeight
+    );
+    setCrop(initial);
+  }, []);
+
+  const getCanvasPreview = useCallback((image: HTMLImageElement, canvas: HTMLCanvasElement, cropPixels: PixelCrop) => {
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const pixelRatio = window.devicePixelRatio || 1;
+    canvas.width = Math.floor(cropPixels.width * scaleX * pixelRatio);
+    canvas.height = Math.floor(cropPixels.height * scaleY * pixelRatio);
+    ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(
+      image,
+      cropPixels.x * scaleX,
+      cropPixels.y * scaleY,
+      cropPixels.width * scaleX,
+      cropPixels.height * scaleY,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+  }, []);
+
+  const confirmCrop = async () => {
+    if (!completedCrop || !imgRef.current || completedCrop.width <= 0 || completedCrop.height <= 0) {
+      // skip if no crop
+      setIsCropOpen(false);
+      return;
+    }
+    if (!previewCanvasRef.current) {
+      previewCanvasRef.current = document.createElement('canvas');
+    }
+    getCanvasPreview(imgRef.current, previewCanvasRef.current, completedCrop);
+    const canvas = previewCanvasRef.current;
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+
+    const newImage: ProductImage = {
+      image_url: dataUrl,
+      alt_text: currentFile ? currentFile.name : 'image.jpg',
+      sort_order: formData.images.length
+    };
+    setFormData(prev => ({ ...prev, images: [...prev.images, newImage] }));
+
+    // move to next file in queue
+    setIsCropOpen(false);
+    setCompletedCrop(undefined);
+    setCrop(undefined);
+
+    const remaining = fileQueueRef.current;
+    if (remaining.length > 0) {
+      const [next, ...rest] = remaining;
+      fileQueueRef.current = rest;
+      setCurrentFile(next);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setCurrentImageUrl(event.target?.result as string);
+        setIsCropOpen(true);
+      };
+      reader.readAsDataURL(next);
+    } else {
+      setCurrentFile(null);
+    }
+  };
+
+  const cancelCrop = () => {
+    // skip current file and go next
+    setIsCropOpen(false);
+    setCompletedCrop(undefined);
+    setCrop(undefined);
+
+    const remaining = fileQueueRef.current;
+    if (remaining.length > 0) {
+      const [next, ...rest] = remaining;
+      fileQueueRef.current = rest;
+      setCurrentFile(next);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setCurrentImageUrl(event.target?.result as string);
+        setIsCropOpen(true);
+      };
+      reader.readAsDataURL(next);
+    } else {
+      setCurrentFile(null);
+    }
   };
 
   const handleRemoveImage = (index: number) => {
@@ -520,6 +631,24 @@ const ProductForm: React.FC = () => {
               </label>
             </div>
           </div>
+
+          {isCropOpen && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-4 w-full max-w-2xl">
+                <h4 className="text-md font-semibold mb-3">Crop Image (1:1)</h4>
+                <div className="max-h-[70vh] overflow-auto">
+                  <ReactCrop crop={crop} onChange={(c: Crop) => setCrop(c)} onComplete={(c: PixelCrop) => setCompletedCrop(c)} aspect={1}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={currentImageUrl} alt="To crop" onLoad={(e) => onImageLoad(e.currentTarget)} />
+                  </ReactCrop>
+                </div>
+                <div className="mt-4 flex justify-end gap-2">
+                  <button type="button" className="btn-secondary" onClick={cancelCrop}>Skip</button>
+                  <button type="button" className="btn-primary" onClick={confirmCrop}>Use Crop</button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {formData.images.length > 0 && (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

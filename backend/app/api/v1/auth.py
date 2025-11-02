@@ -52,9 +52,9 @@ async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
     }
 
 
-@router.post("/register/customer", response_model=UserResponse)
+@router.post("/register/customer", response_model=Token)
 async def register_customer(user_data: UserCreate, db: Session = Depends(get_db)):
-    """Register a new customer"""
+    """Register a new customer and automatically log them in"""
     # Check if user already exists
     if db.query(User).filter(User.email == user_data.email).first():
         raise HTTPException(
@@ -79,7 +79,16 @@ async def register_customer(user_data: UserCreate, db: Session = Depends(get_db)
     db.commit()
     db.refresh(db_user)
     
-    return db_user
+    # Create tokens for auto-login (same as login endpoint)
+    access_token = create_access_token(data={"sub": db_user.id, "role": db_user.role})
+    refresh_token = create_refresh_token(data={"sub": db_user.id, "role": db_user.role})
+    
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "user": db_user
+    }
 
 
 @router.post("/register/seller", response_model=UserResponse)
@@ -109,6 +118,14 @@ async def register_seller(seller_data: SellerRegister, db: Session = Depends(get
     db.commit()
     db.refresh(db_user)
     
+    # Geocode pincode to get coordinates (with caching)
+    from ...utils.location import geocode_pincode_kerala
+    latitude, longitude = None, None
+    if seller_data.pincode:
+        coords = geocode_pincode_kerala(seller_data.pincode, db_session=db)
+        if coords:
+            latitude, longitude = coords
+    
     # Create seller profile
     db_seller = Seller(
         user_id=db_user.id,
@@ -118,6 +135,8 @@ async def register_seller(seller_data: SellerRegister, db: Session = Depends(get
         city=seller_data.city,
         state=seller_data.state,
         pincode=seller_data.pincode,
+        latitude=latitude,
+        longitude=longitude,
         is_approved=False  # Requires admin approval
     )
     

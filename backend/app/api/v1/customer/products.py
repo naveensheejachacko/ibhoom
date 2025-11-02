@@ -7,6 +7,7 @@ from ....models.user import User
 from ....models.product import Product, ProductStatus
 from ....schemas.product import ProductResponse, ProductListResponse
 from ....services import product_service
+from ....utils.location import is_within_radius, get_city_coordinates
 
 router = APIRouter()
 
@@ -21,10 +22,32 @@ async def get_all_products(
     search: Optional[str] = Query(None),
     sort_by: Optional[str] = Query("created_at", regex="^(created_at|price|name)$"),
     sort_order: Optional[str] = Query("desc", regex="^(asc|desc)$"),
+    # Location filtering parameters
+    latitude: Optional[float] = Query(None, description="Customer's latitude"),
+    longitude: Optional[float] = Query(None, description="Customer's longitude"),
+    city: Optional[str] = Query(None, description="Customer's city name"),
+    radius_km: Optional[float] = Query(5, ge=1, le=500, description="Search radius in kilometers (default: 5km)"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_customer_user)
 ):
-    """Get all approved products for customers (Customer only)"""
+    """Get all approved products for customers with location-based filtering (within 5km radius) (Customer only)"""
+    # Require location to enforce 5km radius rule
+    customer_lat, customer_lon = None, None
+    if latitude and longitude:
+        customer_lat, customer_lon = latitude, longitude
+    elif city:
+        # Geocode city to get coordinates
+        coords = get_city_coordinates(city)
+        if coords:
+            customer_lat, customer_lon = coords
+    
+    # Enforce location requirement for 5km filtering
+    if not customer_lat or not customer_lon:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Location is required. Please provide either (latitude, longitude) or city parameter to see products within 5km radius."
+        )
+    
     products = product_service.get_products(
         db, skip=skip, limit=limit,
         category_id=category_id, status=ProductStatus.APPROVED,
@@ -34,13 +57,26 @@ async def get_all_products(
     # Add seller information to each product
     result = []
     for product in products:
+        # Skip products without sellers (location filtering requires seller)
+        if not product.seller:
+            continue
+            
         # Get seller information
-        seller_name = "Unknown Seller"
-        seller_email = "unknown@example.com"
+        seller_name = f"{product.seller.user.first_name} {product.seller.user.last_name}"
+        seller_email = product.seller.user.email
         
-        if product.seller:
-            seller_name = f"{product.seller.user.first_name} {product.seller.user.last_name}"
-            seller_email = product.seller.user.email
+        # Apply location filtering (required - 5km radius)
+        # Skip products from sellers without location data
+        if not product.seller.latitude or not product.seller.longitude:
+            continue
+        
+        # Check if seller is within radius (enforced 5km)
+        if not is_within_radius(
+            product.seller.latitude, product.seller.longitude,
+            customer_lat, customer_lon,
+            radius_km
+        ):
+            continue
         
         product_dict = {
             "id": product.id,
@@ -75,11 +111,33 @@ async def get_all_products(
 async def get_newly_arrived_products(
     days: int = Query(7, ge=1, le=30),
     limit: int = Query(20, ge=1, le=100),
+    # Location filtering parameters
+    latitude: Optional[float] = Query(None, description="Customer's latitude"),
+    longitude: Optional[float] = Query(None, description="Customer's longitude"),
+    city: Optional[str] = Query(None, description="Customer's city name"),
+    radius_km: Optional[float] = Query(5, ge=1, le=500, description="Search radius in kilometers (default: 5km)"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_customer_user)
 ):
-    """Get newly arrived products (Customer only)"""
+    """Get newly arrived products with location-based filtering (within 5km radius) (Customer only)"""
     from datetime import datetime, timedelta
+    
+    # Require location to enforce 5km radius rule
+    customer_lat, customer_lon = None, None
+    if latitude and longitude:
+        customer_lat, customer_lon = latitude, longitude
+    elif city:
+        # Geocode city to get coordinates
+        coords = get_city_coordinates(city)
+        if coords:
+            customer_lat, customer_lon = coords
+    
+    # Enforce location requirement for 5km filtering
+    if not customer_lat or not customer_lon:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Location is required. Please provide either (latitude, longitude) or city parameter to see products within 5km radius."
+        )
     
     # Calculate date threshold
     threshold_date = datetime.utcnow() - timedelta(days=days)
@@ -92,12 +150,26 @@ async def get_newly_arrived_products(
     # Add seller information to each product
     result = []
     for product in products:
-        seller_name = "Unknown Seller"
-        seller_email = "unknown@example.com"
+        # Skip products without sellers (location filtering requires seller)
+        if not product.seller:
+            continue
+            
+        # Get seller information
+        seller_name = f"{product.seller.user.first_name} {product.seller.user.last_name}"
+        seller_email = product.seller.user.email
         
-        if product.seller:
-            seller_name = f"{product.seller.user.first_name} {product.seller.user.last_name}"
-            seller_email = product.seller.user.email
+        # Apply location filtering (required - 5km radius)
+        # Skip products from sellers without location data
+        if not product.seller.latitude or not product.seller.longitude:
+            continue
+        
+        # Check if seller is within radius (enforced 5km)
+        if not is_within_radius(
+            product.seller.latitude, product.seller.longitude,
+            customer_lat, customer_lon,
+            radius_km
+        ):
+            continue
         
         product_dict = {
             "id": product.id,
@@ -130,10 +202,32 @@ async def get_products_by_category(
     search: Optional[str] = Query(None),
     sort_by: Optional[str] = Query("created_at", regex="^(created_at|price|name)$"),
     sort_order: Optional[str] = Query("desc", regex="^(asc|desc)$"),
+    # Location filtering parameters
+    latitude: Optional[float] = Query(None, description="Customer's latitude"),
+    longitude: Optional[float] = Query(None, description="Customer's longitude"),
+    city: Optional[str] = Query(None, description="Customer's city name"),
+    radius_km: Optional[float] = Query(5, ge=1, le=500, description="Search radius in kilometers (default: 5km)"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_customer_user)
 ):
-    """Get products by category (Customer only)"""
+    """Get products by category with location-based filtering (within 5km radius) (Customer only)"""
+    # Require location to enforce 5km radius rule
+    customer_lat, customer_lon = None, None
+    if latitude and longitude:
+        customer_lat, customer_lon = latitude, longitude
+    elif city:
+        # Geocode city to get coordinates
+        coords = get_city_coordinates(city)
+        if coords:
+            customer_lat, customer_lon = coords
+    
+    # Enforce location requirement for 5km filtering
+    if not customer_lat or not customer_lon:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Location is required. Please provide either (latitude, longitude) or city parameter to see products within 5km radius."
+        )
+    
     products = product_service.get_products(
         db, skip=skip, limit=limit,
         category_id=category_id, status=ProductStatus.APPROVED,
@@ -143,12 +237,26 @@ async def get_products_by_category(
     # Add seller information to each product
     result = []
     for product in products:
-        seller_name = "Unknown Seller"
-        seller_email = "unknown@example.com"
+        # Skip products without sellers (location filtering requires seller)
+        if not product.seller:
+            continue
+            
+        # Get seller information
+        seller_name = f"{product.seller.user.first_name} {product.seller.user.last_name}"
+        seller_email = product.seller.user.email
         
-        if product.seller:
-            seller_name = f"{product.seller.user.first_name} {product.seller.user.last_name}"
-            seller_email = product.seller.user.email
+        # Apply location filtering (required - 5km radius)
+        # Skip products from sellers without location data
+        if not product.seller.latitude or not product.seller.longitude:
+            continue
+        
+        # Check if seller is within radius (enforced 5km)
+        if not is_within_radius(
+            product.seller.latitude, product.seller.longitude,
+            customer_lat, customer_lon,
+            radius_km
+        ):
+            continue
         
         product_dict = {
             "id": product.id,

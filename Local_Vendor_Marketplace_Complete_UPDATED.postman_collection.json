@@ -150,7 +150,12 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"email\": \"seller@example.com\",\n    \"password\": \"password123\",\n    \"first_name\": \"Jane\",\n    \"last_name\": \"Seller\",\n    \"phone\": \"9876543211\",\n    \"business_name\": \"Tech Electronics Store\",\n    \"business_type\": \"Electronics Retail\",\n    \"address\": \"123 Business Street\",\n    \"city\": \"Mumbai\",\n    \"state\": \"Maharashtra\",\n    \"pincode\": \"400001\"\n}"
+							"raw": "{\n    \"email\": \"seller@example.com\",\n    \"password\": \"password123\",\n    \"first_name\": \"Jane\",\n    \"last_name\": \"Seller\",\n    \"phone\": \"9876543211\",\n    \"business_name\": \"Tech Electronics Store\",\n    \"business_type\": \"Electronics Retail\",\n    \"address\": \"123 Business Street\",\n    \"city\": \"Mumbai\",\n    \"state\": \"Maharashtra\",\n    \"pincode\": \"400001\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/auth/register/seller",
@@ -1475,6 +1480,237 @@
 			]
 		},
 		{
+			"name": "Seller - Profile Management",
+			"item": [
+				{
+					"name": "Get Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Get profile successful', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Profile data is present', function () {",
+									"        pm.expect(response).to.have.property('id');",
+									"        pm.expect(response).to.have.property('email');",
+									"        pm.expect(response).to.have.property('first_name');",
+									"        pm.expect(response).to.have.property('last_name');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sellerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/seller/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"seller",
+								"profile"
+							]
+						},
+						"description": "Get current seller's profile information"
+					}
+				},
+				{
+					"name": "Update Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Update profile successful', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Profile updated successfully', function () {",
+									"        pm.expect(response).to.have.property('id');",
+									"        pm.expect(response).to.have.property('email');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sellerToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "first_name",
+									"value": "Updated First Name",
+									"type": "text"
+								},
+								{
+									"key": "last_name",
+									"value": "Updated Last Name",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "updated@example.com",
+									"type": "text"
+								},
+								{
+									"key": "pincode",
+									"value": "400001",
+									"type": "text"
+								},
+								{
+									"key": "profile_picture",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/seller/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"seller",
+								"profile"
+							]
+						},
+						"description": "Update seller profile information including profile picture upload"
+					}
+				},
+				{
+					"name": "Update Password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Update password successful', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Password updated successfully', function () {",
+									"        pm.expect(response).to.have.property('message');",
+									"        pm.expect(response.message).to.include('Password updated');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sellerToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"current_password\": \"password123\",\n    \"new_password\": \"newpassword123\",\n    \"confirm_password\": \"newpassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/seller/profile/password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"seller",
+								"profile",
+								"password"
+							]
+						},
+						"description": "Update seller password"
+					}
+				},
+				{
+					"name": "Delete Profile Picture",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Delete profile picture successful', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Profile picture deleted successfully', function () {",
+									"        pm.expect(response).to.have.property('message');",
+									"        pm.expect(response.message).to.include('deleted');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sellerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/seller/profile/profile-picture",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"seller",
+								"profile",
+								"profile-picture"
+							]
+						},
+						"description": "Delete seller's profile picture"
+					}
+				}
+			]
+		},
+		{
 			"name": "Admin - Product Management",
 			"item": [
 				{
@@ -1666,6 +1902,116 @@
 					}
 				},
 				{
+					"name": "Create Order with Product Variants",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('variantOrderId', response.id);",
+									"    pm.test('Order with variants created successfully', function () {",
+									"        pm.response.to.have.status(201);",
+									"    });",
+									"    ",
+									"    pm.test('Order contains variant items', function () {",
+									"        pm.expect(response.items).to.be.an('array');",
+									"        pm.expect(response.items.length).to.be.greaterThan(0);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"delivery_address\": \"456 Variant Street, Apartment 2A\",\n    \"delivery_city\": \"Mumbai\",\n    \"delivery_state\": \"Maharashtra\",\n    \"delivery_pincode\": \"400001\",\n    \"phone\": \"9876543210\",\n    \"notes\": \"Order with specific color and size variants\",\n    \"items\": [\n        {\n            \"product_id\": \"{{productId}}\",\n            \"product_variant_id\": \"{{variantId}}\",\n            \"quantity\": 2\n        },\n        {\n            \"product_id\": \"{{productId}}\",\n            \"product_variant_id\": \"{{variantId2}}\",\n            \"quantity\": 1\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customer/orders",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"orders"
+							]
+						},
+						"description": "Create order with specific product variants (e.g., Red Large, Blue Medium)"
+					}
+				},
+				{
+					"name": "Create Mixed Order (Product + Variants)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('mixedOrderId', response.id);",
+									"    pm.test('Mixed order created successfully', function () {",
+									"        pm.response.to.have.status(201);",
+									"    });",
+									"    ",
+									"    pm.test('Order contains mixed items', function () {",
+									"        pm.expect(response.items).to.be.an('array');",
+									"        pm.expect(response.items.length).to.be.greaterThan(0);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"delivery_address\": \"789 Mixed Street, Apartment 3C\",\n    \"delivery_city\": \"Mumbai\",\n    \"delivery_state\": \"Maharashtra\",\n    \"delivery_pincode\": \"400001\",\n    \"phone\": \"9876543210\",\n    \"notes\": \"Mixed order with base product and specific variants\",\n    \"items\": [\n        {\n            \"product_id\": \"{{productId}}\",\n            \"quantity\": 1\n        },\n        {\n            \"product_id\": \"{{productId}}\",\n            \"product_variant_id\": \"{{variantId}}\",\n            \"quantity\": 1\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customer/orders",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"orders"
+							]
+						},
+						"description": "Create order with both base product and specific variants"
+					}
+				},
+				{
 					"name": "Get My Orders",
 					"request": {
 						"method": "GET",
@@ -1847,6 +2193,160 @@
 					}
 				},
 				{
+					"name": "Get Products with Location Filter",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Location-based product search successful', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Response is an array', function () {",
+									"        pm.expect(response).to.be.an('array');",
+									"    });",
+									"    ",
+									"    pm.test('Products have location data', function () {",
+									"        if (response.length > 0) {",
+									"            const product = response[0];",
+									"            pm.expect(product).to.have.property('seller_name');",
+									"            pm.expect(product).to.have.property('seller_email');",
+									"        }",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customer/products?latitude={{customerLatitude}}&longitude={{customerLongitude}}&radius_km=10&category_id={{electronicsId}}&sort_by=price&sort_order=asc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"products"
+							],
+							"query": [
+								{
+									"key": "latitude",
+									"value": "{{customerLatitude}}"
+								},
+								{
+									"key": "longitude",
+									"value": "{{customerLongitude}}"
+								},
+								{
+									"key": "radius_km",
+									"value": "10"
+								},
+								{
+									"key": "category_id",
+									"value": "{{electronicsId}}"
+								},
+								{
+									"key": "sort_by",
+									"value": "price"
+								},
+								{
+									"key": "sort_order",
+									"value": "asc"
+								}
+							]
+						},
+						"description": "Get products filtered by location within specified radius from customer's coordinates"
+					}
+				},
+				{
+					"name": "Get Products by City",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('City-based product search successful', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Response is an array', function () {",
+									"        pm.expect(response).to.be.an('array');",
+									"    });",
+									"    ",
+									"    pm.test('Products filtered by city', function () {",
+									"        if (response.length > 0) {",
+									"            const product = response[0];",
+									"            pm.expect(product).to.have.property('seller_name');",
+									"            pm.expect(product).to.have.property('seller_email');",
+									"        }",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customer/products?city={{customerCity}}&radius_km=25&category_id={{electronicsId}}&sort_by=created_at&sort_order=desc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"products"
+							],
+							"query": [
+								{
+									"key": "city",
+									"value": "{{customerCity}}"
+								},
+								{
+									"key": "radius_km",
+									"value": "25"
+								},
+								{
+									"key": "category_id",
+									"value": "{{electronicsId}}"
+								},
+								{
+									"key": "sort_by",
+									"value": "created_at"
+								},
+								{
+									"key": "sort_order",
+									"value": "desc"
+								}
+							]
+						},
+						"description": "Get products filtered by city name with geocoding"
+					}
+				},
+				{
 					"name": "Get Newly Arrived Products",
 					"request": {
 						"method": "GET",
@@ -1879,6 +2379,82 @@
 								}
 							]
 						}
+					}
+				},
+				{
+					"name": "Get Newly Arrived Products with Location",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Newly arrived products with location successful', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Response is an array', function () {",
+									"        pm.expect(response).to.be.an('array');",
+									"    });",
+									"    ",
+									"    pm.test('Products are newly arrived', function () {",
+									"        if (response.length > 0) {",
+									"            const product = response[0];",
+									"            pm.expect(product).to.have.property('created_at');",
+									"            pm.expect(product).to.have.property('seller_name');",
+									"        }",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customer/products/newly-arrived?days=7&limit=10&latitude={{customerLatitude}}&longitude={{customerLongitude}}&radius_km=15",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"products",
+								"newly-arrived"
+							],
+							"query": [
+								{
+									"key": "days",
+									"value": "7"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "latitude",
+									"value": "{{customerLatitude}}"
+								},
+								{
+									"key": "longitude",
+									"value": "{{customerLongitude}}"
+								},
+								{
+									"key": "radius_km",
+									"value": "15"
+								}
+							]
+						},
+						"description": "Get newly arrived products with location filtering"
 					}
 				},
 				{
@@ -1926,6 +2502,92 @@
 					}
 				},
 				{
+					"name": "Get Products by Category with Location",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Category products with location successful', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Response is an array', function () {",
+									"        pm.expect(response).to.be.an('array');",
+									"    });",
+									"    ",
+									"    pm.test('Products are in category with location', function () {",
+									"        if (response.length > 0) {",
+									"            const product = response[0];",
+									"            pm.expect(product).to.have.property('category_id');",
+									"            pm.expect(product).to.have.property('seller_name');",
+									"            pm.expect(product).to.have.property('seller_email');",
+									"        }",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customer/products/category/{{electronicsId}}?skip=0&limit=20&sort_by=price&sort_order=asc&latitude={{customerLatitude}}&longitude={{customerLongitude}}&radius_km=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"products",
+								"category",
+								"{{electronicsId}}"
+							],
+							"query": [
+								{
+									"key": "skip",
+									"value": "0"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "sort_by",
+									"value": "price"
+								},
+								{
+									"key": "sort_order",
+									"value": "asc"
+								},
+								{
+									"key": "latitude",
+									"value": "{{customerLatitude}}"
+								},
+								{
+									"key": "longitude",
+									"value": "{{customerLongitude}}"
+								},
+								{
+									"key": "radius_km",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get products by category with location filtering"
+					}
+				},
+				{
 					"name": "Get Product Details",
 					"request": {
 						"method": "GET",
@@ -1948,6 +2610,62 @@
 								"{{productId}}"
 							]
 						}
+					}
+				},
+				{
+					"name": "Get Product Variants",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Get product variants successful', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Product has variants', function () {",
+									"        pm.expect(response).to.have.property('variants');",
+									"        pm.expect(response.variants).to.be.an('array');",
+									"    });",
+									"    ",
+									"    // Store first two variant IDs for testing",
+									"    if (response.variants && response.variants.length > 0) {",
+									"        pm.collectionVariables.set('variantId', response.variants[0].id);",
+									"        if (response.variants.length > 1) {",
+									"            pm.collectionVariables.set('variantId2', response.variants[1].id);",
+									"        }",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customer/products/{{productId}}/variants",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"products",
+								"{{productId}}",
+								"variants"
+							]
+						},
+						"description": "Get all available variants for a product (color, size, etc.)"
 					}
 				}
 			]
@@ -2662,6 +3380,51 @@
 		},
 		{
 			"key": "storage12_256ValueId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "customerLatitude",
+			"value": "19.0760",
+			"type": "string"
+		},
+		{
+			"key": "customerLongitude",
+			"value": "72.8777",
+			"type": "string"
+		},
+		{
+			"key": "customerCity",
+			"value": "Mumbai",
+			"type": "string"
+		},
+		{
+			"key": "sellerLatitude",
+			"value": "19.0760",
+			"type": "string"
+		},
+		{
+			"key": "sellerLongitude",
+			"value": "72.8777",
+			"type": "string"
+		},
+		{
+			"key": "variantId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "variantId2",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "variantOrderId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "mixedOrderId",
 			"value": "",
 			"type": "string"
 		}

@@ -1,11 +1,20 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from decimal import Decimal
 from ..models.order import Order, OrderItem, OrderStatus, PaymentStatus
 from ..models.product import Product, ProductVariant
 from ..models.user import User
 from ..schemas.order import OrderCreate, OrderStatusUpdate, PaymentStatusUpdate
 import uuid
 from datetime import datetime
+import time
+
+
+def generate_order_number() -> str:
+    """Generate a unique order number"""
+    timestamp = int(time.time())
+    random_suffix = str(uuid.uuid4())[:8].upper()
+    return f"ORD-{timestamp}-{random_suffix}"
 
 
 def create_order(db: Session, order: OrderCreate, customer_id: str) -> Order:
@@ -16,9 +25,9 @@ def create_order(db: Session, order: OrderCreate, customer_id: str) -> Order:
         raise ValueError("Customer not found")
     
     # Validate and calculate totals
-    total_customer_amount = 0.0
-    total_seller_amount = 0.0
-    total_commission_amount = 0.0
+    total_customer_amount = Decimal('0.0')
+    total_seller_amount = Decimal('0.0')
+    total_commission_amount = Decimal('0.0')
     order_items_data = []
     
     for item_data in order.items:
@@ -57,9 +66,9 @@ def create_order(db: Session, order: OrderCreate, customer_id: str) -> Order:
             raise ValueError(f"Product {product.name} is not available for purchase")
         
         # Calculate item totals
-        total_seller_item = seller_unit_price * item_data.quantity
-        total_customer_item = customer_unit_price * item_data.quantity
-        total_commission_item = commission_unit_amount * item_data.quantity
+        total_seller_item = Decimal(str(seller_unit_price)) * item_data.quantity
+        total_customer_item = Decimal(str(customer_unit_price)) * item_data.quantity
+        total_commission_item = Decimal(str(commission_unit_amount)) * item_data.quantity
         
         total_seller_amount += total_seller_item
         total_customer_amount += total_customer_item
@@ -69,10 +78,10 @@ def create_order(db: Session, order: OrderCreate, customer_id: str) -> Order:
             'product_id': item_data.product_id,
             'product_variant_id': item_data.product_variant_id,
             'quantity': item_data.quantity,
-            'seller_unit_price': seller_unit_price,
-            'customer_unit_price': customer_unit_price,
-            'commission_unit_rate': commission_unit_rate,
-            'commission_unit_amount': commission_unit_amount,
+            'seller_unit_price': Decimal(str(seller_unit_price)),
+            'customer_unit_price': Decimal(str(customer_unit_price)),
+            'commission_unit_rate': Decimal(str(commission_unit_rate)),
+            'commission_unit_amount': Decimal(str(commission_unit_amount)),
             'total_seller_amount': total_seller_item,
             'total_customer_amount': total_customer_item,
             'total_commission_amount': total_commission_item,
@@ -82,6 +91,7 @@ def create_order(db: Session, order: OrderCreate, customer_id: str) -> Order:
     # Create order
     db_order = Order(
         id=str(uuid.uuid4()),
+        order_number=generate_order_number(),
         customer_id=customer_id,
         total_customer_amount=total_customer_amount,
         total_seller_amount=total_seller_amount,

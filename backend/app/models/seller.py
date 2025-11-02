@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, String, Text, Boolean, DateTime, ForeignKey, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
@@ -16,6 +16,8 @@ class Seller(Base):
     city = Column(String(100))
     state = Column(String(100))
     pincode = Column(String(10))
+    latitude = Column(Float)  # Geocoded from pincode
+    longitude = Column(Float)  # Geocoded from pincode
     is_approved = Column(Boolean, default=False)
     approval_date = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)

@@ -109,6 +109,14 @@ async def register_seller(seller_data: SellerRegister, db: Session = Depends(get
     db.commit()
     db.refresh(db_user)
     
+    # Geocode pincode to get coordinates (with caching)
+    from ...utils.location import geocode_pincode_kerala
+    latitude, longitude = None, None
+    if seller_data.pincode:
+        coords = geocode_pincode_kerala(seller_data.pincode, db_session=db)
+        if coords:
+            latitude, longitude = coords
+    
     # Create seller profile
     db_seller = Seller(
         user_id=db_user.id,
@@ -118,6 +126,8 @@ async def register_seller(seller_data: SellerRegister, db: Session = Depends(get
         city=seller_data.city,
         state=seller_data.state,
         pincode=seller_data.pincode,
+        latitude=latitude,
+        longitude=longitude,
         is_approved=False  # Requires admin approval
     )
     

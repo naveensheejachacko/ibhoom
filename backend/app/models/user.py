@@ -33,6 +33,8 @@ class User(Base):
     # Relationships
     seller = relationship("Seller", back_populates="user", uselist=False)
     orders = relationship("Order", back_populates="customer")
+    cart_items = relationship("Cart", back_populates="customer")
+    wishlist_items = relationship("Wishlist", back_populates="customer")
     
     @property
     def full_name(self):

@@ -6,6 +6,7 @@ from .product import Product, ProductVariant, ProductVariantAttribute, ProductIm
 from .order import Order, OrderItem, OrderStatus
 from .commission import CommissionSetting, CommissionType
 from .review import ProductReview
+from .cart import Cart, Wishlist
 
 __all__ = [
     "User", "UserRole",
@@ -15,6 +16,7 @@ __all__ = [
     "Product", "ProductVariant", "ProductVariantAttribute", "ProductImage", "ProductStatus",
     "Order", "OrderItem", "OrderStatus",
     "CommissionSetting", "CommissionType",
-    "ProductReview"
+    "ProductReview",
+    "Cart", "Wishlist"
 ]
 

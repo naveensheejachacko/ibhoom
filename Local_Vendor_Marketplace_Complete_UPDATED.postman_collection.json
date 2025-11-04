@@ -36,6 +36,7 @@
 									"if (pm.response.code === 200) {",
 									"    const response = pm.response.json();",
 									"    pm.collectionVariables.set('adminToken', response.access_token);",
+									"    pm.collectionVariables.set('refreshToken', response.refresh_token);",
 									"    pm.test('Admin login successful', function () {",
 									"        pm.response.to.have.status(200);",
 									"    });",
@@ -189,6 +190,7 @@
 									"if (pm.response.code === 200) {",
 									"    const response = pm.response.json();",
 									"    pm.collectionVariables.set('sellerToken', response.access_token);",
+									"    pm.collectionVariables.set('refreshToken', response.refresh_token);",
 									"    pm.test('Seller login successful', function () {",
 									"        pm.response.to.have.status(200);",
 									"    });",
@@ -234,6 +236,7 @@
 									"if (pm.response.code === 200) {",
 									"    const response = pm.response.json();",
 									"    pm.collectionVariables.set('customerToken', response.access_token);",
+									"    pm.collectionVariables.set('refreshToken', response.refresh_token);",
 									"    pm.test('Customer login successful', function () {",
 									"        pm.response.to.have.status(200);",
 									"    });",
@@ -291,6 +294,59 @@
 								"me"
 							]
 						}
+					}
+				},
+				{
+					"name": "Refresh Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('customerToken', response.access_token);",
+									"    pm.collectionVariables.set('refreshToken', response.refresh_token);",
+									"    pm.test('Token refreshed successfully', function () {",
+									"        pm.response.to.have.status(200);",
+									"        pm.expect(response).to.have.property('access_token');",
+									"        pm.expect(response).to.have.property('refresh_token');",
+									"    });",
+									"} else if (pm.response.code === 401) {",
+									"    pm.test('Refresh token expired or invalid', function () {",
+									"        pm.response.to.have.status(401);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refresh_token\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/refresh",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"refresh"
+							]
+						},
+						"description": "Get new access token using refresh token. Returns both new access_token and refresh_token. Use this when access token expires (after 30 minutes)."
 					}
 				}
 			]
@@ -2457,6 +2513,540 @@
 			]
 		},
 		{
+			"name": "Customer - Cart",
+			"item": [
+				{
+					"name": "Add Item to Cart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('cartItemId', response.id);",
+									"    pm.test('Item added to cart successfully', function () {",
+									"        pm.response.to.have.status(201);",
+									"        pm.expect(response).to.have.property('product_id');",
+									"        pm.expect(response).to.have.property('quantity');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"product_id\": \"{{productId}}\",\n    \"quantity\": 2\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customer/cart",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"cart"
+							]
+						},
+						"description": "Add product to cart. If item already exists, quantity will be increased."
+					}
+				},
+				{
+					"name": "Add Variant to Cart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Variant added to cart successfully', function () {",
+									"        pm.response.to.have.status(201);",
+									"        pm.expect(response).to.have.property('product_variant_id');",
+									"        pm.expect(response).to.have.property('variant_name');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"product_id\": \"{{productId}}\",\n    \"product_variant_id\": \"{{variantId}}\",\n    \"quantity\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customer/cart",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"cart"
+							]
+						},
+						"description": "Add product variant to cart. Quantity will be validated against variant stock."
+					}
+				},
+				{
+					"name": "Get Cart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Cart retrieved successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Cart contains items array', function () {",
+									"        pm.expect(response).to.have.property('items');",
+									"        pm.expect(response).to.have.property('total_items');",
+									"        pm.expect(response).to.have.property('total_amount');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customer/cart",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"cart"
+							]
+						},
+						"description": "Get all items in cart with product details, prices, and stock information."
+					}
+				},
+				{
+					"name": "Update Cart Item Quantity",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Cart item updated successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Quantity updated', function () {",
+									"        pm.expect(response).to.have.property('quantity');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"quantity\": 3\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customer/cart/{{cartItemId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"cart",
+								"{{cartItemId}}"
+							]
+						},
+						"description": "Update cart item quantity. Quantity must be within available stock limits."
+					}
+				},
+				{
+					"name": "Remove Item from Cart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Item removed from cart successfully', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customer/cart/{{cartItemId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"cart",
+								"{{cartItemId}}"
+							]
+						},
+						"description": "Remove specific item from cart."
+					}
+				},
+				{
+					"name": "Clear Cart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Cart cleared successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customer/cart",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"cart"
+							]
+						},
+						"description": "Clear all items from cart."
+					}
+				},
+				{
+					"name": "Get Cart Item",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customer/cart/{{cartItemId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"cart",
+								"{{cartItemId}}"
+							]
+						},
+						"description": "Get specific cart item details."
+					}
+				}
+			]
+		},
+		{
+			"name": "Customer - Wishlist",
+			"item": [
+				{
+					"name": "Add Product to Wishlist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('wishlistItemId', response.id);",
+									"    pm.test('Product added to wishlist successfully', function () {",
+									"        pm.response.to.have.status(201);",
+									"        pm.expect(response).to.have.property('product_id');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customer/wishlist/{{productId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"wishlist",
+								"{{productId}}"
+							]
+						},
+						"description": "Add product to wishlist. If already in wishlist, returns existing item."
+					}
+				},
+				{
+					"name": "Get Wishlist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Wishlist retrieved successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Wishlist contains items array', function () {",
+									"        pm.expect(response).to.have.property('items');",
+									"        pm.expect(response).to.have.property('total_items');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customer/wishlist",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"wishlist"
+							]
+						},
+						"description": "Get all items in wishlist with product details."
+					}
+				},
+				{
+					"name": "Check Wishlist Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Wishlist status checked successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Response contains wishlist status', function () {",
+									"        pm.expect(response).to.have.property('is_in_wishlist');",
+									"        pm.expect(response).to.have.property('product_id');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customer/wishlist/check/{{productId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"wishlist",
+								"check",
+								"{{productId}}"
+							]
+						},
+						"description": "Check if a product is in customer's wishlist."
+					}
+				},
+				{
+					"name": "Remove Item from Wishlist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Item removed from wishlist successfully', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customer/wishlist/{{wishlistItemId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"wishlist",
+								"{{wishlistItemId}}"
+							]
+						},
+						"description": "Remove item from wishlist by wishlist item ID."
+					}
+				},
+				{
+					"name": "Remove Product from Wishlist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Product removed from wishlist successfully', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customer/wishlist/product/{{productId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"wishlist",
+								"product",
+								"{{productId}}"
+							]
+						},
+						"description": "Remove product from wishlist by product ID."
+					}
+				}
+			]
+		},
+		{
 			"name": "Customer - Products",
 			"item": [
 				{
@@ -2496,6 +3086,25 @@
 				},
 				{
 					"name": "Get All Products",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Products retrieved successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 400) {",
+									"    pm.test('Location required error', function () {",
+									"        pm.expect(pm.response.json().detail).to.include('Location is required');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "GET",
 						"header": [
@@ -2505,7 +3114,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/customer/products?skip=0&limit=20&sort_by=created_at&sort_order=desc",
+							"raw": "{{baseUrl}}/api/v1/customer/products?skip=0&limit=20&sort_by=created_at&sort_order=desc&latitude={{customerLatitude}}&longitude={{customerLongitude}}&radius_km=5",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -2531,13 +3140,48 @@
 								{
 									"key": "sort_order",
 									"value": "desc"
+								},
+								{
+									"key": "latitude",
+									"value": "{{customerLatitude}}",
+									"description": "Customer's latitude (required for location-based filtering)"
+								},
+								{
+									"key": "longitude",
+									"value": "{{customerLongitude}}",
+									"description": "Customer's longitude (required for location-based filtering)"
+								},
+								{
+									"key": "radius_km",
+									"value": "5",
+									"description": "Search radius in kilometers (default: 5km)"
 								}
 							]
-						}
+						},
+						"description": "Get all approved products with location-based filtering (within 5km radius). Location (latitude/longitude or city) is REQUIRED."
 					}
 				},
 				{
 					"name": "Get Products with Filters",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Filtered products retrieved successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 400) {",
+									"    pm.test('Location required error', function () {",
+									"        pm.expect(pm.response.json().detail).to.include('Location is required');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "GET",
 						"header": [
@@ -2547,7 +3191,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/customer/products?category_id={{electronicsId}}&min_price=100&max_price=1000&search=phone&sort_by=price&sort_order=asc",
+							"raw": "{{baseUrl}}/api/v1/customer/products?category_id={{electronicsId}}&min_price=100&max_price=1000&search=phone&sort_by=price&sort_order=asc&latitude={{customerLatitude}}&longitude={{customerLongitude}}&radius_km=5",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -2581,9 +3225,25 @@
 								{
 									"key": "sort_order",
 									"value": "asc"
+								},
+								{
+									"key": "latitude",
+									"value": "{{customerLatitude}}",
+									"description": "Customer's latitude (required for location-based filtering)"
+								},
+								{
+									"key": "longitude",
+									"value": "{{customerLongitude}}",
+									"description": "Customer's longitude (required for location-based filtering)"
+								},
+								{
+									"key": "radius_km",
+									"value": "5",
+									"description": "Search radius in kilometers (default: 5km)"
 								}
 							]
-						}
+						},
+						"description": "Get products with filters (category, price range, search) and location-based filtering (within 5km radius). Location (latitude/longitude or city) is REQUIRED."
 					}
 				},
 				{
@@ -2662,7 +3322,7 @@
 								}
 							]
 						},
-						"description": "Get products filtered by location within specified radius from customer's coordinates"
+						"description": "Get products filtered by location within specified radius from customer's coordinates. Location (latitude/longitude or city) is REQUIRED for all customer product endpoints."
 					}
 				},
 				{
@@ -2737,11 +3397,30 @@
 								}
 							]
 						},
-						"description": "Get products filtered by city name with geocoding"
+						"description": "Get products filtered by city name with geocoding. Location (latitude/longitude or city) is REQUIRED for all customer product endpoints."
 					}
 				},
 				{
 					"name": "Get Newly Arrived Products",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Newly arrived products retrieved successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 400) {",
+									"    pm.test('Location required error', function () {",
+									"        pm.expect(pm.response.json().detail).to.include('Location is required');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "GET",
 						"header": [
@@ -2751,7 +3430,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/customer/products/newly-arrived?days=7&limit=10",
+							"raw": "{{baseUrl}}/api/v1/customer/products/newly-arrived?days=7&limit=10&latitude={{customerLatitude}}&longitude={{customerLongitude}}&radius_km=5",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -2770,9 +3449,25 @@
 								{
 									"key": "limit",
 									"value": "10"
+								},
+								{
+									"key": "latitude",
+									"value": "{{customerLatitude}}",
+									"description": "Customer's latitude (required for location-based filtering)"
+								},
+								{
+									"key": "longitude",
+									"value": "{{customerLongitude}}",
+									"description": "Customer's longitude (required for location-based filtering)"
+								},
+								{
+									"key": "radius_km",
+									"value": "5",
+									"description": "Search radius in kilometers (default: 5km)"
 								}
 							]
-						}
+						},
+						"description": "Get newly arrived products with location-based filtering (within 5km radius). Location (latitude/longitude or city) is REQUIRED."
 					}
 				},
 				{
@@ -2848,11 +3543,30 @@
 								}
 							]
 						},
-						"description": "Get newly arrived products with location filtering"
+						"description": "Get newly arrived products with location filtering. Location (latitude/longitude or city) is REQUIRED for all customer product endpoints."
 					}
 				},
 				{
 					"name": "Get Products by Category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Category products retrieved successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 400) {",
+									"    pm.test('Location required error', function () {",
+									"        pm.expect(pm.response.json().detail).to.include('Location is required');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "GET",
 						"header": [
@@ -2862,7 +3576,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/customer/products/category/{{electronicsId}}?skip=0&limit=20&sort_by=price&sort_order=asc",
+							"raw": "{{baseUrl}}/api/v1/customer/products/category/{{electronicsId}}?skip=0&limit=20&sort_by=price&sort_order=asc&latitude={{customerLatitude}}&longitude={{customerLongitude}}&radius_km=5",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -2890,9 +3604,25 @@
 								{
 									"key": "sort_order",
 									"value": "asc"
+								},
+								{
+									"key": "latitude",
+									"value": "{{customerLatitude}}",
+									"description": "Customer's latitude (required for location-based filtering)"
+								},
+								{
+									"key": "longitude",
+									"value": "{{customerLongitude}}",
+									"description": "Customer's longitude (required for location-based filtering)"
+								},
+								{
+									"key": "radius_km",
+									"value": "5",
+									"description": "Search radius in kilometers (default: 5km)"
 								}
 							]
-						}
+						},
+						"description": "Get products by category with location-based filtering (within 5km radius). Location (latitude/longitude or city) is REQUIRED."
 					}
 				},
 				{
@@ -2978,7 +3708,7 @@
 								}
 							]
 						},
-						"description": "Get products by category with location filtering"
+						"description": "Get products by category with location filtering. Location (latitude/longitude or city) is REQUIRED for all customer product endpoints."
 					}
 				},
 				{
@@ -3988,6 +4718,11 @@
 			"type": "string"
 		},
 		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string"
+		},
+		{
 			"key": "electronicsId",
 			"value": "",
 			"type": "string"
@@ -4119,6 +4854,16 @@
 		},
 		{
 			"key": "mixedOrderId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "cartItemId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "wishlistItemId",
 			"value": "",
 			"type": "string"
 		}

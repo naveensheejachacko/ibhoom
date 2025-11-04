@@ -48,6 +48,8 @@ class Product(Base):
     images = relationship("ProductImage", back_populates="product")
     order_items = relationship("OrderItem", back_populates="product")
     reviews = relationship("ProductReview", back_populates="product")
+    cart_items = relationship("Cart", back_populates="product")
+    wishlist_items = relationship("Wishlist", back_populates="product")
     
     def __repr__(self):
         return f"<Product {self.name}>"
@@ -74,6 +76,7 @@ class ProductVariant(Base):
     attributes = relationship("ProductVariantAttribute", back_populates="variant")
     images = relationship("ProductImage", back_populates="variant")
     order_items = relationship("OrderItem", back_populates="variant")
+    cart_items = relationship("Cart", back_populates="variant")
     
     def __repr__(self):
         return f"<ProductVariant {self.variant_name}>"

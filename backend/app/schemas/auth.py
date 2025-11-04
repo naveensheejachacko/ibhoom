@@ -43,6 +43,10 @@ class TokenPayload(BaseModel):
     role: Optional[str] = None
 
 
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+
 class SellerRegister(UserBase):
     password: str
     business_name: str

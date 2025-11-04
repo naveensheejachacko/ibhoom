@@ -5,6 +5,7 @@ from ....core.database import get_db
 from ....core.dependencies import get_customer_user
 from ....models.user import User
 from ....models.product import Product, ProductStatus
+from ....models.seller import Seller
 from ....schemas.product import ProductResponse, ProductListResponse
 from ....services import product_service
 from ....utils.location import is_within_radius, get_city_coordinates
@@ -50,7 +51,7 @@ async def get_all_products(
     
     # Query products with eager loading of seller and user relationships
     query = db.query(Product).options(
-        joinedload(Product.seller).joinedload("user")
+        joinedload(Product.seller).joinedload(Seller.user)
     ).filter(Product.status == ProductStatus.APPROVED)
     
     if category_id:
@@ -63,10 +64,12 @@ async def get_all_products(
         query = query.filter(Product.customer_price <= max_price)
     
     if search:
+        # Case-insensitive search across name, description, and tags
+        search_term = f"%{search}%"
         query = query.filter(
-            Product.name.contains(search) | 
-            Product.description.contains(search) |
-            Product.tags.contains(search)
+            Product.name.ilike(search_term) | 
+            Product.description.ilike(search_term) |
+            Product.tags.ilike(search_term)
         )
     
     products = query.order_by(Product.created_at.desc()).offset(skip).limit(limit).all()
@@ -128,6 +131,7 @@ async def get_all_products(
 async def get_newly_arrived_products(
     days: int = Query(7, ge=1, le=30),
     limit: int = Query(20, ge=1, le=100),
+    search: Optional[str] = Query(None, description="Search term for product name, description, or tags"),
     # Location filtering parameters
     latitude: Optional[float] = Query(None, description="Customer's latitude"),
     longitude: Optional[float] = Query(None, description="Customer's longitude"),
@@ -160,12 +164,23 @@ async def get_newly_arrived_products(
     threshold_date = datetime.utcnow() - timedelta(days=days)
     
     # Query products with eager loading of seller and user relationships
-    products = db.query(Product).options(
-        joinedload(Product.seller).joinedload("user")
+    query = db.query(Product).options(
+        joinedload(Product.seller).joinedload(Seller.user)
     ).filter(
         Product.status == ProductStatus.APPROVED,
         Product.created_at >= threshold_date
-    ).order_by(Product.created_at.desc()).limit(limit).all()
+    )
+    
+    # Apply search filter if provided
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            Product.name.ilike(search_term) | 
+            Product.description.ilike(search_term) |
+            Product.tags.ilike(search_term)
+        )
+    
+    products = query.order_by(Product.created_at.desc()).limit(limit).all()
     
     # Add seller information to each product
     result = []
@@ -250,7 +265,7 @@ async def get_products_by_category(
     
     # Query products with eager loading of seller and user relationships
     query = db.query(Product).options(
-        joinedload(Product.seller).joinedload("user")
+        joinedload(Product.seller).joinedload(Seller.user)
     ).filter(Product.status == ProductStatus.APPROVED)
     
     if category_id:
@@ -263,10 +278,12 @@ async def get_products_by_category(
         query = query.filter(Product.customer_price <= max_price)
     
     if search:
+        # Case-insensitive search across name, description, and tags
+        search_term = f"%{search}%"
         query = query.filter(
-            Product.name.contains(search) | 
-            Product.description.contains(search) |
-            Product.tags.contains(search)
+            Product.name.ilike(search_term) | 
+            Product.description.ilike(search_term) |
+            Product.tags.ilike(search_term)
         )
     
     products = query.order_by(Product.created_at.desc()).offset(skip).limit(limit).all()

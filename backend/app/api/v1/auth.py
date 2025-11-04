@@ -5,7 +5,7 @@ from typing import List
 from ...core.database import get_db
 from ...core.security import create_access_token, create_refresh_token, verify_password, get_password_hash
 from ...models import User, Seller, UserRole
-from ...schemas.auth import UserLogin, UserCreate, SellerRegister, Token, UserResponse
+from ...schemas.auth import UserLogin, UserCreate, SellerRegister, Token, UserResponse, RefreshTokenRequest
 from ...core.config import settings
 
 router = APIRouter()
@@ -178,6 +178,58 @@ async def register_admin(user_data: UserCreate, db: Session = Depends(get_db)):
 
 # Import here to avoid circular imports
 from ...core.dependencies import get_current_user
+
+@router.post("/refresh", response_model=Token)
+async def refresh_token(
+    refresh_token_data: RefreshTokenRequest,
+    db: Session = Depends(get_db)
+):
+    """Refresh access token using refresh token"""
+    from ...core.security import verify_token
+    
+    refresh_token_str = refresh_token_data.refresh_token
+    
+    # Verify refresh token
+    payload = verify_token(refresh_token_str)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token"
+        )
+    
+    # Check token type
+    if payload.get("type") != "refresh":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token type"
+        )
+    
+    # Get user
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload"
+        )
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found or inactive"
+        )
+    
+    # Create new tokens
+    access_token = create_access_token(data={"sub": user.id, "role": user.role})
+    new_refresh_token = create_refresh_token(data={"sub": user.id, "role": user.role})
+    
+    return {
+        "access_token": access_token,
+        "refresh_token": new_refresh_token,
+        "token_type": "bearer",
+        "user": user
+    }
+
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(current_user: User = Depends(get_current_user)):

@@ -82,11 +82,18 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"if (pm.response.code === 201) {",
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
 									"    const response = pm.response.json();",
-									"    pm.collectionVariables.set('customerId', response.id);",
-									"    pm.test('Customer registration successful', function () {",
-									"        pm.response.to.have.status(201);",
+									"    if (response.user && response.user.id) {",
+									"        pm.collectionVariables.set('customerId', response.user.id);",
+									"    }",
+									"    if (response.access_token) {",
+									"        pm.collectionVariables.set('customerToken', response.access_token);",
+									"    }",
+									"    pm.test('Customer registration successful with auto-login', function () {",
+									"        pm.response.to.have.status(200);",
+									"        pm.expect(response).to.have.property('access_token');",
+									"        pm.expect(response).to.have.property('user');",
 									"    });",
 									"}"
 								],
@@ -2059,6 +2066,393 @@
 							]
 						}
 					}
+				},
+				{
+					"name": "Request Return",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Return request submitted successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Order status is return_requested', function () {",
+									"        pm.expect(response.status).to.equal('return_requested');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"return_reason\": \"Product damaged during delivery. Need replacement or refund.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customer/orders/{{orderId}}/return",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"orders",
+								"{{orderId}}",
+								"return"
+							]
+						},
+						"description": "Request return for a delivered order. Only delivered orders can be returned."
+					}
+				},
+				{
+					"name": "Download Invoice",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Invoice downloaded successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"    pm.response.to.have.header('Content-Type', 'application/pdf');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{customerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/customer/orders/{{orderId}}/invoice",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customer",
+								"orders",
+								"{{orderId}}",
+								"invoice"
+							]
+						},
+						"description": "Download invoice PDF for a delivered order. Invoice is automatically generated when order is marked as delivered."
+					}
+				}
+			]
+		},
+		{
+			"name": "Seller - Orders",
+			"item": [
+				{
+					"name": "Get My Orders",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sellerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/seller/orders?skip=0&limit=100",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"seller",
+								"orders"
+							],
+							"query": [
+								{
+									"key": "skip",
+									"value": "0"
+								},
+								{
+									"key": "limit",
+									"value": "100"
+								},
+								{
+									"key": "status",
+									"value": "",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get all orders containing seller's products. Can filter by status."
+					}
+				},
+				{
+					"name": "Get Order Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sellerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/seller/orders/{{orderId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"seller",
+								"orders",
+								"{{orderId}}"
+							]
+						},
+						"description": "Get order details by ID. Only returns orders containing seller's products."
+					}
+				},
+				{
+					"name": "Reject Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Order rejected successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Order status is rejected', function () {",
+									"        pm.expect(response.status).to.equal('rejected');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sellerToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"rejected\",\n    \"seller_notes\": \"Product out of stock. Cannot fulfill order.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/seller/orders/{{orderId}}/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"seller",
+								"orders",
+								"{{orderId}}",
+								"status"
+							]
+						},
+						"description": "Reject order from pending or processing status. Stock will be restored automatically."
+					}
+				},
+				{
+					"name": "Cancel Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Order cancelled successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Order status is cancelled', function () {",
+									"        pm.expect(response.status).to.equal('cancelled');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sellerToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"cancelled\",\n    \"seller_notes\": \"Customer requested cancellation.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/seller/orders/{{orderId}}/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"seller",
+								"orders",
+								"{{orderId}}",
+								"status"
+							]
+						},
+						"description": "Cancel order from pending or processing status. Stock will be restored automatically."
+					}
+				},
+				{
+					"name": "Set Order to Processing",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Order set to processing successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Order status is processing', function () {",
+									"        pm.expect(response.status).to.equal('processing');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sellerToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"processing\",\n    \"seller_notes\": \"Order is being prepared for packing.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/seller/orders/{{orderId}}/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"seller",
+								"orders",
+								"{{orderId}}",
+								"status"
+							]
+						},
+						"description": "Set order status to processing. Can only be set from pending status."
+					}
+				},
+				{
+					"name": "Mark Order as Ready for Dispatch",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Order marked as ready for dispatch successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Order status is ready_for_dispatch', function () {",
+									"        pm.expect(response.status).to.equal('ready_for_dispatch');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sellerToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"ready_for_dispatch\",\n    \"seller_notes\": \"Order packed and ready for pickup by delivery team.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/seller/orders/{{orderId}}/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"seller",
+								"orders",
+								"{{orderId}}",
+								"status"
+							]
+						},
+						"description": "Mark order as ready for dispatch. Can only be set from processing status. Admin can then dispatch or deliver the order."
+					}
 				}
 			]
 		},
@@ -2984,6 +3378,19 @@
 				},
 				{
 					"name": "Update Order Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Order status updated successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "PUT",
 						"header": [
@@ -2998,7 +3405,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"status\": \"processing\",\n    \"admin_notes\": \"Order confirmed and being prepared for shipment\"\n}"
+							"raw": "{\n    \"status\": \"dispatched\",\n    \"admin_notes\": \"Order dispatched for delivery\"\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/status",
@@ -3013,7 +3420,67 @@
 								"{{orderId}}",
 								"status"
 							]
+						},
+						"description": "Update order status. Admin can set: dispatched (from ready_for_dispatch), delivered (from dispatched or ready_for_dispatch), cancelled. Invoice is automatically generated when order is marked as delivered."
+					}
+				},
+				{
+					"name": "Mark Order as Delivered",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Order marked as delivered successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Order status is delivered', function () {",
+									"        pm.expect(response.status).to.equal('delivered');",
+									"    });",
+									"    pm.test('Invoice should be generated', function () {",
+									"        // Invoice is automatically generated when order is delivered",
+									"        pm.expect(response.status).to.equal('delivered');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
 						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"delivered\",\n    \"admin_notes\": \"Order delivered successfully to customer\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"orders",
+								"{{orderId}}",
+								"status"
+							]
+						},
+						"description": "Mark order as delivered. Can be set from dispatched or ready_for_dispatch status. Invoice is automatically generated."
 					}
 				},
 				{
@@ -3052,6 +3519,26 @@
 				},
 				{
 					"name": "Cancel Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Order cancelled successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Order status is cancelled', function () {",
+									"        pm.expect(response.status).to.equal('cancelled');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [
@@ -3079,7 +3566,214 @@
 									"value": "Order cancelled due to stock unavailability"
 								}
 							]
+						},
+						"description": "Cancel order and restore stock. Admin can cancel orders from various statuses."
+					}
+				},
+				{
+					"name": "Approve Return",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Return approved successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Order status is return_approved', function () {",
+									"        pm.expect(response.status).to.equal('return_approved');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
 						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"return_approved\",\n    \"return_notes\": \"Return approved. Customer can return the product.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/return",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"orders",
+								"{{orderId}}",
+								"return"
+							]
+						},
+						"description": "Approve return request. Only admin can approve returns. Can only be set from return_requested status."
+					}
+				},
+				{
+					"name": "Reject Return",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Return rejected successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Order status is return_rejected', function () {",
+									"        pm.expect(response.status).to.equal('return_rejected');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"return_rejected\",\n    \"return_notes\": \"Return request rejected. Product condition does not meet return policy.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/return",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"orders",
+								"{{orderId}}",
+								"return"
+							]
+						},
+						"description": "Reject return request. Only admin can reject returns. Can only be set from return_requested status."
+					}
+				},
+				{
+					"name": "Complete Return",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Return completed successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Order status is returned', function () {",
+									"        pm.expect(response.status).to.equal('returned');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"returned\",\n    \"return_notes\": \"Product received. Return completed. Stock restored.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/return",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"orders",
+								"{{orderId}}",
+								"return"
+							]
+						},
+						"description": "Complete return process. Only admin can complete returns. Can only be set from return_approved status. Stock is automatically restored."
+					}
+				},
+				{
+					"name": "Download Invoice",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Invoice downloaded successfully', function () {",
+									"    pm.response.to.have.status(200);",
+									"    pm.response.to.have.header('Content-Type', 'application/pdf');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/invoice",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"orders",
+								"{{orderId}}",
+								"invoice"
+							]
+						},
+						"description": "Download invoice PDF for a delivered order. Invoice is automatically generated when order is marked as delivered. Contains company logo and details."
 					}
 				}
 			]

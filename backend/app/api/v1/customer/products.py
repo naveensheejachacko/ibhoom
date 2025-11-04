@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from ....core.database import get_db
 from ....core.dependencies import get_customer_user
@@ -48,11 +48,28 @@ async def get_all_products(
             detail="Location is required. Please provide either (latitude, longitude) or city parameter to see products within 5km radius."
         )
     
-    products = product_service.get_products(
-        db, skip=skip, limit=limit,
-        category_id=category_id, status=ProductStatus.APPROVED,
-        min_price=min_price, max_price=max_price, search=search
-    )
+    # Query products with eager loading of seller and user relationships
+    query = db.query(Product).options(
+        joinedload(Product.seller).joinedload("user")
+    ).filter(Product.status == ProductStatus.APPROVED)
+    
+    if category_id:
+        query = query.filter(Product.category_id == category_id)
+    
+    if min_price:
+        query = query.filter(Product.customer_price >= min_price)
+    
+    if max_price:
+        query = query.filter(Product.customer_price <= max_price)
+    
+    if search:
+        query = query.filter(
+            Product.name.contains(search) | 
+            Product.description.contains(search) |
+            Product.tags.contains(search)
+        )
+    
+    products = query.order_by(Product.created_at.desc()).offset(skip).limit(limit).all()
     
     # Add seller information to each product
     result = []
@@ -142,7 +159,10 @@ async def get_newly_arrived_products(
     # Calculate date threshold
     threshold_date = datetime.utcnow() - timedelta(days=days)
     
-    products = db.query(Product).filter(
+    # Query products with eager loading of seller and user relationships
+    products = db.query(Product).options(
+        joinedload(Product.seller).joinedload("user")
+    ).filter(
         Product.status == ProductStatus.APPROVED,
         Product.created_at >= threshold_date
     ).order_by(Product.created_at.desc()).limit(limit).all()
@@ -153,7 +173,7 @@ async def get_newly_arrived_products(
         # Skip products without sellers (location filtering requires seller)
         if not product.seller:
             continue
-            
+        
         # Get seller information
         seller_name = f"{product.seller.user.first_name} {product.seller.user.last_name}"
         seller_email = product.seller.user.email
@@ -228,11 +248,28 @@ async def get_products_by_category(
             detail="Location is required. Please provide either (latitude, longitude) or city parameter to see products within 5km radius."
         )
     
-    products = product_service.get_products(
-        db, skip=skip, limit=limit,
-        category_id=category_id, status=ProductStatus.APPROVED,
-        min_price=min_price, max_price=max_price, search=search
-    )
+    # Query products with eager loading of seller and user relationships
+    query = db.query(Product).options(
+        joinedload(Product.seller).joinedload("user")
+    ).filter(Product.status == ProductStatus.APPROVED)
+    
+    if category_id:
+        query = query.filter(Product.category_id == category_id)
+    
+    if min_price:
+        query = query.filter(Product.customer_price >= min_price)
+    
+    if max_price:
+        query = query.filter(Product.customer_price <= max_price)
+    
+    if search:
+        query = query.filter(
+            Product.name.contains(search) | 
+            Product.description.contains(search) |
+            Product.tags.contains(search)
+        )
+    
+    products = query.order_by(Product.created_at.desc()).offset(skip).limit(limit).all()
     
     # Add seller information to each product
     result = []
@@ -240,7 +277,7 @@ async def get_products_by_category(
         # Skip products without sellers (location filtering requires seller)
         if not product.seller:
             continue
-            
+        
         # Get seller information
         seller_name = f"{product.seller.user.first_name} {product.seller.user.last_name}"
         seller_email = product.seller.user.email

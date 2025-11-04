@@ -56,6 +56,7 @@ class OrderCreate(OrderBase):
 
 class OrderResponse(OrderBase):
     id: str
+    order_number: str
     customer_id: str
     total_customer_amount: float
     total_seller_amount: float
@@ -63,6 +64,9 @@ class OrderResponse(OrderBase):
     status: OrderStatus
     payment_status: PaymentStatus
     admin_notes: Optional[str] = None
+    seller_notes: Optional[str] = None
+    return_reason: Optional[str] = None
+    return_notes: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     items: List[OrderItemResponse] = []
@@ -73,6 +77,7 @@ class OrderResponse(OrderBase):
 
 class OrderListResponse(BaseModel):
     id: str
+    order_number: str
     customer_id: str
     total_customer_amount: float
     total_items: int
@@ -102,4 +107,18 @@ class OrderStats(BaseModel):
     delivered_orders: int
     cancelled_orders: int
     total_revenue: float
-    total_commission: float 
+    total_commission: float
+
+
+class SellerOrderStatusUpdate(BaseModel):
+    status: OrderStatus
+    seller_notes: Optional[str] = None
+
+
+class ReturnRequest(BaseModel):
+    return_reason: str
+
+
+class ReturnStatusUpdate(BaseModel):
+    status: OrderStatus  # RETURN_APPROVED, RETURN_REJECTED, or RETURNED
+    return_notes: Optional[str] = None 

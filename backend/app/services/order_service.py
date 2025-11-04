@@ -162,10 +162,72 @@ def get_orders(
 
 
 def update_order_status(db: Session, order_id: str, status_update: OrderStatusUpdate) -> Optional[Order]:
-    """Update order status (Admin only)"""
+    """Update order status (Admin only) - Legacy method, use update_order_status_admin"""
+    return update_order_status_admin(db, order_id, status_update)
+
+
+def update_order_status_admin(db: Session, order_id: str, status_update: OrderStatusUpdate) -> Optional[Order]:
+    """Update order status (Admin only - can set dispatched, delivered, cancelled)"""
     db_order = db.query(Order).filter(Order.id == order_id).first()
     if not db_order:
         return None
+    
+    # Admin can only set specific statuses
+    allowed_statuses = [
+        OrderStatus.DISPATCHED,
+        OrderStatus.DELIVERED,
+        OrderStatus.CANCELLED
+    ]
+    
+    if status_update.status not in allowed_statuses:
+        raise ValueError(f"Admin can only set status to: {[s.value for s in allowed_statuses]}")
+    
+    current_status = db_order.status
+    
+    # Validate status transitions for admin
+    # Admin can dispatch from ready_for_dispatch
+    if status_update.status == OrderStatus.DISPATCHED:
+        if current_status != OrderStatus.READY_FOR_DISPATCH:
+            raise ValueError(f"Can only dispatch order from ready_for_dispatch status, current: {current_status.value}")
+    
+    # Admin can mark as delivered from dispatched or ready_for_dispatch
+    elif status_update.status == OrderStatus.DELIVERED:
+        if current_status not in [OrderStatus.DISPATCHED, OrderStatus.READY_FOR_DISPATCH]:
+            raise ValueError(f"Can only mark as delivered from dispatched or ready_for_dispatch status, current: {current_status.value}")
+        
+        # Generate invoice when order is marked as delivered
+        try:
+            from ..utils.invoice import generate_invoice_pdf
+            from pathlib import Path
+            
+            # Get the backend directory (parent of app)
+            backend_dir = Path(__file__).parent.parent.parent
+            invoice_dir = backend_dir / "static" / "invoices"
+            invoice_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Generate and save invoice
+            invoice_buffer = generate_invoice_pdf(db_order, output_path=invoice_dir)
+        except Exception as e:
+            # Log error but don't fail the order status update
+            import logging
+            logging.error(f"Failed to generate invoice for order {db_order.order_number}: {str(e)}")
+    
+    # Admin can cancel from pending, processing, ready_for_dispatch
+    elif status_update.status == OrderStatus.CANCELLED:
+        if current_status not in [OrderStatus.PENDING, OrderStatus.PROCESSING, OrderStatus.READY_FOR_DISPATCH]:
+            raise ValueError(f"Cannot cancel order from {current_status.value} status")
+        
+        # Restore stock when cancelling
+        from ..models.product import ProductVariant
+        for item in db_order.items:
+            if item.product_variant_id:
+                variant = db.query(ProductVariant).filter(ProductVariant.id == item.product_variant_id).first()
+                if variant:
+                    variant.stock_quantity += item.quantity
+            else:
+                product = db.query(Product).filter(Product.id == item.product_id).first()
+                if product:
+                    product.stock_quantity += item.quantity
     
     db_order.status = status_update.status
     if status_update.admin_notes:
@@ -208,15 +270,15 @@ def get_order_stats(db: Session) -> dict:
         total_orders = db.query(Order).count()
         pending_orders = db.query(Order).filter(Order.status == OrderStatus.PENDING).count()
         processing_orders = db.query(Order).filter(Order.status == OrderStatus.PROCESSING).count()
-        shipped_orders = db.query(Order).filter(Order.status == OrderStatus.SHIPPED).count()
+        shipped_orders = db.query(Order).filter(Order.status == OrderStatus.DISPATCHED).count()  # Updated to DISPATCHED
         delivered_orders = db.query(Order).filter(Order.status == OrderStatus.DELIVERED).count()
         cancelled_orders = db.query(Order).filter(Order.status == OrderStatus.CANCELLED).count()
         
-        # Calculate revenue
+        # Calculate revenue (from delivered orders only)
         revenue_result = db.query(
             db.func.sum(Order.total_customer_amount),
             db.func.sum(Order.total_commission_amount)
-        ).filter(Order.status.in_([OrderStatus.DELIVERED, OrderStatus.SHIPPED])).first()
+        ).filter(Order.status == OrderStatus.DELIVERED).first()
         
         total_revenue = float(revenue_result[0] or 0)
         total_commission = float(revenue_result[1] or 0)
@@ -248,15 +310,48 @@ def get_order_stats(db: Session) -> dict:
 
 def cancel_order(db: Session, order_id: str, admin_notes: Optional[str] = None) -> Optional[Order]:
     """Cancel order and restore stock (Admin only)"""
+    from ..schemas.order import OrderStatusUpdate
+    
+    status_update = OrderStatusUpdate(status=OrderStatus.CANCELLED, admin_notes=admin_notes)
+    return update_order_status_admin(db, order_id, status_update)
+
+
+def handle_return(db: Session, order_id: str, return_update) -> Optional[Order]:
+    """Handle return request (Admin only - approve, reject, or accept return completion)"""
     db_order = db.query(Order).filter(Order.id == order_id).first()
     if not db_order:
         return None
     
-    # Only allow cancellation for pending/processing orders
-    if db_order.status not in [OrderStatus.PENDING, OrderStatus.PROCESSING]:
-        raise ValueError("Cannot cancel order in current status")
+    # Only return_requested orders can be processed
+    if db_order.status != OrderStatus.RETURN_REQUESTED:
+        raise ValueError(f"Can only process return from return_requested status, current: {db_order.status.value}")
     
-    # Restore stock quantities
+    # Validate return status
+    allowed_return_statuses = [
+        OrderStatus.RETURN_APPROVED,
+        OrderStatus.RETURN_REJECTED,
+        OrderStatus.RETURNED
+    ]
+    
+    if return_update.status not in allowed_return_statuses:
+        raise ValueError(f"Admin can only set return status to: {[s.value for s in allowed_return_statuses]}")
+    
+    # Can approve or reject from return_requested
+    if return_update.status in [OrderStatus.RETURN_APPROVED, OrderStatus.RETURN_REJECTED]:
+        db_order.status = return_update.status
+        if return_update.return_notes:
+            db_order.return_notes = return_update.return_notes
+    
+    # Can mark as returned from return_approved
+    elif return_update.status == OrderStatus.RETURNED:
+        if db_order.status != OrderStatus.RETURN_APPROVED:
+            raise ValueError(f"Can only mark as returned from return_approved status, current: {db_order.status.value}")
+        
+        db_order.status = OrderStatus.RETURNED
+        if return_update.return_notes:
+            db_order.return_notes = return_update.return_notes
+    
+        # Restore stock when return is completed
     for item in db_order.items:
         if item.product_variant_id:
             variant = db.query(ProductVariant).filter(ProductVariant.id == item.product_variant_id).first()
@@ -267,10 +362,6 @@ def cancel_order(db: Session, order_id: str, admin_notes: Optional[str] = None) 
             if product:
                 product.stock_quantity += item.quantity
     
-    # Update order status
-    db_order.status = OrderStatus.CANCELLED
-    if admin_notes:
-        db_order.admin_notes = admin_notes
     db_order.updated_at = datetime.utcnow()
     
     db.commit()

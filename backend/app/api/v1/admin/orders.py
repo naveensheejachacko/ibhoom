@@ -1,11 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from pathlib import Path
 from ....core.database import get_db
 from ....core.dependencies import get_admin_user
 from ....models.user import User
-from ....models.order import OrderStatus, PaymentStatus
-from ....schemas.order import OrderResponse, OrderListResponse, OrderStatusUpdate, PaymentStatusUpdate, OrderStats
+from ....models.order import Order, OrderStatus, PaymentStatus
+from ....schemas.order import (
+    OrderResponse, OrderListResponse, OrderStatusUpdate, PaymentStatusUpdate, 
+    OrderStats, ReturnStatusUpdate
+)
 from ....services import order_service
 
 router = APIRouter()
@@ -85,11 +90,14 @@ async def update_order_status(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_user)
 ):
-    """Update order status (Admin only)"""
-    updated_order = order_service.update_order_status(db, order_id, status_update)
-    if not updated_order:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
-    return updated_order
+    """Update order status (Admin only - can set dispatched, delivered, cancelled)"""
+    try:
+        updated_order = order_service.update_order_status_admin(db, order_id, status_update)
+        if not updated_order:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+        return updated_order
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.put("/{order_id}/payment", response_model=OrderResponse)
@@ -120,4 +128,71 @@ async def cancel_order(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
         return cancelled_order
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) 
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.put("/{order_id}/return", response_model=OrderResponse)
+async def handle_return(
+    order_id: str,
+    return_update: ReturnStatusUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_admin_user)
+):
+    """Handle return request (Admin only - approve, reject, or accept return completion)"""
+    try:
+        updated_order = order_service.handle_return(db, order_id, return_update)
+        if not updated_order:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+        return updated_order
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.get("/{order_id}/invoice")
+async def download_invoice(
+    order_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_admin_user)
+):
+    """Download invoice PDF for a delivered order (Admin only)"""
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+    
+    # Check if order is delivered
+    if order.status != OrderStatus.DELIVERED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invoice can only be generated for delivered orders"
+        )
+    
+    # Check if invoice file exists
+    # Get the backend directory
+    backend_dir = Path(__file__).parent.parent.parent.parent.parent
+    invoice_dir = backend_dir / "static" / "invoices"
+    invoice_file = invoice_dir / f"invoice_{order.order_number}.pdf"
+    
+    if invoice_file.exists():
+        return FileResponse(
+            path=str(invoice_file),
+            filename=f"invoice_{order.order_number}.pdf",
+            media_type="application/pdf"
+        )
+    
+    # Generate invoice on the fly if it doesn't exist
+    try:
+        from ....utils.invoice import generate_invoice_pdf
+        invoice_buffer = generate_invoice_pdf(order, output_path=invoice_dir)
+        
+        return Response(
+            content=invoice_buffer.getvalue(),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="invoice_{order.order_number}.pdf"'
+            }
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate invoice: {str(e)}"
+        ) 

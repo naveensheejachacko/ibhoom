@@ -7,11 +7,17 @@ from ..core.database import Base
 
 
 class OrderStatus(str, enum.Enum):
-    PENDING = "pending"
-    PROCESSING = "processing"
-    SHIPPED = "shipped"
-    DELIVERED = "delivered"
-    CANCELLED = "cancelled"
+    PENDING = "pending"                      # Initial status when order placed
+    REJECTED = "rejected"                    # Seller rejected the order
+    PROCESSING = "processing"                # Seller accepted, preparing order
+    READY_FOR_DISPATCH = "ready for dispatch" # Seller packed, ready to dispatch
+    DISPATCHED = "dispatched"                # Admin dispatched the order
+    DELIVERED = "delivered"                   # Admin marked as delivered
+    CANCELLED = "cancelled"                  # Cancelled by seller or admin
+    RETURN_REQUESTED = "return requested"    # Customer requested return
+    RETURN_APPROVED = "return approved"      # Admin approved return
+    RETURN_REJECTED = "return rejected"      # Admin rejected return
+    RETURNED = "returned"                    # Admin accepted return completion
 
 
 class PaymentStatus(str, enum.Enum):
@@ -39,12 +45,20 @@ class Order(Base):
     phone = Column(String(20), nullable=False)
     notes = Column(Text)
     admin_notes = Column(Text)
+    seller_notes = Column(Text)  # Seller's notes (for rejections, etc.)
+    return_reason = Column(Text)  # Customer's reason for return
+    return_notes = Column(Text)   # Admin's notes for return processing
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     customer = relationship("User", back_populates="orders")
     items = relationship("OrderItem", back_populates="order")
+    
+    @property
+    def total_items(self) -> int:
+        """Calculate total number of items in order"""
+        return sum(item.quantity for item in self.items)
     
     def __repr__(self):
         return f"<Order {self.order_number}>"

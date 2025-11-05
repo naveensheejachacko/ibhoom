@@ -1,7 +1,6 @@
 from pydantic_settings import BaseSettings
 from typing import Optional, Union
 from pydantic import field_validator
-import os
 
 
 class Settings(BaseSettings):
@@ -11,6 +10,8 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     
     # Database Configuration
+    # Read from .env / environment; default to SQLite for local dev
+    # For PostgreSQL: postgresql://user:password@host:port/database?sslmode=require
     DATABASE_URL: str = "sqlite:///./marketplace.db"
     
     # JWT Configuration
@@ -51,6 +52,7 @@ class Settings(BaseSettings):
     
     class Config:
         env_file = ".env"
+        env_file_encoding = "utf-8"
         case_sensitive = True
 
 

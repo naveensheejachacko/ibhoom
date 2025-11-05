@@ -11,3 +11,10 @@ __pycache__/
 .cursorignore
 .venv/
 .venv
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+backend/marketplace.db
+marketplace.db

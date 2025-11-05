@@ -114,34 +114,64 @@ async def register_seller(seller_data: SellerRegister, db: Session = Depends(get
         is_verified=True  # Auto-verify for demo
     )
     
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
+    try:
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create user: {str(e)}"
+        )
     
     # Geocode pincode to get coordinates (with caching)
-    from ...utils.location import geocode_pincode_kerala
+    # Do this in a separate try-except to avoid affecting the main transaction
     latitude, longitude = None, None
     if seller_data.pincode:
-        coords = geocode_pincode_kerala(seller_data.pincode, db_session=db)
-        if coords:
-            latitude, longitude = coords
+        try:
+            from ...utils.location import geocode_pincode_kerala
+            # Use a fresh session for geocoding to avoid transaction issues
+            coords = geocode_pincode_kerala(seller_data.pincode, db_session=None)
+            if coords:
+                latitude, longitude = coords
+        except Exception as e:
+            # Log error but don't fail registration if geocoding fails
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to geocode pincode {seller_data.pincode}: {str(e)}")
+            # Continue without coordinates - they can be added later
     
     # Create seller profile
-    db_seller = Seller(
-        user_id=db_user.id,
-        business_name=seller_data.business_name,
-        business_type=seller_data.business_type,
-        address=seller_data.address,
-        city=seller_data.city,
-        state=seller_data.state,
-        pincode=seller_data.pincode,
-        latitude=latitude,
-        longitude=longitude,
-        is_approved=False  # Requires admin approval
-    )
-    
-    db.add(db_seller)
-    db.commit()
+    try:
+        db_seller = Seller(
+            user_id=db_user.id,
+            business_name=seller_data.business_name,
+            business_type=seller_data.business_type,
+            address=seller_data.address,
+            city=seller_data.city,
+            state=seller_data.state,
+            pincode=seller_data.pincode,
+            latitude=latitude,
+            longitude=longitude,
+            is_approved=False  # Requires admin approval
+        )
+        
+        db.add(db_seller)
+        db.commit()
+        db.refresh(db_seller)
+    except Exception as e:
+        db.rollback()
+        # Clean up the user if seller creation fails
+        try:
+            db.delete(db_user)
+            db.commit()
+        except:
+            db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create seller profile: {str(e)}"
+        )
     
     return db_user
 

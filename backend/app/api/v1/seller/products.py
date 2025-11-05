@@ -18,11 +18,23 @@ async def create_product(
     current_user: User = Depends(get_seller_user)
 ):
     """Create a new product (Seller only)"""
+    # Verify seller exists (should be guaranteed by get_seller_user, but double-check)
+    if not current_user.seller or not current_user.seller.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Seller profile not found. Please complete your seller registration."
+        )
+    
     try:
         db_product = product_service.create_product(db, product, current_user.seller.id)
         return db_product
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create product: {str(e)}"
+        )
 
 
 @router.get("/", response_model=List[ProductListResponse])

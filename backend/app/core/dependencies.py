@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import Optional
 from .database import get_db
 from .security import verify_token
@@ -69,15 +69,26 @@ async def get_admin_user(
 
 
 async def get_seller_user(
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
 ) -> User:
-    """Ensure current user is seller"""
+    """Ensure current user is seller and has seller profile"""
     if current_user.role != "seller":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions"
         )
-    return current_user
+    
+    # Eagerly load seller relationship
+    user = db.query(User).options(joinedload(User.seller)).filter(User.id == current_user.id).first()
+    
+    if not user.seller:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Seller profile not found. Please complete your seller registration."
+        )
+    
+    return user
 
 
 async def get_customer_user(

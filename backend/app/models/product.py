@@ -107,7 +107,7 @@ class ProductImage(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     product_id = Column(String, ForeignKey("products.id"), nullable=False)
     variant_id = Column(String, ForeignKey("product_variants.id"))
-    image_url = Column(String(500), nullable=False)
+    image_url = Column(Text, nullable=False)  # Changed from String(500) to Text to support base64 images
     alt_text = Column(String(255))
     is_primary = Column(Boolean, default=False)
     sort_order = Column(Integer, default=0)

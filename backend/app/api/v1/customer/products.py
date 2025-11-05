@@ -13,6 +13,44 @@ from ....utils.location import is_within_radius, get_city_coordinates
 router = APIRouter()
 
 
+def get_customer_location(
+    latitude: Optional[float],
+    longitude: Optional[float],
+    city: Optional[str],
+    current_user: User
+) -> tuple[Optional[float], Optional[float]]:
+    """
+    Get customer location from multiple sources in priority order:
+    1. Provided latitude/longitude (most accurate)
+    2. Provided city name (geocoded)
+    3. Customer's stored pincode (auto-geocoded)
+    
+    Returns:
+        Tuple of (latitude, longitude) or (None, None) if not found
+    """
+    customer_lat, customer_lon = None, None
+    
+    # Priority 1: Use provided latitude/longitude (most accurate)
+    if latitude and longitude:
+        customer_lat, customer_lon = latitude, longitude
+    
+    # Priority 2: Use provided city name (geocode it)
+    elif city:
+        coords = get_city_coordinates(city)
+        if coords:
+            customer_lat, customer_lon = coords
+    
+    # Priority 3: Auto-use customer's stored pincode (if available)
+    if not customer_lat or not customer_lon:
+        if current_user.pincode:
+            from ...utils.location import geocode_pincode_kerala
+            coords = geocode_pincode_kerala(current_user.pincode, db_session=None)
+            if coords:
+                customer_lat, customer_lon = coords
+    
+    return customer_lat, customer_lon
+
+
 @router.get("/", response_model=List[ProductListResponse])
 async def get_all_products(
     skip: int = Query(0, ge=0),
@@ -32,21 +70,14 @@ async def get_all_products(
     current_user: User = Depends(get_customer_user)
 ):
     """Get all approved products for customers with location-based filtering (within 5km radius) (Customer only)"""
-    # Require location to enforce 5km radius rule
-    customer_lat, customer_lon = None, None
-    if latitude and longitude:
-        customer_lat, customer_lon = latitude, longitude
-    elif city:
-        # Geocode city to get coordinates
-        coords = get_city_coordinates(city)
-        if coords:
-            customer_lat, customer_lon = coords
+    # Get customer location - auto-uses stored pincode if available
+    customer_lat, customer_lon = get_customer_location(latitude, longitude, city, current_user)
     
     # Enforce location requirement for 5km filtering
     if not customer_lat or not customer_lon:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Location is required. Please provide either (latitude, longitude) or city parameter to see products within 5km radius."
+            detail="Location is required. Please provide either (latitude, longitude) or city parameter, or set your pincode in your profile to see products within 5km radius."
         )
     
     # Query products with eager loading of seller and user relationships
@@ -143,21 +174,14 @@ async def get_newly_arrived_products(
     """Get newly arrived products with location-based filtering (within 5km radius) (Customer only)"""
     from datetime import datetime, timedelta
     
-    # Require location to enforce 5km radius rule
-    customer_lat, customer_lon = None, None
-    if latitude and longitude:
-        customer_lat, customer_lon = latitude, longitude
-    elif city:
-        # Geocode city to get coordinates
-        coords = get_city_coordinates(city)
-        if coords:
-            customer_lat, customer_lon = coords
+    # Get customer location - auto-uses stored pincode if available
+    customer_lat, customer_lon = get_customer_location(latitude, longitude, city, current_user)
     
     # Enforce location requirement for 5km filtering
     if not customer_lat or not customer_lon:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Location is required. Please provide either (latitude, longitude) or city parameter to see products within 5km radius."
+            detail="Location is required. Please provide either (latitude, longitude) or city parameter, or set your pincode in your profile to see products within 5km radius."
         )
     
     # Calculate date threshold
@@ -246,21 +270,14 @@ async def get_products_by_category(
     current_user: User = Depends(get_customer_user)
 ):
     """Get products by category with location-based filtering (within 5km radius) (Customer only)"""
-    # Require location to enforce 5km radius rule
-    customer_lat, customer_lon = None, None
-    if latitude and longitude:
-        customer_lat, customer_lon = latitude, longitude
-    elif city:
-        # Geocode city to get coordinates
-        coords = get_city_coordinates(city)
-        if coords:
-            customer_lat, customer_lon = coords
+    # Get customer location - auto-uses stored pincode if available
+    customer_lat, customer_lon = get_customer_location(latitude, longitude, city, current_user)
     
     # Enforce location requirement for 5km filtering
     if not customer_lat or not customer_lon:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Location is required. Please provide either (latitude, longitude) or city parameter to see products within 5km radius."
+            detail="Location is required. Please provide either (latitude, longitude) or city parameter, or set your pincode in your profile to see products within 5km radius."
         )
     
     # Query products with eager loading of seller and user relationships

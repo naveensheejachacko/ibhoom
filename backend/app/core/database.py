@@ -11,34 +11,27 @@ def normalize_database_url(db_url: str) -> str:
     return db_url
 
 def get_connect_args():
-    """Get connection arguments based on database type"""
+    """Get connection arguments for PostgreSQL (SSL required for Aiven)"""
     db_url = settings.DATABASE_URL
     
-    if "sqlite" in db_url:
-        return {"check_same_thread": False}
-    elif "postgres" in db_url.lower():
-        # Handle SSL for PostgreSQL (Aiven requires SSL)
-        connect_args = {}
-        # Extract sslmode from URL if present
-        if "sslmode=require" in db_url.lower():
-            connect_args["sslmode"] = "require"
-        return connect_args
-    return {}
+    # PostgreSQL SSL configuration
+    connect_args = {}
+    if "sslmode=require" in db_url.lower():
+        connect_args["sslmode"] = "require"
+    
+    return connect_args
 
 # Normalize database URL
 normalized_db_url = normalize_database_url(settings.DATABASE_URL)
 
 # Create database engine
-# For PostgreSQL: Use connection pooling and SSL support
-# For SQLite: Use thread-safe configuration
-is_postgres = "postgres" in normalized_db_url.lower()
-
+# PostgreSQL with connection pooling and SSL support
 engine = create_engine(
     normalized_db_url,
     connect_args=get_connect_args(),
-    pool_pre_ping=True if is_postgres else False,  # Verify connections before using them (PostgreSQL)
-    pool_size=5 if is_postgres else None,  # Connection pool for PostgreSQL
-    max_overflow=10 if is_postgres else None  # Max overflow for PostgreSQL
+    pool_pre_ping=True,  # Verify connections before using them
+    pool_size=5,  # Connection pool size
+    max_overflow=10  # Max overflow connections
 )
 
 # Create session factory

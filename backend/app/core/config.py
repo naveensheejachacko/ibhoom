@@ -10,9 +10,9 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     
     # Database Configuration
-    # Read from .env / environment; default to SQLite for local dev
+    # DATABASE_URL must be set in .env file or environment variable
     # For PostgreSQL: postgresql://user:password@host:port/database?sslmode=require
-    DATABASE_URL: str = "sqlite:///./marketplace.db"
+    DATABASE_URL: str  # Required - must be set in .env file (no SQLite fallback)
     
     # JWT Configuration
     JWT_SECRET_KEY: str = "your-super-secret-jwt-key-change-this-in-production"

@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     MAX_FILE_SIZE: int = 5 * 1024 * 1024  # 5MB
     ALLOWED_IMAGE_TYPES: list = [".jpg", ".jpeg", ".png", ".gif", ".webp"]
     
+    # Cloudinary Configuration
+    CLOUDINARY_URL: Optional[str] = None  # cloudinary://api_key:api_secret@cloud_name
+    
     # Pagination
     DEFAULT_PAGE_SIZE: int = 20
     MAX_PAGE_SIZE: int = 100
@@ -45,6 +48,9 @@ class Settings(BaseSettings):
     DEFAULT_COMMISSION_RATE: float = 8.0  # 8%
     MIN_COMMISSION_RATE: float = 0.0
     MAX_COMMISSION_RATE: float = 30.0
+    
+    # Delivery Settings
+    MAX_DELIVERY_RADIUS_KM: float = 50.0  # Maximum delivery radius in kilometers (default: 50km)
     
     # Admin Configuration
     ADMIN_EMAIL: str = "admin@marketplace.com"

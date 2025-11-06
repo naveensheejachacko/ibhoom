@@ -48,13 +48,34 @@ app.include_router(customer_router, prefix="/api/v1/customer", tags=["Customer"]
 
 @app.on_event("startup")
 async def startup_event():
-    """Create database tables on startup"""
+    """Initialize database and create default admin user on startup"""
     try:
-        create_database()
-        print("✅ Database initialized successfully")
+        # Initialize Cloudinary if configured
+        if settings.CLOUDINARY_URL:
+            from .utils.cloudinary_service import configure_cloudinary
+            configure_cloudinary(settings.CLOUDINARY_URL)
+            print("✅ Cloudinary configured successfully")
+            print(f"   Cloudinary URL: {settings.CLOUDINARY_URL[:30]}...")
+        else:
+            print("⚠️  WARNING: CLOUDINARY_URL not set! Product images will be stored as base64 in database.")
+        
+        # Initialize default data (admin user, etc.)
+        # Note: Migrations should run in startCommand before app starts
+        from .utils.init_db import init_db
+        init_db()
+        print("✅ Database initialization completed successfully")
     except Exception as e:
-        print(f"❌ Database initialization failed: {e}")
-        # Don't fail the startup if database already exists
+        print(f"⚠️  Database initialization warning: {e}")
+        # Don't fail the startup - this is non-critical
+
+@app.get("/debug/cloudinary")
+async def check_cloudinary():
+    """Debug endpoint to check Cloudinary configuration"""
+    return {
+        "cloudinary_configured": settings.CLOUDINARY_URL is not None,
+        "cloudinary_url_set": bool(settings.CLOUDINARY_URL),
+        "cloudinary_url_preview": settings.CLOUDINARY_URL[:30] + "..." if settings.CLOUDINARY_URL else None
+    }
 
 @app.get("/")
 async def root():

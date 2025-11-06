@@ -93,11 +93,56 @@ def create_product(db: Session, product: ProductCreate, seller_id: str) -> Produ
     db.flush()  # Get the ID
     
     # Add images
+    from ..core.config import settings
+    from ..utils.cloudinary_service import upload_base64_image
+    
     for img_data in product.images:
+        image_url = img_data.image_url
+        
+        # If image_url is a base64 string, upload to Cloudinary
+        if image_url:
+            # Check if Cloudinary is configured
+            if not settings.CLOUDINARY_URL:
+                print("⚠️  WARNING: CLOUDINARY_URL not set! Images will be stored as base64 in database.")
+                # Continue with base64 - no upload
+            # Check if it's a base64 image (starts with data:image or is a long base64 string)
+            elif image_url.startswith('data:image') or (len(image_url) > 100 and not image_url.startswith('http')):
+                try:
+                    print(f"📤 Uploading image to Cloudinary for product {db_product.id}...")
+                    print(f"   Base64 length: {len(image_url)} characters")
+                    result = upload_base64_image(
+                        base64_string=image_url,
+                        folder=f"products/{seller_id}"
+                    )
+                    image_url = result["image_url"]
+                    print(f"✅ Image uploaded successfully: {image_url[:50]}...")
+                except ValueError as e:
+                    # ValueError means validation or upload error - show full error
+                    error_msg = str(e)
+                    print(f"❌ ERROR: {error_msg}")
+                    import traceback
+                    print(f"   Full traceback:\n{traceback.format_exc()}")
+                    raise ValueError(error_msg)
+                except Exception as e:
+                    # Catch any other unexpected errors
+                    error_msg = f"Unexpected error uploading image: {str(e)}"
+                    print(f"❌ ERROR: {error_msg}")
+                    import traceback
+                    print(f"   Full traceback:\n{traceback.format_exc()}")
+                    raise ValueError(error_msg)
+            # If it's already a Cloudinary URL, use it as is
+            elif "cloudinary.com" in image_url:
+                print(f"✅ Using existing Cloudinary URL: {image_url[:50]}...")
+                image_url = image_url  # Already a Cloudinary URL
+            # If it's already an HTTP URL (not Cloudinary), use it as is
+            elif image_url.startswith('http'):
+                print(f"ℹ️  Using existing HTTP URL: {image_url[:50]}...")
+                image_url = image_url
+        
         image = ProductImage(
             id=str(uuid.uuid4()),
             product_id=db_product.id,
-            image_url=img_data.image_url,
+            image_url=image_url,
             alt_text=img_data.alt_text,
             sort_order=img_data.sort_order
         )

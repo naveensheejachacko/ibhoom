@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     
     # Delivery Settings
     MAX_DELIVERY_RADIUS_KM: float = 50.0  # Maximum delivery radius in kilometers (default: 50km)
+    DELIVERY_VALIDATION_STRICT: bool = True  # If True, block orders when location validation fails
     
     # Admin Configuration
     ADMIN_EMAIL: str = "admin@marketplace.com"

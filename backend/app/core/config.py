@@ -49,6 +49,9 @@ class Settings(BaseSettings):
     MIN_COMMISSION_RATE: float = 0.0
     MAX_COMMISSION_RATE: float = 30.0
     
+    # Delivery Settings
+    MAX_DELIVERY_RADIUS_KM: float = 50.0  # Maximum delivery radius in kilometers (default: 50km)
+    
     # Admin Configuration
     ADMIN_EMAIL: str = "admin@marketplace.com"
     ADMIN_PASSWORD: str = "admin123"  # Change this!

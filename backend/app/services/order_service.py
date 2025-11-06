@@ -4,10 +4,16 @@ from decimal import Decimal
 from ..models.order import Order, OrderItem, OrderStatus, PaymentStatus
 from ..models.product import Product, ProductVariant
 from ..models.user import User
+from ..models.seller import Seller
 from ..schemas.order import OrderCreate, OrderStatusUpdate, PaymentStatusUpdate
+from ..core.config import settings
+from ..utils.location import geocode_pincode_kerala, haversine_distance
 import uuid
 from datetime import datetime
 import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def generate_order_number() -> str:
@@ -64,6 +70,62 @@ def create_order(db: Session, order: OrderCreate, customer_id: str) -> Order:
         # Check if product is approved
         if product.status != "approved":
             raise ValueError(f"Product {product.name} is not available for purchase")
+        
+        # Validate delivery location - check if seller delivers to customer's pincode
+        seller = product.seller
+        if not seller:
+            raise ValueError(f"Product {product.name} has no associated seller")
+        
+        # Check if seller has location coordinates
+        if seller.latitude and seller.longitude:
+            # Geocode customer's delivery pincode (cache-first, with retries)
+            delivery_coords = None
+            for _ in range(3):
+                # Avoid DB writes during active order transaction to prevent PendingRollbackError
+                delivery_coords = geocode_pincode_kerala(order.delivery_pincode, db_session=None)
+                if delivery_coords:
+                    break
+                time.sleep(0.5)
+
+            if delivery_coords:
+                delivery_lat, delivery_lon = delivery_coords
+                
+                # Calculate distance between seller and delivery location
+                distance_km = haversine_distance(
+                    seller.latitude, 
+                    seller.longitude,
+                    delivery_lat,
+                    delivery_lon
+                )
+                
+                # Check if within delivery radius
+                max_radius = settings.MAX_DELIVERY_RADIUS_KM
+                if distance_km > max_radius:
+                    raise ValueError(
+                        f"Product '{product.name}' from seller '{seller.business_name}' "
+                        f"is not available for delivery to pincode {order.delivery_pincode}. "
+                        f"Distance: {distance_km:.1f}km (maximum: {max_radius}km). "
+                        f"Please select a product from a seller in your area."
+                    )
+            else:
+                # Geocoding failed
+                if settings.DELIVERY_VALIDATION_STRICT:
+                    raise ValueError(
+                        f"Unable to verify delivery location for pincode {order.delivery_pincode}. "
+                        f"Please confirm the pincode or try again later."
+                    )
+                else:
+                    # Allow order to proceed in non-strict mode
+                    logger.warning(
+                        f"Could not geocode delivery pincode {order.delivery_pincode} "
+                        f"for order validation. Allowing order to proceed (non-strict mode)."
+                    )
+        else:
+            # If seller doesn't have coordinates, log warning but allow order
+            logger.warning(
+                f"Seller {seller.business_name} (ID: {seller.id}) does not have location coordinates. "
+                f"Delivery location validation skipped."
+            )
         
         # Calculate item totals
         total_seller_item = Decimal(str(seller_unit_price)) * item_data.quantity

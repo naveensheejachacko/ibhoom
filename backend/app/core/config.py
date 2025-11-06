@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     MAX_FILE_SIZE: int = 5 * 1024 * 1024  # 5MB
     ALLOWED_IMAGE_TYPES: list = [".jpg", ".jpeg", ".png", ".gif", ".webp"]
     
+    # Cloudinary Configuration
+    CLOUDINARY_URL: Optional[str] = None  # cloudinary://api_key:api_secret@cloud_name
+    
     # Pagination
     DEFAULT_PAGE_SIZE: int = 20
     MAX_PAGE_SIZE: int = 100

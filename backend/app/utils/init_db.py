@@ -10,6 +10,15 @@ def init_db():
     db = SessionLocal()
     
     try:
+        # Check if tables exist first
+        from sqlalchemy import inspect
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+        
+        if "users" not in tables:
+            print("⚠️  Tables not found. Skipping initialization. Run migrations first.")
+            return
+        
         # Create default admin user
         admin_user = db.query(User).filter(User.email == settings.ADMIN_EMAIL).first()
         if not admin_user:

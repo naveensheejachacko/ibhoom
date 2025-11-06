@@ -5,15 +5,15 @@ services:
     env: python
     plan: free
     rootDir: backend
-    buildCommand: |
-      pip install -r requirements.txt
-      python -m app.utils.init_db
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install -r requirements.txt
+    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
-      - key: DATABASE_URL
-        value: sqlite:///./marketplace.db
+      # IMPORTANT: DATABASE_URL must be set manually in Render Dashboard
+      # Go to: Service → Environment → Add Environment Variable
+      # Key: DATABASE_URL
+      # Value: postgresql://avnadmin:YOUR_PASSWORD@pg-32ed7144-naveensheejachacko-1c5e.c.aivencloud.com:24184/defaultdb?sslmode=require
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: JWT_ACCESS_TOKEN_EXPIRE_MINUTES
@@ -22,6 +22,10 @@ services:
         value: https://ibhoom-frontend-o71n.onrender.com,http://localhost:5173,http://localhost:3000,http://localhost:5174
       - key: DEBUG
         value: false
+      # IMPORTANT: CLOUDINARY_URL must be set manually in Render Dashboard
+      # Go to: Service → Environment → Add Environment Variable
+      # Key: CLOUDINARY_URL
+      # Value: cloudinary://4122626391:fpXS77Uk784y-g@dby7afyd2
 
   # Frontend Node.js Web Service (serves React SPA)
   - type: web

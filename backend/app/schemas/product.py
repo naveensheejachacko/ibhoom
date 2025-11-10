@@ -169,6 +169,8 @@ class ProductListResponse(BaseModel):
     images: List[ProductImageResponse] = []
     seller_name: Optional[str] = None
     seller_email: Optional[str] = None
+    average_rating: Optional[float] = None
+    total_reviews: int = 0
     
     class Config:
         from_attributes = True

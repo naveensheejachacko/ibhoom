@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from ....core.database import get_db
 from ....core.dependencies import get_customer_user
 from ....models.user import User
 from ....models.product import Product, ProductStatus
 from ....models.seller import Seller
+from ....models.review import ProductReview
 from ....schemas.product import ProductResponse, ProductListResponse
 from ....services import product_service
 from ....utils.location import is_within_radius, get_city_coordinates
@@ -49,6 +51,39 @@ def get_customer_location(
                 customer_lat, customer_lon = coords
     
     return customer_lat, customer_lon
+
+
+def get_rating_stats_for_products(db: Session, product_ids: List[str]) -> Dict[str, Dict[str, Any]]:
+    """
+    Fetch average rating and review count for the provided product IDs.
+    Returns a mapping of product_id -> {"average_rating": float | None, "total_reviews": int}
+    """
+    if not product_ids:
+        return {}
+
+    stats = (
+        db.query(
+            ProductReview.product_id,
+            func.avg(ProductReview.rating).label("avg_rating"),
+            func.count(ProductReview.id).label("review_count")
+        )
+        .filter(
+            ProductReview.product_id.in_(product_ids),
+            ProductReview.is_approved == True
+        )
+        .group_by(ProductReview.product_id)
+        .all()
+    )
+
+    ratings_map: Dict[str, Dict[str, Any]] = {}
+    for stat in stats:
+        avg_rating = float(stat.avg_rating) if stat.avg_rating is not None else None
+        ratings_map[stat.product_id] = {
+            "average_rating": round(avg_rating, 1) if avg_rating is not None else None,
+            "total_reviews": int(stat.review_count)
+        }
+
+    return ratings_map
 
 
 @router.get("/", response_model=List[ProductListResponse])
@@ -104,7 +139,8 @@ async def get_all_products(
         )
     
     products = query.order_by(Product.created_at.desc()).offset(skip).limit(limit).all()
-    
+    ratings_map = get_rating_stats_for_products(db, [product.id for product in products])
+
     # Add seller information to each product
     result = []
     for product in products:
@@ -129,6 +165,8 @@ async def get_all_products(
         ):
             continue
         
+        product_stats = ratings_map.get(product.id, {})
+
         product_dict = {
             "id": product.id,
             "name": product.name,
@@ -143,7 +181,9 @@ async def get_all_products(
             "created_at": product.created_at,
             "images": product.images,
             "seller_name": seller_name,
-            "seller_email": seller_email
+            "seller_email": seller_email,
+            "average_rating": product_stats.get("average_rating"),
+            "total_reviews": product_stats.get("total_reviews", 0)
         }
         result.append(product_dict)
     
@@ -205,7 +245,8 @@ async def get_newly_arrived_products(
         )
     
     products = query.order_by(Product.created_at.desc()).limit(limit).all()
-    
+    ratings_map = get_rating_stats_for_products(db, [product.id for product in products])
+
     # Add seller information to each product
     result = []
     for product in products:
@@ -230,6 +271,8 @@ async def get_newly_arrived_products(
         ):
             continue
         
+        product_stats = ratings_map.get(product.id, {})
+
         product_dict = {
             "id": product.id,
             "name": product.name,
@@ -244,7 +287,9 @@ async def get_newly_arrived_products(
             "created_at": product.created_at,
             "images": product.images,
             "seller_name": seller_name,
-            "seller_email": seller_email
+            "seller_email": seller_email,
+            "average_rating": product_stats.get("average_rating"),
+            "total_reviews": product_stats.get("total_reviews", 0)
         }
         result.append(product_dict)
     
@@ -304,7 +349,8 @@ async def get_products_by_category(
         )
     
     products = query.order_by(Product.created_at.desc()).offset(skip).limit(limit).all()
-    
+    ratings_map = get_rating_stats_for_products(db, [product.id for product in products])
+
     # Add seller information to each product
     result = []
     for product in products:
@@ -329,6 +375,8 @@ async def get_products_by_category(
         ):
             continue
         
+        product_stats = ratings_map.get(product.id, {})
+
         product_dict = {
             "id": product.id,
             "name": product.name,
@@ -343,7 +391,9 @@ async def get_products_by_category(
             "created_at": product.created_at,
             "images": product.images,
             "seller_name": seller_name,
-            "seller_email": seller_email
+            "seller_email": seller_email,
+            "average_rating": product_stats.get("average_rating"),
+            "total_reviews": product_stats.get("total_reviews", 0)
         }
         result.append(product_dict)
     

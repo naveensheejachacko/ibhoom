@@ -57,6 +57,15 @@ class Settings(BaseSettings):
     ADMIN_EMAIL: str = "admin@marketplace.com"
     ADMIN_PASSWORD: str = "admin123"  # Change this!
     
+    # Email/SMTP Configuration for Notifications
+    SMTP_ENABLED: bool = False  # Set to True to enable email notifications
+    SMTP_HOST: str = "smtp.gmail.com"  # SMTP server host
+    SMTP_PORT: int = 587  # SMTP server port (587 for TLS, 465 for SSL)
+    SMTP_USE_TLS: bool = True  # Use TLS encryption
+    SMTP_USERNAME: Optional[str] = None  # SMTP username (usually your email)
+    SMTP_PASSWORD: Optional[str] = None  # SMTP password or app password
+    SMTP_FROM_EMAIL: str = "noreply@marketplace.com"  # From email address
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

@@ -41,6 +41,7 @@ class CartItemResponse(BaseModel):
     total_price: Decimal
     product_image: Optional[str] = None
     stock_available: int
+    in_stock: bool  # True if stock_available > 0
     created_at: datetime
     updated_at: datetime
     

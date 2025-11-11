@@ -7,6 +7,7 @@ from .order import Order, OrderItem, OrderStatus
 from .commission import CommissionSetting, CommissionType
 from .review import ProductReview
 from .cart import Cart, Wishlist
+from .notification import Notification, NotificationType
 
 __all__ = [
     "User", "UserRole",
@@ -17,6 +18,7 @@ __all__ = [
     "Order", "OrderItem", "OrderStatus",
     "CommissionSetting", "CommissionType",
     "ProductReview",
-    "Cart", "Wishlist"
+    "Cart", "Wishlist",
+    "Notification", "NotificationType"
 ]
 

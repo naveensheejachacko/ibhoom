@@ -25,13 +25,20 @@ async def add_to_wishlist(
         # Build response with product details
         product = wishlist_item.product
         
-        # Get product image
+        # Get product image - try primary first, then any image, then None
         primary_image = db.query(ProductImage).filter(
             ProductImage.product_id == product.id,
             ProductImage.is_primary == True
         ).first()
         
-        product_image = primary_image.image_url if primary_image else None
+        if not primary_image:
+            # Fallback to any image if no primary image
+            any_image = db.query(ProductImage).filter(
+                ProductImage.product_id == product.id
+            ).order_by(ProductImage.sort_order.asc()).first()
+            product_image = any_image.image_url if any_image else None
+        else:
+            product_image = primary_image.image_url
         
         return WishlistItemResponse(
             id=wishlist_item.id,
@@ -65,13 +72,20 @@ async def get_wishlist(
         
         product = wishlist_item.product
         
-        # Get product image
+        # Get product image - try primary first, then any image, then None
         primary_image = db.query(ProductImage).filter(
             ProductImage.product_id == product.id,
             ProductImage.is_primary == True
         ).first()
         
-        product_image = primary_image.image_url if primary_image else None
+        if not primary_image:
+            # Fallback to any image if no primary image
+            any_image = db.query(ProductImage).filter(
+                ProductImage.product_id == product.id
+            ).order_by(ProductImage.sort_order.asc()).first()
+            product_image = any_image.image_url if any_image else None
+        else:
+            product_image = primary_image.image_url
         
         items.append(WishlistItemResponse(
             id=wishlist_item.id,

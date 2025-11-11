@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from .products import router as products_router
 from .profile import router as profile_router
 from .orders import router as orders_router
+from .notifications import router as notifications_router
 
 router = APIRouter()
 
@@ -9,3 +10,4 @@ router = APIRouter()
 router.include_router(products_router, prefix="/products", tags=["Seller - Products"])
 router.include_router(profile_router, prefix="/profile", tags=["Seller - Profile"])
 router.include_router(orders_router, prefix="/orders", tags=["Seller - Orders"]) 
+router.include_router(notifications_router, prefix="/notifications", tags=["Seller - Notifications"]) 

@@ -5,6 +5,7 @@ from .products import router as products_router
 from .users import router as users_router
 from .orders import router as orders_router
 from .attributes import router as attributes_router
+from .notifications import router as notifications_router
 
 router = APIRouter()
 
@@ -14,4 +15,5 @@ router.include_router(commissions_router, prefix="/commissions", tags=["Admin - 
 router.include_router(products_router, prefix="/products", tags=["Admin - Products"])
 router.include_router(users_router, prefix="/users", tags=["Admin - Users"])
 router.include_router(orders_router, prefix="/orders", tags=["Admin - Orders"])
-router.include_router(attributes_router, prefix="/attributes", tags=["Admin - Attributes"]) 
+router.include_router(attributes_router, prefix="/attributes", tags=["Admin - Attributes"])
+router.include_router(notifications_router, prefix="/notifications", tags=["Admin - Notifications"]) 

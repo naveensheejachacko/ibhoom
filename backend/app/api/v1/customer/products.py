@@ -140,7 +140,7 @@ async def get_all_products(
     
     products = query.order_by(Product.created_at.desc()).offset(skip).limit(limit).all()
     ratings_map = get_rating_stats_for_products(db, [product.id for product in products])
-
+    
     # Add seller information to each product
     result = []
     for product in products:
@@ -166,7 +166,7 @@ async def get_all_products(
             continue
         
         product_stats = ratings_map.get(product.id, {})
-
+        
         product_dict = {
             "id": product.id,
             "name": product.name,
@@ -246,7 +246,7 @@ async def get_newly_arrived_products(
     
     products = query.order_by(Product.created_at.desc()).limit(limit).all()
     ratings_map = get_rating_stats_for_products(db, [product.id for product in products])
-
+    
     # Add seller information to each product
     result = []
     for product in products:
@@ -272,7 +272,7 @@ async def get_newly_arrived_products(
             continue
         
         product_stats = ratings_map.get(product.id, {})
-
+        
         product_dict = {
             "id": product.id,
             "name": product.name,
@@ -350,7 +350,7 @@ async def get_products_by_category(
     
     products = query.order_by(Product.created_at.desc()).offset(skip).limit(limit).all()
     ratings_map = get_rating_stats_for_products(db, [product.id for product in products])
-
+    
     # Add seller information to each product
     result = []
     for product in products:
@@ -376,7 +376,7 @@ async def get_products_by_category(
             continue
         
         product_stats = ratings_map.get(product.id, {})
-
+        
         product_dict = {
             "id": product.id,
             "name": product.name,

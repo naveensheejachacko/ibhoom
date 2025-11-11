@@ -192,6 +192,16 @@ def create_order(db: Session, order: OrderCreate, customer_id: str) -> Order:
     db.commit()
     db.refresh(db_order)
     
+    # Send notifications to admin and sellers (non-blocking)
+    try:
+        from ..services.notification_service import NotificationService
+        notification_results = NotificationService.notify_order_placed(db, db_order)
+        if notification_results.get("errors"):
+            logger.warning(f"Some notifications failed for order {db_order.order_number}: {notification_results['errors']}")
+    except Exception as e:
+        # Log error but don't fail order creation
+        logger.error(f"Failed to send notifications for order {db_order.order_number}: {str(e)}")
+    
     return db_order
 
 

@@ -192,6 +192,15 @@ def create_order(db: Session, order: OrderCreate, customer_id: str) -> Order:
     db.commit()
     db.refresh(db_order)
     
+    # Clear customer's cart after successful order creation
+    try:
+        from ..services.cart_service import clear_cart
+        cleared_count = clear_cart(db, customer_id)
+        logger.info(f"Cleared {cleared_count} items from cart for customer {customer_id} after order {db_order.order_number}")
+    except Exception as e:
+        # Log error but don't fail order creation
+        logger.warning(f"Failed to clear cart for customer {customer_id} after order {db_order.order_number}: {str(e)}")
+    
     # Send notifications to admin and sellers (non-blocking)
     try:
         from ..services.notification_service import NotificationService

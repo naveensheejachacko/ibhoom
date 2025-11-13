@@ -30,6 +30,25 @@ class OrderItemResponse(OrderItemBase):
     total_customer_amount: float
     total_commission_amount: float
     product_name: str
+    variant_name: Optional[str] = None
+    product_image: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+
+class OrderListItemResponse(BaseModel):
+    """Simplified order item for list views with product details"""
+    id: str
+    product_id: str
+    product_variant_id: Optional[str]
+    product_name: str
+    variant_name: Optional[str] = None
+    product_image: Optional[str] = None
+    seller_name: Optional[str] = None
+    quantity: int
+    customer_unit_price: float
+    total_customer_amount: float
     
     class Config:
         from_attributes = True
@@ -84,6 +103,7 @@ class OrderListResponse(BaseModel):
     status: OrderStatus
     payment_status: PaymentStatus
     created_at: datetime
+    items: List[OrderListItemResponse] = []
     
     class Config:
         from_attributes = True

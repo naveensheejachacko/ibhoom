@@ -186,6 +186,13 @@ export const adminApi = {
     });
     return response.data;
   },
+
+  downloadInvoice: async (id: string) => {
+    const response = await api.get(`/api/v1/admin/orders/${id}/invoice`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
   
   // Commissions
   getCommissions: async () => {
@@ -380,6 +387,22 @@ export const customerApi = {
     const response = await api.get(`/api/v1/customer/orders/${id}/invoice`, {
       responseType: 'blob',
     });
+    return response.data;
+  },
+
+  // Products
+  getProducts: async (params?: any) => {
+    const response = await api.get('/api/v1/customer/products', { params });
+    return response.data;
+  },
+
+  getProduct: async (id: string) => {
+    const response = await api.get(`/api/v1/customer/products/${id}`);
+    return response.data;
+  },
+
+  getProductsBySeller: async (sellerId: string, params?: any) => {
+    const response = await api.get(`/api/v1/customer/products/seller/${sellerId}`, { params });
     return response.data;
   },
 };

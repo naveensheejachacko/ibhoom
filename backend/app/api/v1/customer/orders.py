@@ -10,6 +10,7 @@ from ....models.user import User
 from ....models.order import Order, OrderStatus, PaymentStatus, OrderItem
 from ....models.product import Product, ProductVariant, ProductImage
 from ....schemas.order import OrderCreate, OrderResponse, OrderListResponse, OrderListItemResponse, OrderItemResponse, ReturnRequest
+from ....schemas.pagination import PaginatedResponse
 from ....services import order_service
 
 router = APIRouter()
@@ -29,16 +30,21 @@ async def create_order(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.get("/", response_model=List[OrderListResponse])
+@router.get("/", response_model=PaginatedResponse[OrderListResponse])
 async def get_my_orders(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
+    page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+    limit: int = Query(20, ge=1, le=1000, description="Items per page"),
+    skip: Optional[int] = Query(None, ge=0, description="Skip items (alternative to page, deprecated)"),
     status: Optional[OrderStatus] = Query(None),
     payment_status: Optional[PaymentStatus] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_customer_user)
 ):
     """Get customer's own orders (Customer only)"""
+    # Calculate skip from page if not provided
+    if skip is None:
+        skip = (page - 1) * limit
+    
     # Get orders with eager loading of items and related data
     query = db.query(Order).options(
         joinedload(Order.items).joinedload(OrderItem.product).joinedload(Product.seller),
@@ -49,6 +55,9 @@ async def get_my_orders(
         query = query.filter(Order.status == status)
     if payment_status:
         query = query.filter(Order.payment_status == payment_status)
+    
+    # Get total count before pagination
+    total = query.count()
     
     orders = query.order_by(Order.created_at.desc()).offset(skip).limit(limit).all()
     
@@ -104,7 +113,17 @@ async def get_my_orders(
             items=items
         ))
     
-    return order_responses
+    # Calculate pagination metadata
+    current_page = page  # Use the provided page parameter
+    pages = (total + limit - 1) // limit if total > 0 else 1
+    
+    return PaginatedResponse(
+        items=order_responses,
+        total=total,
+        page=current_page,
+        size=limit,
+        pages=pages
+    )
 
 
 @router.get("/{order_id}", response_model=OrderResponse)

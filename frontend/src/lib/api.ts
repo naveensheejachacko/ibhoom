@@ -186,6 +186,13 @@ export const adminApi = {
     });
     return response.data;
   },
+
+  downloadInvoice: async (id: string) => {
+    const response = await api.get(`/api/v1/admin/orders/${id}/invoice`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
   
   // Commissions
   getCommissions: async () => {

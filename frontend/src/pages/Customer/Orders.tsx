@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Search, Filter, Eye, Package, Truck, CheckCircle, X, Clock, FileText, Download } from 'lucide-react';
-import { adminApi } from '../../lib/api';
+import { ShoppingCart, Search, Eye, FileText, Download, X, Clock, Package, CheckCircle } from 'lucide-react';
+import { customerApi } from '../../lib/api';
 import { useToast } from '../../components/Toast';
 import type { OrderListResponse } from '../../types/api';
 
@@ -10,21 +10,19 @@ const Orders: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [paymentFilter, setPaymentFilter] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<OrderListResponse | null>(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
 
   useEffect(() => {
     fetchOrders();
-  }, [statusFilter, paymentFilter]);
+  }, [statusFilter]);
 
   const fetchOrders = async () => {
     try {
       setIsLoading(true);
       const params: any = {};
       if (statusFilter) params.status = statusFilter;
-      if (paymentFilter) params.payment_status = paymentFilter;
-      const data = await adminApi.getOrders(params);
+      const data = await customerApi.getOrders(params);
       setOrders(data);
     } catch (error: any) {
       console.error('Error fetching orders:', error);
@@ -34,21 +32,9 @@ const Orders: React.FC = () => {
     }
   };
 
-  const handleStatusUpdate = async (orderId: string, newStatus: string) => {
-    try {
-      await adminApi.updateOrderStatus(orderId, { status: newStatus });
-      toast.show('Order status updated successfully', { type: 'success' });
-      fetchOrders();
-      setShowOrderModal(false);
-    } catch (error: any) {
-      console.error('Error updating order status:', error);
-      toast.show(error.response?.data?.detail || 'Failed to update order status', { type: 'error' });
-    }
-  };
-
   const handleDownloadInvoice = async (orderId: string, orderNumber: string) => {
     try {
-      const blob = await adminApi.downloadInvoice(orderId);
+      const blob = await customerApi.downloadInvoice(orderId);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -70,7 +56,7 @@ const Orders: React.FC = () => {
 
   const handleViewInvoice = async (orderId: string) => {
     try {
-      const blob = await adminApi.downloadInvoice(orderId);
+      const blob = await customerApi.downloadInvoice(orderId);
       const url = window.URL.createObjectURL(blob);
       window.open(url, '_blank');
       toast.show('Invoice opened in new tab', { type: 'success' });
@@ -105,9 +91,8 @@ const Orders: React.FC = () => {
       case 'pending': return <Clock className="w-4 h-4" />;
       case 'processing': return <Package className="w-4 h-4" />;
       case 'ready for dispatch': return <Package className="w-4 h-4" />;
-      case 'dispatched': return <Truck className="w-4 h-4" />;
+      case 'dispatched': return <Package className="w-4 h-4" />;
       case 'delivered': return <CheckCircle className="w-4 h-4" />;
-      case 'cancelled': return <XCircle className="w-4 h-4" />;
       default: return <Clock className="w-4 h-4" />;
     }
   };
@@ -129,13 +114,13 @@ const Orders: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-secondary-900">Order Management</h1>
-        <p className="text-secondary-600">Process and manage customer orders</p>
+        <h1 className="text-2xl font-bold text-secondary-900">My Orders</h1>
+        <p className="text-secondary-600">View and manage your orders</p>
       </div>
 
       {/* Filters */}
       <div className="card p-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-secondary-700 mb-2">Search</label>
             <div className="relative">
@@ -163,21 +148,6 @@ const Orders: React.FC = () => {
               <option value="dispatched">Dispatched</option>
               <option value="delivered">Delivered</option>
               <option value="cancelled">Cancelled</option>
-              <option value="return requested">Return Requested</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-2">Payment</label>
-            <select
-              value={paymentFilter}
-              onChange={(e) => setPaymentFilter(e.target.value)}
-              className="w-full px-4 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            >
-              <option value="">All Payments</option>
-              <option value="cod_pending">COD Pending</option>
-              <option value="cod_collected">COD Collected</option>
-              <option value="paid">Paid</option>
-              <option value="refunded">Refunded</option>
             </select>
           </div>
           <div className="flex items-end">
@@ -201,7 +171,6 @@ const Orders: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Items</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Amount</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Payment</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Date</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Actions</th>
               </tr>
@@ -209,7 +178,7 @@ const Orders: React.FC = () => {
             <tbody className="bg-white divide-y divide-secondary-200">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-secondary-500">
+                  <td colSpan={6} className="px-6 py-12 text-center text-secondary-500">
                     No orders found
                   </td>
                 </tr>
@@ -238,16 +207,6 @@ const Orders: React.FC = () => {
                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
                         {getStatusIcon(order.status)}
                         {order.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        order.payment_status === 'paid' ? 'bg-green-100 text-green-800' :
-                        order.payment_status === 'cod_collected' ? 'bg-blue-100 text-blue-800' :
-                        order.payment_status === 'cod_pending' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {order.payment_status.replace('_', ' ')}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-500">
@@ -356,53 +315,6 @@ const Orders: React.FC = () => {
                   </div>
                 </div>
               )}
-
-              {/* Status Update */}
-              <div>
-                <h3 className="text-lg font-semibold text-secondary-900 mb-4">Update Status</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {selectedOrder.status === 'pending' || selectedOrder.status === 'processing' ? (
-                    <button
-                      onClick={() => handleStatusUpdate(selectedOrder.id, 'ready for dispatch')}
-                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
-                    >
-                      Ready for Dispatch
-                    </button>
-                  ) : null}
-                  {selectedOrder.status === 'ready for dispatch' ? (
-                    <button
-                      onClick={() => handleStatusUpdate(selectedOrder.id, 'dispatched')}
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
-                    >
-                      Dispatch
-                    </button>
-                  ) : null}
-                  {(selectedOrder.status === 'ready for dispatch' || selectedOrder.status === 'dispatched') ? (
-                    <button
-                      onClick={() => handleStatusUpdate(selectedOrder.id, 'delivered')}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
-                    >
-                      Mark Delivered
-                    </button>
-                  ) : null}
-                  {selectedOrder.status === 'return requested' ? (
-                    <>
-                      <button
-                        onClick={() => handleStatusUpdate(selectedOrder.id, 'return approved')}
-                        className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm"
-                      >
-                        Approve Return
-                      </button>
-                      <button
-                        onClick={() => handleStatusUpdate(selectedOrder.id, 'return rejected')}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
-                      >
-                        Reject Return
-                      </button>
-                    </>
-                  ) : null}
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -412,3 +324,4 @@ const Orders: React.FC = () => {
 };
 
 export default Orders;
+

@@ -21,6 +21,7 @@ import AdminAttributes from './pages/Admin/Attributes';
 import SellerDashboard from './pages/Seller/Dashboard';
 import SellerProducts from './pages/Seller/Products';
 import SellerProductForm from './pages/Seller/ProductForm';
+import SellerOrders from './pages/Seller/Orders';
 import ProfileSettings from './pages/Seller/ProfileSettings';
 
 function App() {
@@ -66,6 +67,7 @@ function App() {
                       <Route path="products" element={<SellerProducts />} />
                       <Route path="products/new" element={<SellerProductForm />} />
                       <Route path="products/edit/:id" element={<SellerProductForm />} />
+                      <Route path="orders" element={<SellerOrders />} />
                       <Route path="profile" element={<ProfileSettings />} />
                     </Routes>
                   </SellerLayout>

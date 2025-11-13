@@ -1,15 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import FileResponse, Response
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from pathlib import Path
 from ....core.database import get_db
 from ....core.dependencies import get_admin_user
 from ....models.user import User
-from ....models.order import Order, OrderStatus, PaymentStatus
+from ....models.order import Order, OrderItem, OrderStatus, PaymentStatus
+from ....models.product import Product, ProductVariant, ProductImage
 from ....schemas.order import (
-    OrderResponse, OrderListResponse, OrderStatusUpdate, PaymentStatusUpdate, 
-    OrderStats, ReturnStatusUpdate
+    OrderResponse, OrderListResponse, OrderListItemResponse, OrderItemResponse,
+    OrderStatusUpdate, PaymentStatusUpdate, OrderStats, ReturnStatusUpdate
 )
 from ....services import order_service
 
@@ -51,11 +52,74 @@ async def get_all_orders(
     current_user: User = Depends(get_admin_user)
 ):
     """Get all orders with filtering (Admin only)"""
-    orders = order_service.get_orders(
-        db, skip=skip, limit=limit,
-        customer_id=customer_id, status=status, payment_status=payment_status
+    # Build query with eager loading
+    query = db.query(Order).options(
+        joinedload(Order.items).joinedload(OrderItem.product).joinedload(Product.seller),
+        joinedload(Order.items).joinedload(OrderItem.variant)
     )
-    return orders
+    
+    if customer_id:
+        query = query.filter(Order.customer_id == customer_id)
+    if status:
+        query = query.filter(Order.status == status)
+    if payment_status:
+        query = query.filter(Order.payment_status == payment_status)
+    
+    orders = query.order_by(Order.created_at.desc()).offset(skip).limit(limit).all()
+    
+    # Build response with product details
+    order_responses = []
+    for order in orders:
+        # Build items with product details
+        items = []
+        for item in order.items:
+            product = item.product
+            variant = item.variant if item.product_variant_id else None
+            
+            # Get product image - try primary first, then any image
+            primary_image = db.query(ProductImage).filter(
+                ProductImage.product_id == product.id,
+                ProductImage.is_primary == True
+            ).first()
+            
+            if not primary_image:
+                # Fallback to any image if no primary image
+                any_image = db.query(ProductImage).filter(
+                    ProductImage.product_id == product.id
+                ).order_by(ProductImage.sort_order.asc()).first()
+                product_image = any_image.image_url if any_image else None
+            else:
+                product_image = primary_image.image_url
+            
+            # Get seller name
+            seller_name = product.seller.business_name if product.seller else None
+            
+            items.append(OrderListItemResponse(
+                id=item.id,
+                product_id=item.product_id,
+                product_variant_id=item.product_variant_id,
+                product_name=item.product_name,
+                variant_name=variant.variant_name if variant else None,
+                product_image=product_image,
+                seller_name=seller_name,
+                quantity=item.quantity,
+                customer_unit_price=float(item.customer_unit_price),
+                total_customer_amount=float(item.total_customer_amount)
+            ))
+        
+        order_responses.append(OrderListResponse(
+            id=order.id,
+            order_number=order.order_number,
+            customer_id=order.customer_id,
+            total_customer_amount=float(order.total_customer_amount),
+            total_items=order.total_items,
+            status=order.status,
+            payment_status=order.payment_status,
+            created_at=order.created_at,
+            items=items
+        ))
+    
+    return order_responses
 
 
 @router.get("/pending", response_model=List[OrderListResponse])
@@ -66,8 +130,67 @@ async def get_pending_orders(
     current_user: User = Depends(get_admin_user)
 ):
     """Get pending orders (Admin only)"""
-    orders = order_service.get_pending_orders(db, skip=skip, limit=limit)
-    return orders
+    # Get orders with eager loading
+    orders = db.query(Order).options(
+        joinedload(Order.items).joinedload(OrderItem.product).joinedload(Product.seller),
+        joinedload(Order.items).joinedload(OrderItem.variant)
+    ).filter(
+        Order.status == OrderStatus.PENDING
+    ).order_by(Order.created_at.asc()).offset(skip).limit(limit).all()
+    
+    # Build response with product details
+    order_responses = []
+    for order in orders:
+        # Build items with product details
+        items = []
+        for item in order.items:
+            product = item.product
+            variant = item.variant if item.product_variant_id else None
+            
+            # Get product image - try primary first, then any image
+            primary_image = db.query(ProductImage).filter(
+                ProductImage.product_id == product.id,
+                ProductImage.is_primary == True
+            ).first()
+            
+            if not primary_image:
+                # Fallback to any image if no primary image
+                any_image = db.query(ProductImage).filter(
+                    ProductImage.product_id == product.id
+                ).order_by(ProductImage.sort_order.asc()).first()
+                product_image = any_image.image_url if any_image else None
+            else:
+                product_image = primary_image.image_url
+            
+            # Get seller name
+            seller_name = product.seller.business_name if product.seller else None
+            
+            items.append(OrderListItemResponse(
+                id=item.id,
+                product_id=item.product_id,
+                product_variant_id=item.product_variant_id,
+                product_name=item.product_name,
+                variant_name=variant.variant_name if variant else None,
+                product_image=product_image,
+                seller_name=seller_name,
+                quantity=item.quantity,
+                customer_unit_price=float(item.customer_unit_price),
+                total_customer_amount=float(item.total_customer_amount)
+            ))
+        
+        order_responses.append(OrderListResponse(
+            id=order.id,
+            order_number=order.order_number,
+            customer_id=order.customer_id,
+            total_customer_amount=float(order.total_customer_amount),
+            total_items=order.total_items,
+            status=order.status,
+            payment_status=order.payment_status,
+            created_at=order.created_at,
+            items=items
+        ))
+    
+    return order_responses
 
 
 @router.get("/{order_id}", response_model=OrderResponse)
@@ -77,10 +200,78 @@ async def get_order(
     current_user: User = Depends(get_admin_user)
 ):
     """Get order by ID (Admin only)"""
-    order = order_service.get_order(db, order_id)
+    # Get order with eager loading of items and related data
+    order = db.query(Order).options(
+        joinedload(Order.items).joinedload(OrderItem.product).joinedload(Product.seller),
+        joinedload(Order.items).joinedload(OrderItem.variant)
+    ).filter(Order.id == order_id).first()
+    
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
-    return order
+    
+    # Build items with product details
+    items_with_details = []
+    for item in order.items:
+        product = item.product
+        variant = item.variant if item.product_variant_id else None
+        
+        # Get product image - try primary first, then any image
+        primary_image = db.query(ProductImage).filter(
+            ProductImage.product_id == product.id,
+            ProductImage.is_primary == True
+        ).first()
+        
+        if not primary_image:
+            # Fallback to any image if no primary image
+            any_image = db.query(ProductImage).filter(
+                ProductImage.product_id == product.id
+            ).order_by(ProductImage.sort_order.asc()).first()
+            product_image = any_image.image_url if any_image else None
+        else:
+            product_image = primary_image.image_url
+        
+        # Create item response with product details
+        items_with_details.append(OrderItemResponse(
+            id=item.id,
+            product_id=item.product_id,
+            product_variant_id=item.product_variant_id,
+            quantity=item.quantity,
+            seller_unit_price=float(item.seller_unit_price),
+            customer_unit_price=float(item.customer_unit_price),
+            commission_unit_rate=float(item.commission_unit_rate),
+            commission_unit_amount=float(item.commission_unit_amount),
+            total_seller_amount=float(item.total_seller_amount),
+            total_customer_amount=float(item.total_customer_amount),
+            total_commission_amount=float(item.total_commission_amount),
+            product_name=item.product_name,
+            variant_name=variant.variant_name if variant else None,
+            product_image=product_image
+        ))
+    
+    # Create order response with enhanced items
+    return OrderResponse(
+        id=order.id,
+        order_number=order.order_number,
+        customer_id=order.customer_id,
+        total_customer_amount=float(order.total_customer_amount),
+        total_seller_amount=float(order.total_seller_amount),
+        total_commission_amount=float(order.total_commission_amount),
+        status=order.status,
+        payment_status=order.payment_status,
+        delivery_address=order.delivery_address,
+        delivery_city=order.delivery_city,
+        delivery_state=order.delivery_state,
+        delivery_pincode=order.delivery_pincode,
+        phone=order.phone,
+        notes=order.notes,
+        admin_notes=order.admin_notes,
+        seller_notes=order.seller_notes,
+        return_reason=order.return_reason,
+        return_notes=order.return_notes,
+        created_at=order.created_at,
+        updated_at=order.updated_at,
+        items=items_with_details
+    )
 
 
 @router.put("/{order_id}/status", response_model=OrderResponse)

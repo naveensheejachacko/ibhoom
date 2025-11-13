@@ -53,6 +53,10 @@ class Settings(BaseSettings):
     MAX_DELIVERY_RADIUS_KM: float = 50.0  # Maximum delivery radius in kilometers (default: 50km)
     DELIVERY_VALIDATION_STRICT: bool = True  # If True, block orders when location validation fails
     
+    # Mapbox Geocoding
+    MAPBOX_ACCESS_TOKEN: Optional[str] = None
+    MAPBOX_GEOCODING_TIMEOUT: float = 5.0
+    
     # Admin Configuration
     ADMIN_EMAIL: str = "admin@marketplace.com"
     ADMIN_PASSWORD: str = "admin123"  # Change this!

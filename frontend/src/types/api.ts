@@ -12,6 +12,17 @@ export interface Category {
   children?: Category[];
 }
 
+export interface SellerBasicInfo {
+  id: string;
+  business_name: string;
+  business_type?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  email?: string;
+  phone?: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -33,11 +44,13 @@ export interface Product {
   created_at: string;
   updated_at: string;
   category: Category;
-  seller: Seller;
+  seller?: SellerBasicInfo;  // Seller basic details
   images: ProductImage[];
   variants: ProductVariant[];
   seller_name?: string;
   seller_email?: string;
+  average_rating?: number;
+  total_reviews?: number;
 }
 
 export interface ProductImage {

@@ -86,6 +86,21 @@ class ProductVariantResponse(ProductVariantBase):
         from_attributes = True
 
 
+class SellerBasicInfo(BaseModel):
+    """Basic seller information for product responses"""
+    id: str
+    business_name: str
+    business_type: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    pincode: Optional[str] = None
+    email: Optional[str] = None  # From user relationship
+    phone: Optional[str] = None  # From user relationship
+    
+    class Config:
+        from_attributes = True
+
+
 class ProductBase(BaseModel):
     name: str
     description: Optional[str] = None
@@ -149,6 +164,7 @@ class ProductResponse(ProductBase):
     reviews: List[dict] = []  # Will contain review stats
     average_rating: Optional[float] = None
     total_reviews: int = 0
+    seller: Optional[SellerBasicInfo] = None  # Seller basic details
     
     class Config:
         from_attributes = True

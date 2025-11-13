@@ -389,6 +389,22 @@ export const customerApi = {
     });
     return response.data;
   },
+
+  // Products
+  getProducts: async (params?: any) => {
+    const response = await api.get('/api/v1/customer/products', { params });
+    return response.data;
+  },
+
+  getProduct: async (id: string) => {
+    const response = await api.get(`/api/v1/customer/products/${id}`);
+    return response.data;
+  },
+
+  getProductsBySeller: async (sellerId: string, params?: any) => {
+    const response = await api.get(`/api/v1/customer/products/seller/${sellerId}`, { params });
+    return response.data;
+  },
 };
 
 export default api; 

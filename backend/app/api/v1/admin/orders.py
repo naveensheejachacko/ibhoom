@@ -12,6 +12,7 @@ from ....schemas.order import (
     OrderResponse, OrderListResponse, OrderListItemResponse, OrderItemResponse,
     OrderStatusUpdate, PaymentStatusUpdate, OrderStats, ReturnStatusUpdate
 )
+from ....schemas.pagination import PaginatedResponse
 from ....services import order_service
 
 router = APIRouter()
@@ -41,10 +42,11 @@ async def get_order_stats(
         )
 
 
-@router.get("/", response_model=List[OrderListResponse])
+@router.get("/", response_model=PaginatedResponse[OrderListResponse])
 async def get_all_orders(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
+    page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+    limit: int = Query(20, ge=1, le=1000, description="Items per page"),
+    skip: Optional[int] = Query(None, ge=0, description="Skip items (alternative to page, deprecated)"),
     customer_id: Optional[str] = Query(None),
     status: Optional[OrderStatus] = Query(None),
     payment_status: Optional[PaymentStatus] = Query(None),
@@ -52,6 +54,10 @@ async def get_all_orders(
     current_user: User = Depends(get_admin_user)
 ):
     """Get all orders with filtering (Admin only)"""
+    # Calculate skip from page if not provided
+    if skip is None:
+        skip = (page - 1) * limit
+    
     # Build query with eager loading
     query = db.query(Order).options(
         joinedload(Order.items).joinedload(OrderItem.product).joinedload(Product.seller),
@@ -64,6 +70,9 @@ async def get_all_orders(
         query = query.filter(Order.status == status)
     if payment_status:
         query = query.filter(Order.payment_status == payment_status)
+    
+    # Get total count before pagination
+    total = query.count()
     
     orders = query.order_by(Order.created_at.desc()).offset(skip).limit(limit).all()
     
@@ -119,24 +128,42 @@ async def get_all_orders(
             items=items
         ))
     
-    return order_responses
+    # Calculate pagination metadata
+    current_page = page  # Use the provided page parameter
+    pages = (total + limit - 1) // limit if total > 0 else 1
+    
+    return PaginatedResponse(
+        items=order_responses,
+        total=total,
+        page=current_page,
+        size=limit,
+        pages=pages
+    )
 
 
-@router.get("/pending", response_model=List[OrderListResponse])
+@router.get("/pending", response_model=PaginatedResponse[OrderListResponse])
 async def get_pending_orders(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
+    page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+    limit: int = Query(20, ge=1, le=1000, description="Items per page"),
+    skip: Optional[int] = Query(None, ge=0, description="Skip items (alternative to page, deprecated)"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_user)
 ):
     """Get pending orders (Admin only)"""
-    # Get orders with eager loading
-    orders = db.query(Order).options(
+    # Calculate skip from page if not provided
+    if skip is None:
+        skip = (page - 1) * limit
+    
+    # Build query with eager loading
+    query = db.query(Order).options(
         joinedload(Order.items).joinedload(OrderItem.product).joinedload(Product.seller),
         joinedload(Order.items).joinedload(OrderItem.variant)
-    ).filter(
-        Order.status == OrderStatus.PENDING
-    ).order_by(Order.created_at.asc()).offset(skip).limit(limit).all()
+    ).filter(Order.status == OrderStatus.PENDING)
+    
+    # Get total count before pagination
+    total = query.count()
+    
+    orders = query.order_by(Order.created_at.asc()).offset(skip).limit(limit).all()
     
     # Build response with product details
     order_responses = []

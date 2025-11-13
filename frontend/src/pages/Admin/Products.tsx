@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Eye, Check, X, Search, Filter, Ban, Trash2, AlertTriangle } from 'lucide-react';
 import { adminApi } from '../../lib/api';
+import Pagination from '../../components/Pagination';
 import { Product } from '../../types/api';
 
 interface ProductCardProps {
@@ -130,7 +131,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onApprove, onReject,
 
 const Products: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -140,42 +140,52 @@ const Products: React.FC = () => {
   const [commissionRate, setCommissionRate] = useState(0);
   const [modalAction, setModalAction] = useState<'approve' | 'reject' | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 20;
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [currentPage, statusFilter, searchTerm]);
 
+  // Reset to page 1 when filters change
   useEffect(() => {
-    filterProducts();
-  }, [products, searchTerm, statusFilter]);
+    setCurrentPage(1);
+  }, [statusFilter, searchTerm]);
 
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
-      const data = await adminApi.getProducts();
-      setProducts(data);
+      const params: any = {
+        page: currentPage,
+        limit: itemsPerPage,
+      };
+      
+      if (statusFilter !== 'all') {
+        params.status = statusFilter;
+      }
+      
+      if (searchTerm) {
+        params.search = searchTerm;
+      }
+      
+      const data = await adminApi.getProducts(params);
+      
+      // Handle paginated response
+      if (data.items) {
+        setProducts(data.items);
+        setTotalPages(data.pages);
+        setTotalItems(data.total);
+      } else {
+        // Fallback for non-paginated response
+        setProducts(Array.isArray(data) ? data : []);
+      }
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const filterProducts = () => {
-    let filtered = products;
-
-    if (searchTerm) {
-      filtered = filtered.filter(product =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(product => product.status === statusFilter);
-    }
-
-    setFilteredProducts(filtered);
   };
 
   const handleApprove = (product: Product) => {
@@ -322,15 +332,16 @@ const Products: React.FC = () => {
       </div>
 
       {/* Products Grid */}
-      {filteredProducts.length === 0 ? (
+      {products.length === 0 ? (
         <div className="card p-12 text-center">
           <Package className="w-12 h-12 text-secondary-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-secondary-900 mb-2">No Products Found</h3>
           <p className="text-secondary-600">No products match your current filters.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProducts.map((product) => (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {products.map((product) => (
             <ProductCard
               key={product.id}
               product={product}
@@ -342,7 +353,18 @@ const Products: React.FC = () => {
               onDelete={handleDelete}
             />
           ))}
-        </div>
+          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageChange={(page) => {
+              setCurrentPage(page);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        </>
       )}
 
       {/* Approval Modal */}

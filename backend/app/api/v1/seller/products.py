@@ -6,6 +6,8 @@ from ....core.dependencies import get_seller_user
 from ....models.user import User
 from ....models.product import ProductStatus
 from ....schemas.product import ProductCreate, ProductUpdate, ProductResponse, ProductListResponse
+from ....schemas.pagination import PaginatedResponse
+from ....models.product import Product
 from ....services import product_service
 
 router = APIRouter()
@@ -37,16 +39,38 @@ async def create_product(
         )
 
 
-@router.get("/", response_model=List[ProductListResponse])
+@router.get("/", response_model=PaginatedResponse[ProductListResponse])
 async def get_my_products(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
+    page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+    limit: int = Query(20, ge=1, le=1000, description="Items per page"),
+    skip: Optional[int] = Query(None, ge=0, description="Skip items (alternative to page, deprecated)"),
     status: Optional[ProductStatus] = Query(None),
     search: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_seller_user)
 ):
     """Get seller's own products (Seller only)"""
+    # Calculate skip from page if not provided
+    if skip is None:
+        skip = (page - 1) * limit
+    
+    # Build query for total count
+    count_query = db.query(Product).filter(
+        Product.seller_id == current_user.seller.id,
+        Product.status != ProductStatus.HIDDEN
+    )
+    
+    if status:
+        count_query = count_query.filter(Product.status == status)
+    if search:
+        count_query = count_query.filter(
+            Product.name.contains(search) | 
+            Product.description.contains(search) |
+            Product.tags.contains(search)
+        )
+    
+    total = count_query.count()
+    
     products = product_service.get_products(
         db, skip=skip, limit=limit,
         seller_id=current_user.seller.id,
@@ -74,7 +98,17 @@ async def get_my_products(
         }
         result.append(product_dict)
     
-    return result
+    # Calculate pagination metadata
+    current_page = page  # Use the provided page parameter
+    pages = (total + limit - 1) // limit if total > 0 else 1
+    
+    return PaginatedResponse(
+        items=result,
+        total=total,
+        page=current_page,
+        size=limit,
+        pages=pages
+    )
 
 
 @router.get("/{product_id}", response_model=ProductResponse)

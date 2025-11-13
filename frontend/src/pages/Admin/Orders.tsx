@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Search, Filter, Eye, Package, Truck, CheckCircle, X, Clock, FileText, Download } from 'lucide-react';
 import { adminApi } from '../../lib/api';
 import { useToast } from '../../components/Toast';
+import Pagination from '../../components/Pagination';
 import type { OrderListResponse } from '../../types/api';
 
 const Orders: React.FC = () => {
@@ -13,19 +14,39 @@ const Orders: React.FC = () => {
   const [paymentFilter, setPaymentFilter] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<OrderListResponse | null>(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 20;
 
   useEffect(() => {
     fetchOrders();
+  }, [statusFilter, paymentFilter, currentPage]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
   }, [statusFilter, paymentFilter]);
 
   const fetchOrders = async () => {
     try {
       setIsLoading(true);
-      const params: any = {};
+      const params: any = {
+        page: currentPage,
+        limit: itemsPerPage,
+      };
       if (statusFilter) params.status = statusFilter;
       if (paymentFilter) params.payment_status = paymentFilter;
       const data = await adminApi.getOrders(params);
-      setOrders(data);
+      // Handle paginated response
+      if (data.items) {
+        setOrders(data.items);
+        setTotalPages(data.pages);
+        setTotalItems(data.total);
+      } else {
+        // Fallback for non-paginated response
+        setOrders(Array.isArray(data) ? data : []);
+      }
     } catch (error: any) {
       console.error('Error fetching orders:', error);
       toast.show('Failed to fetch orders', { type: 'error' });
@@ -112,11 +133,10 @@ const Orders: React.FC = () => {
     }
   };
 
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.id.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
-  });
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, paymentFilter]);
 
   if (isLoading) {
     return (
@@ -207,14 +227,14 @@ const Orders: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-secondary-200">
-              {filteredOrders.length === 0 ? (
+              {orders.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-secondary-500">
                     No orders found
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map((order) => (
+                orders.map((order) => (
                   <tr key={order.id} className="hover:bg-secondary-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-secondary-900">{order.order_number}</div>
@@ -282,6 +302,16 @@ const Orders: React.FC = () => {
             </tbody>
           </table>
         </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          onPageChange={(page) => {
+            setCurrentPage(page);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
       </div>
 
       {/* Order Detail Modal */}

@@ -6,15 +6,18 @@ from ....core.dependencies import get_admin_user
 from ....models.user import User
 from ....models.product import ProductStatus
 from ....schemas.product import ProductResponse, ProductListResponse, ProductApprovalUpdate, ProductFilters
+from ....schemas.pagination import PaginatedResponse
+from ....models.product import Product
 from ....services import product_service
 
 router = APIRouter()
 
 
-@router.get("/", response_model=List[ProductListResponse])
+@router.get("/", response_model=PaginatedResponse[ProductListResponse])
 async def get_all_products(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
+    page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+    limit: int = Query(20, ge=1, le=1000, description="Items per page"),
+    skip: Optional[int] = Query(None, ge=0, description="Skip items (alternative to page, deprecated)"),
     category_id: Optional[str] = Query(None),
     seller_id: Optional[str] = Query(None),
     status: Optional[ProductStatus] = Query(None),
@@ -25,6 +28,32 @@ async def get_all_products(
     current_user: User = Depends(get_admin_user)
 ):
     """Get all products with filtering (Admin only)"""
+    # Calculate skip from page if not provided
+    if skip is None:
+        skip = (page - 1) * limit
+    
+    # Build query for total count
+    count_query = db.query(Product).filter(Product.status != ProductStatus.HIDDEN)
+    
+    if category_id:
+        count_query = count_query.filter(Product.category_id == category_id)
+    if seller_id:
+        count_query = count_query.filter(Product.seller_id == seller_id)
+    if status:
+        count_query = count_query.filter(Product.status == status)
+    if min_price:
+        count_query = count_query.filter(Product.customer_price >= min_price)
+    if max_price:
+        count_query = count_query.filter(Product.customer_price <= max_price)
+    if search:
+        count_query = count_query.filter(
+            Product.name.contains(search) | 
+            Product.description.contains(search) |
+            Product.tags.contains(search)
+        )
+    
+    total = count_query.count()
+    
     products = product_service.get_products(
         db, skip=skip, limit=limit,
         category_id=category_id, seller_id=seller_id, status=status,
@@ -60,19 +89,76 @@ async def get_all_products(
         }
         result.append(product_dict)
     
-    return result
+    # Calculate pagination metadata
+    current_page = page  # Use the provided page parameter
+    pages = (total + limit - 1) // limit if total > 0 else 1
+    
+    return PaginatedResponse(
+        items=result,
+        total=total,
+        page=current_page,
+        size=limit,
+        pages=pages
+    )
 
 
-@router.get("/pending", response_model=List[ProductListResponse])
+@router.get("/pending", response_model=PaginatedResponse[ProductListResponse])
 async def get_pending_products(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
+    page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+    limit: int = Query(20, ge=1, le=1000, description="Items per page"),
+    skip: Optional[int] = Query(None, ge=0, description="Skip items (alternative to page, deprecated)"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_user)
 ):
     """Get products pending approval (Admin only)"""
+    # Calculate skip from page if not provided
+    if skip is None:
+        skip = (page - 1) * limit
+    
+    # Get total count
+    total = db.query(Product).filter(Product.status == ProductStatus.PENDING).count()
+    
     products = product_service.get_pending_products(db, skip=skip, limit=limit)
-    return products
+    
+    # Convert to list response format
+    result = []
+    for product in products:
+        seller_name = "Unknown Seller"
+        seller_email = "unknown@example.com"
+        
+        if product.seller:
+            seller_name = f"{product.seller.user.first_name} {product.seller.user.last_name}"
+            seller_email = product.seller.user.email
+        
+        product_dict = {
+            "id": product.id,
+            "name": product.name,
+            "slug": product.slug,
+            "seller_id": product.seller_id,
+            "category_id": product.category_id,
+            "seller_price": float(product.seller_price),
+            "customer_price": float(product.customer_price),
+            "commission_rate": float(product.commission_rate),
+            "stock_quantity": product.stock_quantity,
+            "status": product.status,
+            "created_at": product.created_at,
+            "images": product.images,
+            "seller_name": seller_name,
+            "seller_email": seller_email
+        }
+        result.append(product_dict)
+    
+    # Calculate pagination metadata
+    current_page = page  # Use the provided page parameter
+    pages = (total + limit - 1) // limit if total > 0 else 1
+    
+    return PaginatedResponse(
+        items=result,
+        total=total,
+        page=current_page,
+        size=limit,
+        pages=pages
+    )
 
 
 @router.get("/{product_id}", response_model=ProductResponse)

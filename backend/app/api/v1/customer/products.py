@@ -9,6 +9,7 @@ from ....models.product import Product, ProductStatus
 from ....models.seller import Seller
 from ....models.review import ProductReview
 from ....schemas.product import ProductResponse, ProductListResponse
+from ....schemas.pagination import PaginatedResponse
 from ....services import product_service
 from ....utils.location import is_within_radius, get_city_coordinates
 
@@ -84,10 +85,10 @@ def get_rating_stats_for_products(db: Session, product_ids: List[str]) -> Dict[s
     return ratings_map
 
 
-@router.get("/", response_model=List[ProductListResponse])
+@router.get("/", response_model=PaginatedResponse[ProductListResponse])
 async def get_all_products(
     skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
+    limit: int = Query(20, ge=1, le=1000),
     category_id: Optional[str] = Query(None),
     min_price: Optional[float] = Query(None, ge=0),
     max_price: Optional[float] = Query(None, ge=0),
@@ -136,10 +137,11 @@ async def get_all_products(
             Product.tags.ilike(search_term)
         )
     
-    products = query.order_by(Product.created_at.desc()).offset(skip).limit(limit).all()
+    # Fetch more products to account for location filtering (fetch 3x to ensure enough results)
+    products = query.order_by(Product.created_at.desc()).offset(skip).limit(limit * 3).all()
     ratings_map = get_rating_stats_for_products(db, [product.id for product in products])
     
-    # Add seller information to each product
+    # Add seller information to each product and apply location filtering
     result = []
     for product in products:
         # Skip products without sellers (location filtering requires seller)
@@ -193,7 +195,21 @@ async def get_all_products(
     else:  # created_at
         result.sort(key=lambda x: x["created_at"], reverse=(sort_order == "desc"))
     
-    return result
+    # Apply pagination to filtered results
+    paginated_result = result[:limit]
+    
+    # Calculate pagination metadata
+    # Note: Total is approximate due to location filtering happening after fetch
+    page = (skip // limit) + 1
+    pages = (len(result) + limit - 1) // limit if len(result) > 0 else 1
+    
+    return PaginatedResponse(
+        items=paginated_result,
+        total=len(result),  # Total after location filtering (for current page range)
+        page=page,
+        size=limit,
+        pages=pages
+    )
 
 
 @router.get("/newly-arrived", response_model=List[ProductListResponse])
@@ -286,7 +302,7 @@ async def get_newly_arrived_products(
 async def get_products_by_category(
     category_id: str,
     skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
+    limit: int = Query(20, ge=1, le=1000),
     min_price: Optional[float] = Query(None, ge=0),
     max_price: Optional[float] = Query(None, ge=0),
     search: Optional[str] = Query(None),
@@ -398,7 +414,7 @@ async def get_products_by_category(
 async def get_products_by_seller(
     seller_id: str,
     skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
+    limit: int = Query(20, ge=1, le=1000),
     category_id: Optional[str] = Query(None),
     min_price: Optional[float] = Query(None, ge=0),
     max_price: Optional[float] = Query(None, ge=0),

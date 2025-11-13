@@ -77,9 +77,12 @@ export interface User {
 
 export interface Order {
   id: string;
+  order_number: string;
   customer_id: string;
-  total_amount: number;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  total_customer_amount: number;
+  total_seller_amount: number;
+  total_commission_amount: number;
+  status: 'pending' | 'rejected' | 'processing' | 'ready for dispatch' | 'dispatched' | 'delivered' | 'cancelled' | 'return requested' | 'return approved' | 'return rejected' | 'returned';
   payment_status: 'cod_pending' | 'cod_collected' | 'paid' | 'refunded';
   delivery_address: string;
   delivery_city: string;
@@ -88,21 +91,54 @@ export interface Order {
   phone: string;
   notes?: string;
   admin_notes?: string;
+  seller_notes?: string;
+  return_reason?: string;
+  return_notes?: string;
   created_at: string;
   updated_at: string;
-  customer: User;
   items: OrderItem[];
+}
+
+export interface OrderListResponse {
+  id: string;
+  order_number: string;
+  customer_id: string;
+  total_customer_amount: number;
+  total_items: number;
+  status: string;
+  payment_status: string;
+  created_at: string;
+  items: OrderListItem[];
+}
+
+export interface OrderListItem {
+  id: string;
+  product_id: string;
+  product_variant_id?: string;
+  product_name: string;
+  variant_name?: string;
+  product_image?: string;
+  seller_name?: string;
+  quantity: number;
+  customer_unit_price: number;
+  total_customer_amount: number;
 }
 
 export interface OrderItem {
   id: string;
-  order_id: string;
   product_id: string;
   product_variant_id?: string;
   quantity: number;
-  unit_price: number;
-  total_price: number;
-  product: Product;
+  seller_unit_price: number;
+  customer_unit_price: number;
+  commission_unit_rate: number;
+  commission_unit_amount: number;
+  total_seller_amount: number;
+  total_customer_amount: number;
+  total_commission_amount: number;
+  product_name: string;
+  variant_name?: string;
+  product_image?: string;
 }
 
 export interface Commission {

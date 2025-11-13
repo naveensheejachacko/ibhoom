@@ -255,6 +255,7 @@ def update_order_status_admin(db: Session, order_id: str, status_update: OrderSt
     
     # Admin can only set specific statuses
     allowed_statuses = [
+        OrderStatus.READY_FOR_DISPATCH,  # Admin can also mark as ready for dispatch
         OrderStatus.DISPATCHED,
         OrderStatus.DELIVERED,
         OrderStatus.CANCELLED
@@ -266,8 +267,13 @@ def update_order_status_admin(db: Session, order_id: str, status_update: OrderSt
     current_status = db_order.status
     
     # Validate status transitions for admin
+    # Admin can set ready_for_dispatch from pending or processing
+    if status_update.status == OrderStatus.READY_FOR_DISPATCH:
+        if current_status not in [OrderStatus.PENDING, OrderStatus.PROCESSING]:
+            raise ValueError(f"Can only set ready_for_dispatch from pending or processing status, current: {current_status.value}")
+    
     # Admin can dispatch from ready_for_dispatch
-    if status_update.status == OrderStatus.DISPATCHED:
+    elif status_update.status == OrderStatus.DISPATCHED:
         if current_status != OrderStatus.READY_FOR_DISPATCH:
             raise ValueError(f"Can only dispatch order from ready_for_dispatch status, current: {current_status.value}")
     

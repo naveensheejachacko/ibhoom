@@ -335,6 +335,53 @@ export const sellerApi = {
     const response = await api.put('/api/v1/seller/profile/password', data);
     return response.data;
   },
+
+  // Orders
+  getOrders: async (params?: any) => {
+    const response = await api.get('/api/v1/seller/orders', { params });
+    return response.data;
+  },
+
+  getOrder: async (id: string) => {
+    const response = await api.get(`/api/v1/seller/orders/${id}`);
+    return response.data;
+  },
+
+  updateOrderStatus: async (id: string, data: any) => {
+    const response = await api.put(`/api/v1/seller/orders/${id}/status`, data);
+    return response.data;
+  },
+};
+
+// Customer API
+export const customerApi = {
+  // Orders
+  getOrders: async (params?: any) => {
+    const response = await api.get('/api/v1/customer/orders', { params });
+    return response.data;
+  },
+
+  getOrder: async (id: string) => {
+    const response = await api.get(`/api/v1/customer/orders/${id}`);
+    return response.data;
+  },
+
+  createOrder: async (data: any) => {
+    const response = await api.post('/api/v1/customer/orders', data);
+    return response.data;
+  },
+
+  requestReturn: async (id: string, data: { return_reason: string }) => {
+    const response = await api.post(`/api/v1/customer/orders/${id}/return`, data);
+    return response.data;
+  },
+
+  downloadInvoice: async (id: string) => {
+    const response = await api.get(`/api/v1/customer/orders/${id}/invoice`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };
 
 export default api; 

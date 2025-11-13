@@ -8,6 +8,8 @@ from typing import Optional, Tuple, Dict
 from pathlib import Path
 import logging
 
+from ..core.config import settings
+
 logger = logging.getLogger(__name__)
 
 # Cache for loaded pincode data
@@ -55,6 +57,13 @@ def geocode_pincode(pincode: str) -> Optional[Tuple[float, float]]:
         # Clean pincode
         pincode = str(pincode).strip()
         
+        # Preferred: Mapbox Geocoding if configured
+        if settings.MAPBOX_ACCESS_TOKEN:
+            coords = _geocode_with_mapbox(pincode)
+            if coords:
+                return coords
+            logger.warning("Mapbox geocoding did not return results for pincode %s, falling back to Postal API", pincode)
+        
         # Option 1: Use Indian Postal Pin Code API (Free, no rate limit for India pincodes)
         # This is a public API specifically for Indian pincodes
         url = f"https://api.postalpincode.in/pincode/{pincode}"
@@ -82,6 +91,38 @@ def geocode_pincode(pincode: str) -> Optional[Tuple[float, float]]:
     except Exception as e:
         logger.error(f"Error geocoding pincode {pincode}: {str(e)}")
         return None
+
+
+def _geocode_with_mapbox(pincode: str) -> Optional[Tuple[float, float]]:
+    """
+    Geocode using Mapbox Places API when an access token is configured.
+    """
+    try:
+        url = f"https://api.mapbox.com/geocoding/v5/mapbox.places/{pincode}.json"
+        params = {
+            "access_token": settings.MAPBOX_ACCESS_TOKEN,
+            "country": "in",
+            "limit": 1,
+            "types": "postcode",
+            "autocomplete": "false"
+        }
+        response = requests.get(url, params=params, timeout=settings.MAPBOX_GEOCODING_TIMEOUT)
+        if response.status_code == 200:
+            payload = response.json()
+            features = payload.get("features") or []
+            if features:
+                geometry = features[0].get("geometry") or {}
+                coordinates = geometry.get("coordinates")
+                if coordinates and len(coordinates) >= 2:
+                    lon, lat = coordinates[0], coordinates[1]
+                    logger.info(f"Geocoded pincode {pincode} via Mapbox: ({lat}, {lon})")
+                    return float(lat), float(lon)
+            logger.warning("Mapbox response did not contain coordinates for pincode %s", pincode)
+        else:
+            logger.warning("Mapbox geocoding failed for pincode %s (status %s): %s", pincode, response.status_code, response.text)
+    except Exception as exc:
+        logger.error("Error geocoding pincode %s via Mapbox: %s", pincode, exc)
+    return None
 
 
 def _geocode_with_nominatim(pincode: str, district: str = None, state: str = "Kerala") -> Optional[Tuple[float, float]]:

@@ -87,8 +87,9 @@ def get_rating_stats_for_products(db: Session, product_ids: List[str]) -> Dict[s
 
 @router.get("/", response_model=PaginatedResponse[ProductListResponse])
 async def get_all_products(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=1000),
+    page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+    limit: int = Query(20, ge=1, le=1000, description="Items per page"),
+    skip: Optional[int] = Query(None, ge=0, description="Skip items (alternative to page, deprecated)"),
     category_id: Optional[str] = Query(None),
     min_price: Optional[float] = Query(None, ge=0),
     max_price: Optional[float] = Query(None, ge=0),
@@ -104,6 +105,10 @@ async def get_all_products(
     current_user: User = Depends(get_customer_user)
 ):
     """Get all products with location-based filtering (within 5km radius) (Customer only)"""
+    # Calculate skip from page if not provided
+    if skip is None:
+        skip = (page - 1) * limit
+    
     # Get customer location - auto-uses stored pincode if available
     customer_lat, customer_lon = get_customer_location(latitude, longitude, city, current_user)
     
@@ -200,22 +205,23 @@ async def get_all_products(
     
     # Calculate pagination metadata
     # Note: Total is approximate due to location filtering happening after fetch
-    page = (skip // limit) + 1
+    current_page = page  # Use the provided page parameter
     pages = (len(result) + limit - 1) // limit if len(result) > 0 else 1
     
     return PaginatedResponse(
         items=paginated_result,
         total=len(result),  # Total after location filtering (for current page range)
-        page=page,
+        page=current_page,
         size=limit,
         pages=pages
     )
 
 
-@router.get("/newly-arrived", response_model=List[ProductListResponse])
+@router.get("/newly-arrived", response_model=PaginatedResponse[ProductListResponse])
 async def get_newly_arrived_products(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    skip: Optional[int] = Query(None, ge=0, description="Skip items (alternative to page, deprecated)"),
     # Location filtering parameters
     latitude: Optional[float] = Query(None, description="Customer's latitude"),
     longitude: Optional[float] = Query(None, description="Customer's longitude"),
@@ -225,6 +231,10 @@ async def get_newly_arrived_products(
     current_user: User = Depends(get_customer_user)
 ):
     """Get newly arrived products (Customer only) - Products added in last 7 days within 5km radius"""
+    # Calculate skip from page if not provided
+    if skip is None:
+        skip = (page - 1) * limit
+    
     # Get customer location - auto-uses stored pincode if available
     customer_lat, customer_lon = get_customer_location(latitude, longitude, city, current_user)
     
@@ -295,14 +305,28 @@ async def get_newly_arrived_products(
         }
         result.append(product_dict)
     
-    return result
+    # Apply pagination to filtered results
+    paginated_result = result[:limit]
+    
+    # Calculate pagination metadata
+    current_page = page  # Use the provided page parameter
+    pages = (len(result) + limit - 1) // limit if len(result) > 0 else 1
+    
+    return PaginatedResponse(
+        items=paginated_result,
+        total=len(result),  # Total after location filtering
+        page=current_page,
+        size=limit,
+        pages=pages
+    )
 
 
-@router.get("/category/{category_id}", response_model=List[ProductListResponse])
+@router.get("/category/{category_id}", response_model=PaginatedResponse[ProductListResponse])
 async def get_products_by_category(
     category_id: str,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=1000),
+    page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+    limit: int = Query(20, ge=1, le=1000, description="Items per page"),
+    skip: Optional[int] = Query(None, ge=0, description="Skip items (alternative to page, deprecated)"),
     min_price: Optional[float] = Query(None, ge=0),
     max_price: Optional[float] = Query(None, ge=0),
     search: Optional[str] = Query(None),
@@ -317,6 +341,10 @@ async def get_products_by_category(
     current_user: User = Depends(get_customer_user)
 ):
     """Get products by category with location-based filtering (within 5km radius) (Customer only)"""
+    # Calculate skip from page if not provided
+    if skip is None:
+        skip = (page - 1) * limit
+    
     # Get customer location - auto-uses stored pincode if available
     customer_lat, customer_lon = get_customer_location(latitude, longitude, city, current_user)
     
@@ -407,14 +435,28 @@ async def get_products_by_category(
     else:  # created_at
         result.sort(key=lambda x: x["created_at"], reverse=(sort_order == "desc"))
     
-    return result
+    # Apply pagination to filtered results
+    paginated_result = result[:limit]
+    
+    # Calculate pagination metadata
+    current_page = page  # Use the provided page parameter
+    pages = (len(result) + limit - 1) // limit if len(result) > 0 else 1
+    
+    return PaginatedResponse(
+        items=paginated_result,
+        total=len(result),  # Total after location filtering
+        page=current_page,
+        size=limit,
+        pages=pages
+    )
 
 
-@router.get("/seller/{seller_id}", response_model=List[ProductListResponse])
+@router.get("/seller/{seller_id}", response_model=PaginatedResponse[ProductListResponse])
 async def get_products_by_seller(
     seller_id: str,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=1000),
+    page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+    limit: int = Query(20, ge=1, le=1000, description="Items per page"),
+    skip: Optional[int] = Query(None, ge=0, description="Skip items (alternative to page, deprecated)"),
     category_id: Optional[str] = Query(None),
     min_price: Optional[float] = Query(None, ge=0),
     max_price: Optional[float] = Query(None, ge=0),
@@ -430,6 +472,10 @@ async def get_products_by_seller(
     current_user: User = Depends(get_customer_user)
 ):
     """Get all products from a specific seller (Customer only)"""
+    # Calculate skip from page if not provided
+    if skip is None:
+        skip = (page - 1) * limit
+    
     # Verify seller exists and is approved
     seller = db.query(Seller).options(
         joinedload(Seller.user)
@@ -491,6 +537,9 @@ async def get_products_by_seller(
         else:
             query = query.order_by(Product.created_at.desc())
     
+    # Get total count before pagination
+    total = query.count()
+    
     products = query.offset(skip).limit(limit).all()
     ratings_map = get_rating_stats_for_products(db, [product.id for product in products])
     
@@ -519,7 +568,17 @@ async def get_products_by_seller(
         }
         result.append(product_dict)
     
-    return result
+    # Calculate pagination metadata
+    current_page = page  # Use the provided page parameter
+    pages = (total + limit - 1) // limit if total > 0 else 1
+    
+    return PaginatedResponse(
+        items=result,
+        total=total,
+        page=current_page,
+        size=limit,
+        pages=pages
+    )
 
 
 @router.get("/{product_id}", response_model=ProductResponse)

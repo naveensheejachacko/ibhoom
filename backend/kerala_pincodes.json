@@ -107,7 +107,8 @@
   "thrissur": {
     "680001": {"lat": 10.5276, "lon": 76.2144, "area": "Thrissur Central"},
     "680002": {"lat": 10.5276, "lon": 76.2144, "area": "Thrissur South"},
-    "680003": {"lat": 10.5276, "lon": 76.2144, "area": "Thrissur East"}
+    "680003": {"lat": 10.5276, "lon": 76.2144, "area": "Thrissur East"},
+    "680512": {"lat": 10.5167, "lon": 76.2167, "area": "Thrissur Rural"}
   },
   "other_districts": {
     "691001": {"lat": 8.8932, "lon": 76.6141, "area": "Kollam"},
@@ -120,6 +121,10 @@
     "688001": {"lat": 9.4981, "lon": 76.3388, "area": "Alappuzha"}
   }
 }
+
+
+
+
 
 
 

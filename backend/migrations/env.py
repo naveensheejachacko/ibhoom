@@ -20,7 +20,8 @@ from app.models import (
     CategoryAttribute, AttributeType, Seller, Product, 
     ProductVariant, ProductVariantAttribute, ProductImage, 
     ProductStatus, Order, OrderItem, OrderStatus,
-    CommissionSetting, CommissionType, ProductReview, Cart, Wishlist
+    CommissionSetting, CommissionType, ProductReview, Cart, Wishlist,
+    Notification, NotificationType, FCMToken
 )
 
 # this is the Alembic Config object, which provides

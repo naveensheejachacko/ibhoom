@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import datetime
 from pathlib import Path
+import logging
 from ....core.database import get_db
 from ....core.dependencies import get_customer_user
 from ....models.user import User
@@ -13,6 +14,7 @@ from ....schemas.order import OrderCreate, OrderResponse, OrderListResponse, Ord
 from ....schemas.pagination import PaginatedResponse
 from ....services import order_service
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -25,9 +27,102 @@ async def create_order(
     """Create a new order (Customer only)"""
     try:
         db_order = order_service.create_order(db, order, current_user.id)
-        return db_order
+        
+        # Reload order with all relationships for response serialization
+        # Use a fresh query to ensure clean transaction state
+        # If previous query failed due to transaction issues, this will work
+        try:
+            db_order = db.query(Order).options(
+                joinedload(Order.items).joinedload(OrderItem.product),
+                joinedload(Order.items).joinedload(OrderItem.variant)
+            ).filter(Order.id == db_order.id).first()
+        except Exception as reload_error:
+            # If reload fails due to transaction issues, rollback and try again
+            logger.warning(f"First reload attempt failed: {reload_error}, retrying...")
+            db.rollback()
+            db_order = db.query(Order).options(
+                joinedload(Order.items).joinedload(OrderItem.product),
+                joinedload(Order.items).joinedload(OrderItem.variant)
+            ).filter(Order.id == db_order.id).first()
+        
+        if not db_order:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Order created but could not be retrieved"
+            )
+        
+        # Build response with product details
+        items_with_details = []
+        for item in db_order.items:
+            product = item.product
+            variant = item.variant if item.product_variant_id else None
+            
+            # Get product image - try primary first, then any image
+            primary_image = db.query(ProductImage).filter(
+                ProductImage.product_id == product.id,
+                ProductImage.is_primary == True
+            ).first()
+            
+            if not primary_image:
+                # Fallback to any image if no primary image
+                any_image = db.query(ProductImage).filter(
+                    ProductImage.product_id == product.id
+                ).order_by(ProductImage.sort_order.asc()).first()
+                product_image = any_image.image_url if any_image else None
+            else:
+                product_image = primary_image.image_url
+            
+            items_with_details.append(OrderItemResponse(
+                id=item.id,
+                product_id=item.product_id,
+                product_variant_id=item.product_variant_id,
+                quantity=item.quantity,
+                seller_unit_price=float(item.seller_unit_price),
+                customer_unit_price=float(item.customer_unit_price),
+                commission_unit_rate=float(item.commission_unit_rate),
+                commission_unit_amount=float(item.commission_unit_amount),
+                total_seller_amount=float(item.total_seller_amount),
+                total_customer_amount=float(item.total_customer_amount),
+                total_commission_amount=float(item.total_commission_amount),
+                product_name=item.product_name,
+                variant_name=variant.variant_name if variant else None,
+                product_image=product_image
+            ))
+        
+        # Return properly constructed response
+        return OrderResponse(
+            id=db_order.id,
+            order_number=db_order.order_number,
+            customer_id=db_order.customer_id,
+            total_customer_amount=float(db_order.total_customer_amount),
+            total_seller_amount=float(db_order.total_seller_amount),
+            total_commission_amount=float(db_order.total_commission_amount),
+            status=db_order.status,
+            payment_status=db_order.payment_status,
+            delivery_address=db_order.delivery_address,
+            delivery_city=db_order.delivery_city,
+            delivery_state=db_order.delivery_state,
+            delivery_pincode=db_order.delivery_pincode,
+            phone=db_order.phone,
+            notes=db_order.notes,
+            admin_notes=db_order.admin_notes,
+            seller_notes=db_order.seller_notes,
+            return_reason=db_order.return_reason,
+            return_notes=db_order.return_notes,
+            created_at=db_order.created_at,
+            updated_at=db_order.updated_at,
+            items=items_with_details
+        )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        # Rollback transaction on any error
+        db.rollback()
+        logger.error(f"Error creating order: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create order: {str(e)}"
+        )
 
 
 @router.get("/", response_model=PaginatedResponse[OrderListResponse])

@@ -265,33 +265,53 @@ class FirebaseService:
         Returns:
             Dictionary with send results
         """
-        from ..models.fcm_token import FCMToken
+        try:
+            from ..models.fcm_token import FCMToken
+        except ImportError:
+            logger.warning("FCMToken model not available")
+            return {"success_count": 0, "failure_count": 0, "message": "FCM tokens not configured"}
         
-        # Get all active FCM tokens for the user
-        tokens = db.query(FCMToken.token).filter(
-            FCMToken.user_id == user_id,
-            FCMToken.is_active == True
-        ).all()
-        
-        if not tokens:
-            logger.info(f"No active FCM tokens found for user {user_id}")
-            return {"success_count": 0, "failure_count": 0, "message": "No active tokens"}
-        
-        token_list = [token[0] for token in tokens]
-        
-        # Update last_used_at for tokens
-        from datetime import datetime
-        db.query(FCMToken).filter(
-            FCMToken.user_id == user_id,
-            FCMToken.is_active == True
-        ).update({"last_used_at": datetime.utcnow()})
-        db.commit()
-        
-        return FirebaseService.send_multicast_notification(
-            tokens=token_list,
-            title=title,
-            body=body,
-            data=data,
-            image_url=image_url
-        )
+        try:
+            # Check if table exists by attempting to query
+            # If table doesn't exist, this will raise an exception
+            tokens = db.query(FCMToken.token).filter(
+                FCMToken.user_id == user_id,
+                FCMToken.is_active == True
+            ).all()
+            
+            if not tokens:
+                logger.info(f"No active FCM tokens found for user {user_id}")
+                return {"success_count": 0, "failure_count": 0, "message": "No active tokens"}
+            
+            token_list = [token[0] for token in tokens]
+            
+            # Update last_used_at for tokens (in a separate transaction to avoid affecting main transaction)
+            try:
+                from datetime import datetime
+                db.query(FCMToken).filter(
+                    FCMToken.user_id == user_id,
+                    FCMToken.is_active == True
+                ).update({"last_used_at": datetime.utcnow()})
+                db.commit()
+            except Exception as update_error:
+                # Rollback the update if it fails, but don't fail the whole operation
+                db.rollback()
+                logger.warning(f"Failed to update FCM token last_used_at: {update_error}")
+            
+            return FirebaseService.send_multicast_notification(
+                tokens=token_list,
+                title=title,
+                body=body,
+                data=data,
+                image_url=image_url
+            )
+        except Exception as e:
+            # Handle case where fcm_tokens table doesn't exist or other DB errors
+            error_msg = str(e)
+            if "does not exist" in error_msg or "UndefinedTable" in error_msg:
+                logger.warning(f"FCM tokens table does not exist. Run migration to create it. Error: {error_msg}")
+                return {"success_count": 0, "failure_count": 0, "message": "FCM tokens table not created yet"}
+            else:
+                logger.error(f"Error querying FCM tokens: {error_msg}")
+                return {"success_count": 0, "failure_count": 0, "message": f"Error: {error_msg}"}
 

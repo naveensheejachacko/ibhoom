@@ -18,3 +18,7 @@ __pycache__/
 *.sqlite3
 backend/marketplace.db
 marketplace.db
+
+
+#firebase service account key
+firebase-service-account.json

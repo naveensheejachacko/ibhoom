@@ -7,9 +7,9 @@ from ..models.user import UserRole
 class UserListResponse(BaseModel):
     id: str
     email: str
-    first_name: str
-    last_name: str
-    phone: Optional[str]
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone: Optional[str] = None
     role: UserRole
     is_active: bool
     is_verified: bool

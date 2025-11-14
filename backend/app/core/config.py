@@ -70,6 +70,11 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: Optional[str] = None  # SMTP password or app password
     SMTP_FROM_EMAIL: str = "noreply@marketplace.com"  # From email address
     
+    # Firebase Cloud Messaging (FCM) Configuration
+    FIREBASE_ENABLED: bool = False  # Set to True to enable Firebase push notifications
+    FIREBASE_SERVICE_ACCOUNT_PATH: Optional[str] = None  # Path to Firebase service account JSON file
+    FIREBASE_SERVICE_ACCOUNT_JSON: Optional[str] = None  # Firebase service account JSON as string (alternative to file path)
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

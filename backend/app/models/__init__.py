@@ -9,6 +9,7 @@ from .review import ProductReview
 from .cart import Cart, Wishlist
 from .notification import Notification, NotificationType
 from .banner import Banner, BannerPosition, BannerStatus
+from .fcm_token import FCMToken
 
 __all__ = [
     "User", "UserRole",
@@ -21,6 +22,7 @@ __all__ = [
     "ProductReview",
     "Cart", "Wishlist",
     "Notification", "NotificationType",
-    "Banner", "BannerPosition", "BannerStatus"
+    "Banner", "BannerPosition", "BannerStatus",
+    "FCMToken"
 ]
 

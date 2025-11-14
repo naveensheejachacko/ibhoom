@@ -23,7 +23,13 @@ const Orders: React.FC = () => {
       const params: any = {};
       if (statusFilter) params.status = statusFilter;
       const data = await sellerApi.getOrders(params);
-      setOrders(data);
+      // Handle paginated response
+      if (data.items) {
+        setOrders(data.items);
+      } else {
+        // Fallback for non-paginated response
+        setOrders(Array.isArray(data) ? data : []);
+      }
     } catch (error: any) {
       console.error('Error fetching orders:', error);
       toast.show('Failed to fetch orders', { type: 'error' });
@@ -67,7 +73,7 @@ const Orders: React.FC = () => {
       case 'ready for dispatch': return <Package className="w-4 h-4" />;
       case 'dispatched': return <CheckCircle className="w-4 h-4" />;
       case 'delivered': return <CheckCircle className="w-4 h-4" />;
-      case 'cancelled': return <XCircle className="w-4 h-4" />;
+      case 'cancelled': return <X className="w-4 h-4" />;
       default: return <Clock className="w-4 h-4" />;
     }
   };

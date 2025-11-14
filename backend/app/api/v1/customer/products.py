@@ -631,7 +631,7 @@ async def get_product_details(
         "tags": product.tags,
         "meta_title": product.meta_title,
         "meta_description": product.meta_description,
-        "admin_notes": product.admin_notes,
+        "admin_notes": None,  # Admin notes not exposed to customers (stored in rejection_reason field)
         "created_at": product.created_at,
         "updated_at": product.updated_at,
         "images": product.images,

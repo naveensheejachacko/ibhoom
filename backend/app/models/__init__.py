@@ -8,6 +8,7 @@ from .commission import CommissionSetting, CommissionType
 from .review import ProductReview
 from .cart import Cart, Wishlist
 from .notification import Notification, NotificationType
+from .banner import Banner, BannerPosition, BannerStatus
 
 __all__ = [
     "User", "UserRole",
@@ -19,6 +20,7 @@ __all__ = [
     "CommissionSetting", "CommissionType",
     "ProductReview",
     "Cart", "Wishlist",
-    "Notification", "NotificationType"
+    "Notification", "NotificationType",
+    "Banner", "BannerPosition", "BannerStatus"
 ]
 

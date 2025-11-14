@@ -31,7 +31,14 @@ const UsersPage: React.FC = () => {
     try {
       setIsLoading(true);
       const data = await adminApi.getUsers();
-      setUsers(data);
+      console.log('Fetched users data:', data); // Debug log
+      // Ensure we have an array and each user has unique data
+      if (Array.isArray(data)) {
+        setUsers(data);
+      } else {
+        console.error('Invalid users data format:', data);
+        setUsers([]);
+      }
     } catch (error) {
       console.error('Error fetching users:', error);
     } finally {
@@ -162,7 +169,9 @@ const UsersPage: React.FC = () => {
                     </div>
                     <div>
                       <h4 className="font-medium text-secondary-900">
-                        {user.first_name} {user.last_name}
+                        {user.first_name || user.last_name 
+                          ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                          : user.email.split('@')[0] || 'User'}
                       </h4>
                       <p className="text-sm text-secondary-600">{user.email}</p>
                       <div className="flex items-center space-x-4 mt-1">

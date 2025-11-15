@@ -1,0 +1,28 @@
+[Unit]
+Description=ibhoom FastAPI Backend Service
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/ibhoom/backend
+Environment="PATH=/var/www/ibhoom/backend/venv/bin"
+EnvironmentFile=/var/www/ibhoom/backend/.env
+ExecStart=/var/www/ibhoom/backend/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ibhoom-backend
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/ibhoom/backend/uploads /var/www/ibhoom/backend/static
+
+[Install]
+WantedBy=multi-user.target

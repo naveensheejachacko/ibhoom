@@ -176,9 +176,34 @@ async def register_seller(seller_data: SellerRegister, db: Session = Depends(get
     return db_user
 
 
-# Admin registration has been moved to /api/v1/admin-setup/setup
-# This endpoint is protected by a secret key and is not publicly accessible
-# Use the admin-setup endpoint with X-Admin-Setup-Secret header instead
+@router.post("/register/admin", response_model=UserResponse)
+async def register_admin(user_data: UserCreate, db: Session = Depends(get_db)):
+    """Register admin - Private endpoint, not publicly documented"""
+    # Check if user already exists
+    if db.query(User).filter(User.email == user_data.email).first():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered"
+        )
+    
+    # Role is automatically set to admin
+    
+    # Create admin user
+    db_user = User(
+        email=user_data.email,
+        password_hash=get_password_hash(user_data.password),
+        first_name=user_data.first_name,
+        last_name=user_data.last_name,
+        phone=user_data.phone,
+        role=UserRole.ADMIN,
+        is_verified=True
+    )
+    
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    
+    return db_user
 
 
 # Import here to avoid circular imports

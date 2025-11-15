@@ -19,6 +19,9 @@ __pycache__/
 backend/marketplace.db
 marketplace.db
 
+# Node modules (should never be committed)
+node_modules/
+**/node_modules/
 
 #firebase service account key
 firebase-service-account.json

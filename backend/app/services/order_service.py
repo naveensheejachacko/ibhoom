@@ -308,22 +308,9 @@ def update_order_status_admin(db: Session, order_id: str, status_update: OrderSt
         if current_status not in [OrderStatus.DISPATCHED, OrderStatus.READY_FOR_DISPATCH]:
             raise ValueError(f"Can only mark as delivered from dispatched or ready_for_dispatch status, current: {current_status.value}")
         
-        # Generate invoice when order is marked as delivered
-        try:
-            from ..utils.invoice import generate_invoice_pdf
-            from pathlib import Path
-            
-            # Get the backend directory (parent of app)
-            backend_dir = Path(__file__).parent.parent.parent
-            invoice_dir = backend_dir / "static" / "invoices"
-            invoice_dir.mkdir(parents=True, exist_ok=True)
-            
-            # Generate and save invoice
-            invoice_buffer = generate_invoice_pdf(db_order, output_path=invoice_dir)
-        except Exception as e:
-            # Log error but don't fail the order status update
-            import logging
-            logging.error(f"Failed to generate invoice for order {db_order.order_number}: {str(e)}")
+        # Note: Invoice generation is now done on-demand when requested
+        # We don't save invoices to disk to save space - they're generated on-the-fly
+        # This prevents disk space issues as the number of orders grows
     
     # Admin can cancel from pending, processing, ready_for_dispatch
     elif status_update.status == OrderStatus.CANCELLED:

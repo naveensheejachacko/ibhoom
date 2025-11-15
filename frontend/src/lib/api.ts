@@ -175,13 +175,43 @@ export const adminApi = {
     return response.data;
   },
   
-  createCategory: async (data: any) => {
-    const response = await api.post('/api/v1/admin/categories', data);
+  createCategory: async (data: any, iconFile?: File) => {
+    const formData = new FormData();
+    formData.append('name', data.name);
+    if (data.description) formData.append('description', data.description);
+    if (data.parent_id) formData.append('parent_id', data.parent_id);
+    if (data.sort_order !== undefined) formData.append('sort_order', data.sort_order.toString());
+    if (data.is_active !== undefined) formData.append('is_active', data.is_active.toString());
+    if (iconFile) {
+      formData.append('icon', iconFile);
+    } else if (data.icon_url) {
+      formData.append('icon_url', data.icon_url);
+    }
+    const response = await api.post('/api/v1/admin/categories', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
   
-  updateCategory: async (id: string, data: any) => {
-    const response = await api.put(`/api/v1/admin/categories/${id}`, data);
+  updateCategory: async (id: string, data: any, iconFile?: File) => {
+    const formData = new FormData();
+    if (data.name !== undefined) formData.append('name', data.name);
+    if (data.description !== undefined) formData.append('description', data.description || '');
+    if (data.parent_id !== undefined) formData.append('parent_id', data.parent_id || '');
+    if (data.sort_order !== undefined) formData.append('sort_order', data.sort_order.toString());
+    if (data.is_active !== undefined) formData.append('is_active', data.is_active.toString());
+    if (iconFile) {
+      formData.append('icon', iconFile);
+    } else if (data.icon_url !== undefined) {
+      formData.append('icon_url', data.icon_url || '');
+    }
+    const response = await api.put(`/api/v1/admin/categories/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
   

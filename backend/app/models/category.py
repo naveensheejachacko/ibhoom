@@ -12,6 +12,7 @@ class Category(Base):
     name = Column(String(100), nullable=False)
     slug = Column(String(100), unique=True, index=True)
     description = Column(Text)
+    icon_url = Column(String(500), nullable=True)
     parent_id = Column(String, ForeignKey("categories.id"))
     level = Column(Integer, default=1)
     sort_order = Column(Integer, default=0)

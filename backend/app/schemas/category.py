@@ -6,6 +6,7 @@ from datetime import datetime
 class CategoryBase(BaseModel):
     name: str
     description: Optional[str] = None
+    icon_url: Optional[str] = None
     parent_id: Optional[str] = None
     sort_order: int = 0
     is_active: bool = True
@@ -18,6 +19,7 @@ class CategoryCreate(CategoryBase):
 class CategoryUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    icon_url: Optional[str] = None
     parent_id: Optional[str] = None
     sort_order: Optional[int] = None
     is_active: Optional[bool] = None

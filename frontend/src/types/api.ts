@@ -3,6 +3,7 @@ export interface Category {
   name: string;
   slug: string;
   description?: string;
+  icon_url?: string;
   parent_id?: string;
   path: string;
   sort_order: number;

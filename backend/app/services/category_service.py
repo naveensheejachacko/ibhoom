@@ -53,6 +53,7 @@ def create_category(db: Session, category: CategoryCreate) -> Category:
         name=category.name,
         slug=slug,
         description=category.description,
+        icon_url=category.icon_url,
         parent_id=category.parent_id,
         level=level,
         sort_order=category.sort_order,

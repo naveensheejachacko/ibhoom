@@ -24,15 +24,96 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor for error handling
+// Response interceptor for automatic token refresh
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: any) => void;
+  reject: (error?: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+  async (error) => {
+    const originalRequest = error.config;
+
+    // If error is 401 and we haven't tried to refresh yet
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // If already refreshing, queue this request
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      const refreshToken = localStorage.getItem('refresh_token');
+
+      if (!refreshToken) {
+        // No refresh token, logout user
+        processQueue(new Error('No refresh token'), null);
+        isRefreshing = false;
+        localStorage.removeItem('token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
+
+      try {
+        // Make direct API call to refresh endpoint (bypass interceptor to avoid circular dependency)
+        const refreshResponse = await axios.post(
+          `${API_BASE_URL}/api/v1/auth/refresh`,
+          { refresh_token: refreshToken },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+        
+        const { access_token, refresh_token: new_refresh_token } = refreshResponse.data;
+        
+        // Update tokens in localStorage
+        localStorage.setItem('token', access_token);
+        localStorage.setItem('refresh_token', new_refresh_token);
+        
+        // Update the original request with new token
+        originalRequest.headers.Authorization = `Bearer ${access_token}`;
+        
+        // Process queued requests
+        processQueue(null, access_token);
+        isRefreshing = false;
+        
+        // Retry the original request
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Refresh failed, logout user
+        processQueue(refreshError, null);
+        isRefreshing = false;
+        localStorage.removeItem('token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
     }
+
     return Promise.reject(error);
   }
 );
@@ -49,6 +130,13 @@ export const authApi = {
   
   getCurrentUser: async () => {
     const response = await api.get('/api/v1/auth/me');
+    return response.data;
+  },
+
+  refreshToken: async (refreshToken: string): Promise<LoginResponse> => {
+    const response = await api.post('/api/v1/auth/refresh', {
+      refresh_token: refreshToken,
+    });
     return response.data;
   },
 

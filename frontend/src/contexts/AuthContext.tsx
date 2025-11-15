@@ -28,6 +28,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const initAuth = async () => {
       try {
         const savedToken = localStorage.getItem('token');
+        const savedRefreshToken = localStorage.getItem('refresh_token');
         const savedUser = localStorage.getItem('user');
 
         if (savedToken && savedUser) {
@@ -40,8 +41,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(currentUser);
             localStorage.setItem('user', JSON.stringify(currentUser));
           } catch (error) {
-            // Token is invalid, clear auth state
-            logout();
+            // Token might be expired, try to refresh if we have refresh token
+            if (savedRefreshToken) {
+              try {
+                const response = await authApi.refreshToken(savedRefreshToken);
+                setToken(response.access_token);
+                localStorage.setItem('token', response.access_token);
+                localStorage.setItem('refresh_token', response.refresh_token);
+                setUser(response.user);
+                localStorage.setItem('user', JSON.stringify(response.user));
+              } catch (refreshError) {
+                // Refresh failed, clear auth state
+                logout();
+              }
+            } else {
+              // No refresh token, clear auth state
+              logout();
+            }
           }
         }
       } catch (error) {
@@ -63,7 +79,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setToken(response.access_token);
       setUser(response.user);
       
+      // Store both access and refresh tokens
       localStorage.setItem('token', response.access_token);
+      localStorage.setItem('refresh_token', response.refresh_token);
       localStorage.setItem('user', JSON.stringify(response.user));
       
       // Initialize Firebase notifications after successful login
@@ -106,6 +124,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
     setToken(null);
     localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
   };
 

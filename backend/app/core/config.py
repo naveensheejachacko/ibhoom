@@ -60,6 +60,7 @@ class Settings(BaseSettings):
     # Admin Configuration
     ADMIN_EMAIL: str = "admin@marketplace.com"
     ADMIN_PASSWORD: str = "admin123"  # Change this!
+    ADMIN_SETUP_SECRET: Optional[str] = None  # Secret key for admin setup endpoint (set in .env)
     
     # Email/SMTP Configuration for Notifications
     SMTP_ENABLED: bool = False  # Set to True to enable email notifications

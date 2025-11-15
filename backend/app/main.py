@@ -34,6 +34,10 @@ app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads"
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 
+# Import and include admin setup router (hidden endpoint)
+from .api.v1.admin_setup import router as admin_setup_router
+app.include_router(admin_setup_router, prefix="/api/v1/admin-setup", tags=["Admin Setup"])
+
 # Import and include admin router
 from .api.v1.admin.router import router as admin_router
 app.include_router(admin_router, prefix="/api/v1/admin", tags=["Admin"])

@@ -139,10 +139,6 @@ const Login: React.FC = () => {
               <Link to="/register/seller" className="font-medium text-primary-600 hover:text-primary-500">
                 Register as Seller
               </Link>
-              {' or '}
-              <Link to="/register/admin" className="font-medium text-primary-600 hover:text-primary-500">
-                Register as Admin
-              </Link>
             </p>
           </div>
         </form>

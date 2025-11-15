@@ -5,7 +5,6 @@ import AdminLayout from './components/Layout/AdminLayout';
 import SellerLayout from './components/Layout/SellerLayout';
 import Login from './components/Auth/Login';
 import SellerRegistration from './components/Auth/SellerRegistration';
-import AdminRegistration from './components/Auth/AdminRegistration';
 
 // Admin Pages
 import AdminDashboard from './pages/Admin/Dashboard';
@@ -33,7 +32,7 @@ function App() {
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register/seller" element={<SellerRegistration />} />
-            <Route path="/register/admin" element={<AdminRegistration />} />
+            {/* Admin registration removed - use /api/v1/admin-setup/setup with secret key */}
             
             {/* Admin Routes */}
             <Route

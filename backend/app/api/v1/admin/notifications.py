@@ -5,7 +5,7 @@ from ....core.database import get_db
 from ....core.dependencies import get_admin_user
 from ....models.user import User
 from ....schemas.notification import NotificationResponse, NotificationListResponse, NotificationUpdate
-from ....services import notification_service
+from ....services.notification_service import NotificationService
 
 router = APIRouter()
 
@@ -19,11 +19,11 @@ async def get_notifications(
     current_user: User = Depends(get_admin_user)
 ):
     """Get admin notifications (Admin only)"""
-    notifications = notification_service.get_user_notifications(
+    notifications = NotificationService.get_user_notifications(
         db, current_user.id, skip=skip, limit=limit, unread_only=unread_only
     )
     
-    total_unread = notification_service.get_unread_count(db, current_user.id)
+    total_unread = NotificationService.get_unread_count(db, current_user.id)
     total_count = len(notifications)
     
     return NotificationListResponse(
@@ -39,7 +39,7 @@ async def get_unread_count(
     current_user: User = Depends(get_admin_user)
 ):
     """Get count of unread notifications (Admin only)"""
-    count = notification_service.get_unread_count(db, current_user.id)
+    count = NotificationService.get_unread_count(db, current_user.id)
     return {"unread_count": count}
 
 
@@ -50,7 +50,7 @@ async def mark_notification_read(
     current_user: User = Depends(get_admin_user)
 ):
     """Mark a notification as read (Admin only)"""
-    success = notification_service.mark_as_read(db, notification_id, current_user.id)
+    success = NotificationService.mark_as_read(db, notification_id, current_user.id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -65,6 +65,6 @@ async def mark_all_read(
     current_user: User = Depends(get_admin_user)
 ):
     """Mark all notifications as read (Admin only)"""
-    count = notification_service.mark_all_as_read(db, current_user.id)
+    count = NotificationService.mark_all_as_read(db, current_user.id)
     return {"message": f"{count} notification(s) marked as read"}
 

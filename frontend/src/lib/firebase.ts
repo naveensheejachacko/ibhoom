@@ -205,7 +205,16 @@ export const initializeFirebaseNotifications = async (
   
   if (token) {
     // Setup foreground message listener
-    setupForegroundMessageListener(onMessageReceived);
+    // When a push notification is received, trigger a custom event to refresh notifications
+    setupForegroundMessageListener((payload) => {
+      // Dispatch custom event to refresh notifications in UI
+      window.dispatchEvent(new CustomEvent('notification-received', { detail: payload }));
+      
+      // Call custom handler if provided
+      if (onMessageReceived) {
+        onMessageReceived(payload);
+      }
+    });
     console.log('✅ Firebase notifications initialized');
   } else {
     console.warn('⚠️ Firebase notifications not initialized (permission denied or token unavailable)');

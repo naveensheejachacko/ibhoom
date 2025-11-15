@@ -78,8 +78,13 @@ class NotificationService:
         item_count = len(order.items)
         items_text = f"{item_count} item{'s' if item_count != 1 else ''}"
         
+        # Get customer name safely
+        customer_name = "Customer"
+        if order.customer:
+            customer_name = f"{order.customer.first_name or ''} {order.customer.last_name or ''}".strip() or "Customer"
+        
         title = f"New Order: {order.order_number}"
-        message = f"New order received from {order.customer.first_name} {order.customer.last_name}. Total: ₹{order.total_customer_amount:.2f} ({items_text})"
+        message = f"New order received from {customer_name}. Total: ₹{order.total_customer_amount:.2f} ({items_text})"
         
         return NotificationService.create_notification(
             db=db,

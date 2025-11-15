@@ -282,6 +282,27 @@ export const adminApi = {
     const response = await api.delete(`/api/v1/admin/attributes/category-attributes/${id}`);
     return response.data;
   },
+
+  // Notifications
+  getNotifications: async (params?: { skip?: number; limit?: number; unread_only?: boolean }) => {
+    const response = await api.get('/api/v1/admin/notifications', { params });
+    return response.data;
+  },
+
+  getUnreadCount: async () => {
+    const response = await api.get('/api/v1/admin/notifications/unread-count');
+    return response.data;
+  },
+
+  markNotificationRead: async (notificationId: string) => {
+    const response = await api.put(`/api/v1/admin/notifications/${notificationId}/read`);
+    return response.data;
+  },
+
+  markAllNotificationsRead: async () => {
+    const response = await api.put('/api/v1/admin/notifications/mark-all-read');
+    return response.data;
+  },
 };
 
 // Seller API
@@ -356,6 +377,27 @@ export const sellerApi = {
 
   updateOrderStatus: async (id: string, data: any) => {
     const response = await api.put(`/api/v1/seller/orders/${id}/status`, data);
+    return response.data;
+  },
+
+  // Notifications
+  getNotifications: async (params?: { skip?: number; limit?: number; unread_only?: boolean }) => {
+    const response = await api.get('/api/v1/seller/notifications', { params });
+    return response.data;
+  },
+
+  getUnreadCount: async () => {
+    const response = await api.get('/api/v1/seller/notifications/unread-count');
+    return response.data;
+  },
+
+  markNotificationRead: async (notificationId: string) => {
+    const response = await api.put(`/api/v1/seller/notifications/${notificationId}/read`);
+    return response.data;
+  },
+
+  markAllNotificationsRead: async () => {
+    const response = await api.put('/api/v1/seller/notifications/mark-all-read');
     return response.data;
   },
 };

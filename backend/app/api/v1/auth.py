@@ -178,7 +178,7 @@ async def register_seller(seller_data: SellerRegister, db: Session = Depends(get
 
 @router.post("/register/admin", response_model=UserResponse)
 async def register_admin(user_data: UserCreate, db: Session = Depends(get_db)):
-    """Register admin (for development only - should be protected in production)"""
+    """Register admin - Private endpoint, not publicly documented"""
     # Check if user already exists
     if db.query(User).filter(User.email == user_data.email).first():
         raise HTTPException(

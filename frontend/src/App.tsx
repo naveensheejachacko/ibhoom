@@ -33,7 +33,9 @@ function App() {
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register/seller" element={<SellerRegistration />} />
-            <Route path="/register/admin" element={<AdminRegistration />} />
+            
+            {/* Private Admin Setup Route - Not linked from anywhere */}
+            <Route path="/admin-setup" element={<AdminRegistration />} />
             
             {/* Admin Routes */}
             <Route

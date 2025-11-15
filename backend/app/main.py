@@ -59,6 +59,20 @@ async def startup_event():
         else:
             print("⚠️  WARNING: CLOUDINARY_URL not set! Product images will be stored as base64 in database.")
         
+        # Initialize Firebase if configured
+        if settings.FIREBASE_ENABLED:
+            try:
+                from .services.firebase_service import initialize_firebase
+                firebase_app = initialize_firebase()
+                if firebase_app:
+                    print("✅ Firebase Cloud Messaging initialized successfully")
+                else:
+                    print("⚠️  WARNING: Firebase enabled but initialization failed. Check your configuration.")
+            except Exception as e:
+                print(f"⚠️  Firebase initialization warning: {e}")
+        else:
+            print("ℹ️  Firebase notifications are disabled (set FIREBASE_ENABLED=true to enable)")
+        
         # Initialize default data (admin user, etc.)
         # Note: Migrations should run in startCommand before app starts
         from .utils.init_db import init_db

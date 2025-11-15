@@ -36,6 +36,7 @@ class User(Base):
     cart_items = relationship("Cart", back_populates="customer")
     wishlist_items = relationship("Wishlist", back_populates="customer")
     notifications = relationship("Notification", back_populates="user")
+    fcm_tokens = relationship("FCMToken", back_populates="user")
     
     @property
     def full_name(self):

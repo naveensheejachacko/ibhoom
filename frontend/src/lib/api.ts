@@ -24,15 +24,96 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor for error handling
+// Response interceptor for automatic token refresh
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: any) => void;
+  reject: (error?: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+  async (error) => {
+    const originalRequest = error.config;
+
+    // If error is 401 and we haven't tried to refresh yet
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // If already refreshing, queue this request
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      const refreshToken = localStorage.getItem('refresh_token');
+
+      if (!refreshToken) {
+        // No refresh token, logout user
+        processQueue(new Error('No refresh token'), null);
+        isRefreshing = false;
+        localStorage.removeItem('token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
+
+      try {
+        // Make direct API call to refresh endpoint (bypass interceptor to avoid circular dependency)
+        const refreshResponse = await axios.post(
+          `${API_BASE_URL}/api/v1/auth/refresh`,
+          { refresh_token: refreshToken },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+        
+        const { access_token, refresh_token: new_refresh_token } = refreshResponse.data;
+        
+        // Update tokens in localStorage
+        localStorage.setItem('token', access_token);
+        localStorage.setItem('refresh_token', new_refresh_token);
+        
+        // Update the original request with new token
+        originalRequest.headers.Authorization = `Bearer ${access_token}`;
+        
+        // Process queued requests
+        processQueue(null, access_token);
+        isRefreshing = false;
+        
+        // Retry the original request
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Refresh failed, logout user
+        processQueue(refreshError, null);
+        isRefreshing = false;
+        localStorage.removeItem('token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
     }
+
     return Promise.reject(error);
   }
 );
@@ -49,6 +130,13 @@ export const authApi = {
   
   getCurrentUser: async () => {
     const response = await api.get('/api/v1/auth/me');
+    return response.data;
+  },
+
+  refreshToken: async (refreshToken: string): Promise<LoginResponse> => {
+    const response = await api.post('/api/v1/auth/refresh', {
+      refresh_token: refreshToken,
+    });
     return response.data;
   },
 
@@ -87,13 +175,43 @@ export const adminApi = {
     return response.data;
   },
   
-  createCategory: async (data: any) => {
-    const response = await api.post('/api/v1/admin/categories', data);
+  createCategory: async (data: any, iconFile?: File) => {
+    const formData = new FormData();
+    formData.append('name', data.name);
+    if (data.description) formData.append('description', data.description);
+    if (data.parent_id) formData.append('parent_id', data.parent_id);
+    if (data.sort_order !== undefined) formData.append('sort_order', data.sort_order.toString());
+    if (data.is_active !== undefined) formData.append('is_active', data.is_active.toString());
+    if (iconFile) {
+      formData.append('icon', iconFile);
+    } else if (data.icon_url) {
+      formData.append('icon_url', data.icon_url);
+    }
+    const response = await api.post('/api/v1/admin/categories', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
   
-  updateCategory: async (id: string, data: any) => {
-    const response = await api.put(`/api/v1/admin/categories/${id}`, data);
+  updateCategory: async (id: string, data: any, iconFile?: File) => {
+    const formData = new FormData();
+    if (data.name !== undefined) formData.append('name', data.name);
+    if (data.description !== undefined) formData.append('description', data.description || '');
+    if (data.parent_id !== undefined) formData.append('parent_id', data.parent_id || '');
+    if (data.sort_order !== undefined) formData.append('sort_order', data.sort_order.toString());
+    if (data.is_active !== undefined) formData.append('is_active', data.is_active.toString());
+    if (iconFile) {
+      formData.append('icon', iconFile);
+    } else if (data.icon_url !== undefined) {
+      formData.append('icon_url', data.icon_url || '');
+    }
+    const response = await api.put(`/api/v1/admin/categories/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
   
@@ -282,6 +400,27 @@ export const adminApi = {
     const response = await api.delete(`/api/v1/admin/attributes/category-attributes/${id}`);
     return response.data;
   },
+
+  // Notifications
+  getNotifications: async (params?: { skip?: number; limit?: number; unread_only?: boolean }) => {
+    const response = await api.get('/api/v1/admin/notifications', { params });
+    return response.data;
+  },
+
+  getUnreadCount: async () => {
+    const response = await api.get('/api/v1/admin/notifications/unread-count');
+    return response.data;
+  },
+
+  markNotificationRead: async (notificationId: string) => {
+    const response = await api.put(`/api/v1/admin/notifications/${notificationId}/read`);
+    return response.data;
+  },
+
+  markAllNotificationsRead: async () => {
+    const response = await api.put('/api/v1/admin/notifications/mark-all-read');
+    return response.data;
+  },
 };
 
 // Seller API
@@ -356,6 +495,27 @@ export const sellerApi = {
 
   updateOrderStatus: async (id: string, data: any) => {
     const response = await api.put(`/api/v1/seller/orders/${id}/status`, data);
+    return response.data;
+  },
+
+  // Notifications
+  getNotifications: async (params?: { skip?: number; limit?: number; unread_only?: boolean }) => {
+    const response = await api.get('/api/v1/seller/notifications', { params });
+    return response.data;
+  },
+
+  getUnreadCount: async () => {
+    const response = await api.get('/api/v1/seller/notifications/unread-count');
+    return response.data;
+  },
+
+  markNotificationRead: async (notificationId: string) => {
+    const response = await api.put(`/api/v1/seller/notifications/${notificationId}/read`);
+    return response.data;
+  },
+
+  markAllNotificationsRead: async () => {
+    const response = await api.put('/api/v1/seller/notifications/mark-all-read');
     return response.data;
   },
 };

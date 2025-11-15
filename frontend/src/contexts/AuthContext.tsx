@@ -28,6 +28,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const initAuth = async () => {
       try {
         const savedToken = localStorage.getItem('token');
+        const savedRefreshToken = localStorage.getItem('refresh_token');
         const savedUser = localStorage.getItem('user');
 
         if (savedToken && savedUser) {
@@ -40,8 +41,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(currentUser);
             localStorage.setItem('user', JSON.stringify(currentUser));
           } catch (error) {
-            // Token is invalid, clear auth state
-            logout();
+            // Token might be expired, try to refresh if we have refresh token
+            if (savedRefreshToken) {
+              try {
+                const response = await authApi.refreshToken(savedRefreshToken);
+                setToken(response.access_token);
+                localStorage.setItem('token', response.access_token);
+                localStorage.setItem('refresh_token', response.refresh_token);
+                setUser(response.user);
+                localStorage.setItem('user', JSON.stringify(response.user));
+              } catch (refreshError) {
+                // Refresh failed, clear auth state
+                logout();
+              }
+            } else {
+              // No refresh token, clear auth state
+              logout();
+            }
           }
         }
       } catch (error) {
@@ -63,8 +79,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setToken(response.access_token);
       setUser(response.user);
       
+      // Store both access and refresh tokens
       localStorage.setItem('token', response.access_token);
+      localStorage.setItem('refresh_token', response.refresh_token);
       localStorage.setItem('user', JSON.stringify(response.user));
+      
+      // Initialize Firebase notifications after successful login
+      try {
+        const userRole = response.user.role as 'admin' | 'seller' | 'customer';
+        if (userRole === 'admin' || userRole === 'seller') {
+          const { initializeFirebaseNotifications } = await import('../lib/firebase');
+          await initializeFirebaseNotifications(userRole);
+        }
+      } catch (firebaseError) {
+        // Don't fail login if Firebase initialization fails
+        console.warn('Firebase notification initialization failed:', firebaseError);
+      }
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -73,10 +103,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // Delete FCM token before logout
+    try {
+      const savedToken = localStorage.getItem('fcm_token');
+      const savedUser = localStorage.getItem('user');
+      if (savedToken && savedUser) {
+        const user = JSON.parse(savedUser);
+        const userRole = user.role as 'admin' | 'seller' | 'customer';
+        if (userRole === 'admin' || userRole === 'seller') {
+          const { deleteFCMToken } = await import('../lib/firebase');
+          await deleteFCMToken(savedToken, userRole);
+        }
+        localStorage.removeItem('fcm_token');
+      }
+    } catch (error) {
+      console.warn('Failed to delete FCM token on logout:', error);
+    }
+    
     setUser(null);
     setToken(null);
     localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
   };
 

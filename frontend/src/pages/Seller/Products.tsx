@@ -25,9 +25,19 @@ const Products: React.FC = () => {
     try {
       setIsLoading(true);
       const data = await sellerApi.getProducts();
-      setProducts(data);
+      // Handle paginated response - extract items array
+      if (data && data.items && Array.isArray(data.items)) {
+        setProducts(data.items);
+      } else if (Array.isArray(data)) {
+        // Fallback: if it's already an array, use it directly
+        setProducts(data);
+      } else {
+        console.error('Unexpected products data format:', data);
+        setProducts([]);
+      }
     } catch (error) {
       console.error('Error fetching products:', error);
+      setProducts([]);
     } finally {
       setIsLoading(false);
     }

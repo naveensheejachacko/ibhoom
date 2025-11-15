@@ -10,6 +10,7 @@ from ..models.notification import Notification, NotificationType
 from ..models.order import Order, OrderItem
 from ..models.user import User, UserRole
 from ..models.product import Product
+from ..models.seller import Seller
 
 logger = logging.getLogger(__name__)
 
@@ -77,8 +78,13 @@ class NotificationService:
         item_count = len(order.items)
         items_text = f"{item_count} item{'s' if item_count != 1 else ''}"
         
+        # Get customer name safely
+        customer_name = "Customer"
+        if order.customer:
+            customer_name = f"{order.customer.first_name or ''} {order.customer.last_name or ''}".strip() or "Customer"
+        
         title = f"New Order: {order.order_number}"
-        message = f"New order received from {order.customer.first_name} {order.customer.last_name}. Total: ₹{order.total_customer_amount:.2f} ({items_text})"
+        message = f"New order received from {customer_name}. Total: ₹{order.total_customer_amount:.2f} ({items_text})"
         
         return NotificationService.create_notification(
             db=db,
@@ -130,6 +136,7 @@ class NotificationService:
         """
         Create notifications for admin and all sellers when an order is placed.
         This method groups order items by seller and creates individual notifications.
+        Also sends Firebase push notifications if enabled.
         
         Args:
             db: Database session
@@ -140,7 +147,9 @@ class NotificationService:
         """
         results = {
             "admin_notified": False,
+            "admin_fcm_sent": False,
             "sellers_notified": {},
+            "sellers_fcm_sent": {},
             "errors": []
         }
         
@@ -159,6 +168,40 @@ class NotificationService:
             try:
                 admin_notification = NotificationService.notify_admin_new_order(db, order)
                 results["admin_notified"] = True
+                
+                # Send Firebase push notification to admin
+                # Wrap in try-except and ensure it doesn't affect the main transaction
+                try:
+                    from ..services.firebase_service import FirebaseService
+                    # Use a fresh session state - rollback any partial state first
+                    try:
+                        db.rollback()
+                    except:
+                        pass
+                    
+                    fcm_result = FirebaseService.send_to_user(
+                        db=db,
+                        user_id=admin_notification.user_id,
+                        title=admin_notification.title,
+                        body=admin_notification.message,
+                        data={
+                            "type": admin_notification.notification_type.value,
+                            "order_id": str(order.id),
+                            "notification_id": str(admin_notification.id)
+                        }
+                    )
+                    if fcm_result.get("success_count", 0) > 0:
+                        results["admin_fcm_sent"] = True
+                        logger.info(f"Firebase notification sent to admin for order {order.order_number}")
+                except Exception as fcm_error:
+                    # Rollback any partial transaction state
+                    try:
+                        db.rollback()
+                    except:
+                        pass
+                    logger.warning(f"Failed to send Firebase notification to admin: {str(fcm_error)}")
+                    results["errors"].append(f"Admin FCM error: {str(fcm_error)}")
+                    
             except Exception as e:
                 error_msg = f"Failed to notify admin: {str(e)}"
                 logger.error(error_msg)
@@ -168,8 +211,9 @@ class NotificationService:
             seller_items_map = {}
             for item in order.items:
                 # Get product with seller relationship
+                # Use class-bound attributes instead of strings for SQLAlchemy 2.0+
                 product = db.query(Product).options(
-                    joinedload(Product.seller).joinedload("user")
+                    joinedload(Product.seller).joinedload(Seller.user)
                 ).filter(Product.id == item.product_id).first()
                 
                 if not product or not product.seller:
@@ -186,10 +230,44 @@ class NotificationService:
             # Notify each seller
             for seller_user_id, seller_items in seller_items_map.items():
                 try:
-                    NotificationService.notify_seller_new_order(
+                    seller_notification = NotificationService.notify_seller_new_order(
                         db, order, seller_user_id, seller_items
                     )
                     results["sellers_notified"][seller_user_id] = True
+                    
+                    # Send Firebase push notification to seller
+                    # Wrap in try-except and ensure it doesn't affect the main transaction
+                    try:
+                        from ..services.firebase_service import FirebaseService
+                        # Use a fresh session state - rollback any partial state first
+                        try:
+                            db.rollback()
+                        except:
+                            pass
+                        
+                        fcm_result = FirebaseService.send_to_user(
+                            db=db,
+                            user_id=seller_user_id,
+                            title=seller_notification.title,
+                            body=seller_notification.message,
+                            data={
+                                "type": seller_notification.notification_type.value,
+                                "order_id": str(order.id),
+                                "notification_id": str(seller_notification.id)
+                            }
+                        )
+                        if fcm_result.get("success_count", 0) > 0:
+                            results["sellers_fcm_sent"][seller_user_id] = True
+                            logger.info(f"Firebase notification sent to seller {seller_user_id} for order {order.order_number}")
+                    except Exception as fcm_error:
+                        # Rollback any partial transaction state
+                        try:
+                            db.rollback()
+                        except:
+                            pass
+                        logger.warning(f"Failed to send Firebase notification to seller {seller_user_id}: {str(fcm_error)}")
+                        results["errors"].append(f"Seller {seller_user_id} FCM error: {str(fcm_error)}")
+                        
                 except Exception as e:
                     error_msg = f"Failed to notify seller {seller_user_id}: {str(e)}"
                     logger.error(error_msg)

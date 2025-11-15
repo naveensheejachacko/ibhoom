@@ -190,26 +190,52 @@ def create_order(db: Session, order: OrderCreate, customer_id: str) -> Order:
             product.stock_quantity -= item_data.quantity
     
     db.commit()
-    db.refresh(db_order)
+    
+    # Store order ID before any operations that might affect the transaction
+    order_id = db_order.id
+    order_number = db_order.order_number
     
     # Clear customer's cart after successful order creation
+    # Use a separate try-except to ensure it doesn't affect the main transaction
     try:
         from ..services.cart_service import clear_cart
         cleared_count = clear_cart(db, customer_id)
-        logger.info(f"Cleared {cleared_count} items from cart for customer {customer_id} after order {db_order.order_number}")
+        logger.info(f"Cleared {cleared_count} items from cart for customer {customer_id} after order {order_number}")
     except Exception as e:
         # Log error but don't fail order creation
-        logger.warning(f"Failed to clear cart for customer {customer_id} after order {db_order.order_number}: {str(e)}")
+        logger.warning(f"Failed to clear cart for customer {customer_id} after order {order_number}: {str(e)}")
+        # Rollback any partial cart clearing, but order is already committed
+        try:
+            db.rollback()
+        except:
+            pass
     
     # Send notifications to admin and sellers (non-blocking)
+    # IMPORTANT: Do this in a background task or ensure errors don't affect the session
     try:
         from ..services.notification_service import NotificationService
         notification_results = NotificationService.notify_order_placed(db, db_order)
         if notification_results.get("errors"):
-            logger.warning(f"Some notifications failed for order {db_order.order_number}: {notification_results['errors']}")
+            logger.warning(f"Some notifications failed for order {order_number}: {notification_results['errors']}")
     except Exception as e:
         # Log error but don't fail order creation
-        logger.error(f"Failed to send notifications for order {db_order.order_number}: {str(e)}")
+        logger.error(f"Failed to send notifications for order {order_number}: {str(e)}")
+        # Ensure transaction is rolled back if notification caused issues
+        try:
+            db.rollback()
+        except:
+            pass
+    
+    # Reload order with all relationships in a fresh query to avoid transaction issues
+    # This ensures we have a clean session state
+    from sqlalchemy.orm import joinedload
+    db_order = db.query(Order).options(
+        joinedload(Order.items)
+    ).filter(Order.id == order_id).first()
+    
+    if not db_order:
+        # If reload fails, raise error - order was created but we can't retrieve it
+        raise ValueError(f"Order {order_number} was created but could not be retrieved. Order ID: {order_id}")
     
     return db_order
 

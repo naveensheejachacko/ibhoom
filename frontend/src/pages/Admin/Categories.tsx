@@ -32,7 +32,10 @@ const Categories: React.FC = () => {
     name: '',
     description: '',
     parent_id: '',
+    icon_url: '',
   });
+  const [iconFile, setIconFile] = useState<File | null>(null);
+  const [iconPreview, setIconPreview] = useState<string | null>(null);
 
   const [showAttributesModal, setShowAttributesModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -100,13 +103,15 @@ const Categories: React.FC = () => {
     e.preventDefault();
     try {
       if (editingCategory) {
-        await adminApi.updateCategory(editingCategory.id, formData);
+        await adminApi.updateCategory(editingCategory.id, formData, iconFile || undefined);
       } else {
-        await adminApi.createCategory(formData);
+        await adminApi.createCategory(formData, iconFile || undefined);
       }
       setShowModal(false);
       setEditingCategory(null);
-      setFormData({ name: '', description: '', parent_id: '' });
+      setFormData({ name: '', description: '', parent_id: '', icon_url: '' });
+      setIconFile(null);
+      setIconPreview(null);
       fetchCategories();
     } catch (error) {
       console.error('Error saving category:', error);
@@ -119,7 +124,10 @@ const Categories: React.FC = () => {
       name: category.name,
       description: category.description || '',
       parent_id: category.parent_id || '',
+      icon_url: category.icon_url || '',
     });
+    setIconFile(null);
+    setIconPreview(category.icon_url || null);
     setShowModal(true);
   };
 
@@ -225,7 +233,15 @@ const Categories: React.FC = () => {
       <div key={category.id} style={{ marginLeft: level * 16 }}>
         <div className="flex items-center justify-between p-3 border border-secondary-200 rounded-lg mb-2">
           <div className="flex items-center space-x-3">
-            <FolderTree className="w-5 h-5 text-secondary-600" />
+            {category.icon_url ? (
+              <img 
+                src={category.icon_url} 
+                alt={category.name}
+                className="w-8 h-8 object-contain"
+              />
+            ) : (
+              <FolderTree className="w-5 h-5 text-secondary-600" />
+            )}
             <div>
               <h4 className="font-medium text-secondary-900">{category.name}</h4>
               <p className="text-sm text-secondary-600">{category.description}</p>
@@ -348,6 +364,53 @@ const Categories: React.FC = () => {
                   className="input-field h-24 resize-none"
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  Category Icon
+                </label>
+                <div className="space-y-2">
+                  {iconPreview && (
+                    <div className="flex items-center space-x-2">
+                      <img 
+                        src={iconPreview} 
+                        alt="Icon preview" 
+                        className="w-16 h-16 object-contain border border-secondary-200 rounded"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIconFile(null);
+                          setIconPreview(null);
+                          setFormData({ ...formData, icon_url: '' });
+                        }}
+                        className="text-sm text-red-600 hover:text-red-700"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setIconFile(file);
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setIconPreview(reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="input-field"
+                  />
+                  <p className="text-xs text-secondary-500">
+                    Upload a small icon image for this category (recommended: 64x64px or 128x128px)
+                  </p>
+                </div>
+              </div>
               
               <div className="flex space-x-3">
                 <button
@@ -355,7 +418,9 @@ const Categories: React.FC = () => {
                   onClick={() => {
                     setShowModal(false);
                     setEditingCategory(null);
-                    setFormData({ name: '', description: '', parent_id: '' });
+                    setFormData({ name: '', description: '', parent_id: '', icon_url: '' });
+                    setIconFile(null);
+                    setIconPreview(null);
                   }}
                   className="flex-1 btn-secondary"
                 >

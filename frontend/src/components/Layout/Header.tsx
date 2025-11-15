@@ -1,6 +1,7 @@
 import React from 'react';
-import { Bell, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import NotificationDropdown from '../Notifications/NotificationDropdown';
 
 interface HeaderProps {
   title: string;
@@ -8,6 +9,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ title }) => {
   const { user } = useAuth();
+  const userRole = user?.role as 'admin' | 'seller';
 
   return (
     <header className="bg-white border-b border-secondary-200 px-6 py-4">
@@ -15,7 +17,7 @@ const Header: React.FC<HeaderProps> = ({ title }) => {
         <div>
           <h2 className="text-2xl font-bold text-secondary-900">{title}</h2>
           <p className="text-sm text-secondary-500">
-            Welcome back, {user?.first_name}!
+            Welcome back, {user?.first_name || 'User'}!
           </p>
         </div>
 
@@ -30,17 +32,17 @@ const Header: React.FC<HeaderProps> = ({ title }) => {
             />
           </div>
 
-          {/* Notifications */}
-          <button className="relative p-2 text-secondary-600 hover:text-secondary-900 transition-colors duration-200">
-            <Bell className="w-5 h-5" />
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-          </button>
+          {/* Notifications - Only show for admin and seller */}
+          {(userRole === 'admin' || userRole === 'seller') && (
+            <NotificationDropdown userRole={userRole} />
+          )}
 
           {/* User Avatar */}
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
               <span className="text-white font-medium text-sm">
-                {user?.first_name?.[0]}{user?.last_name?.[0]}
+                {user?.first_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
+                {user?.last_name?.[0] || ''}
               </span>
             </div>
           </div>

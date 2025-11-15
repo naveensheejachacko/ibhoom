@@ -384,23 +384,23 @@ async def download_invoice(
             detail="Invoice can only be generated for delivered orders"
         )
     
-    # Check if invoice file exists
-    # Get the backend directory
-    backend_dir = Path(__file__).parent.parent.parent.parent.parent
-    invoice_dir = backend_dir / "static" / "invoices"
-    invoice_file = invoice_dir / f"invoice_{order.order_number}.pdf"
-    
-    if invoice_file.exists():
-        return FileResponse(
-            path=str(invoice_file),
-            filename=f"invoice_{order.order_number}.pdf",
-            media_type="application/pdf"
-        )
-    
-    # Generate invoice on the fly if it doesn't exist
+    # Generate invoice on the fly (don't save to disk to save space)
     try:
         from ....utils.invoice import generate_invoice_pdf
-        invoice_buffer = generate_invoice_pdf(order, output_path=invoice_dir)
+        import os
+        
+        # Generate invoice without saving
+        invoice_buffer = generate_invoice_pdf(order, output_path=None)
+        
+        # Delete any existing invoice file if it exists (cleanup)
+        backend_dir = Path(__file__).parent.parent.parent.parent.parent
+        invoice_dir = backend_dir / "static" / "invoices"
+        invoice_file = invoice_dir / f"invoice_{order.order_number}.pdf"
+        if invoice_file.exists():
+            try:
+                os.remove(invoice_file)
+            except Exception:
+                pass  # Ignore deletion errors
         
         return Response(
             content=invoice_buffer.getvalue(),

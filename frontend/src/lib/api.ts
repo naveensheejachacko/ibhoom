@@ -421,6 +421,64 @@ export const adminApi = {
     const response = await api.put('/api/v1/admin/notifications/mark-all-read');
     return response.data;
   },
+
+  // Banners
+  getBanners: async (params?: any) => {
+    const response = await api.get('/api/v1/admin/banners', { params });
+    return response.data;
+  },
+  
+  getBanner: async (id: string) => {
+    const response = await api.get(`/api/v1/admin/banners/${id}`);
+    return response.data;
+  },
+  
+  createBanner: async (data: any, imageFile?: File) => {
+    const formData = new FormData();
+    formData.append('title', data.title);
+    if (data.description) formData.append('description', data.description);
+    if (data.link_url) formData.append('link_url', data.link_url);
+    formData.append('position', data.position);
+    formData.append('status', data.status);
+    formData.append('sort_order', data.sort_order.toString());
+    if (data.start_date) formData.append('start_date', data.start_date);
+    if (data.end_date) formData.append('end_date', data.end_date);
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
+    const response = await api.post('/api/v1/admin/banners', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+  
+  updateBanner: async (id: string, data: any, imageFile?: File) => {
+    const formData = new FormData();
+    if (data.title !== undefined) formData.append('title', data.title);
+    if (data.description !== undefined) formData.append('description', data.description || '');
+    if (data.link_url !== undefined) formData.append('link_url', data.link_url || '');
+    if (data.position !== undefined) formData.append('position', data.position);
+    if (data.status !== undefined) formData.append('status', data.status);
+    if (data.sort_order !== undefined) formData.append('sort_order', data.sort_order.toString());
+    if (data.start_date !== undefined) formData.append('start_date', data.start_date || '');
+    if (data.end_date !== undefined) formData.append('end_date', data.end_date || '');
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
+    const response = await api.put(`/api/v1/admin/banners/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+  
+  deleteBanner: async (id: string) => {
+    const response = await api.delete(`/api/v1/admin/banners/${id}`);
+    return response.data;
+  },
 };
 
 // Seller API

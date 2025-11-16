@@ -6,6 +6,7 @@ from .cart import router as cart_router
 from .wishlist import router as wishlist_router
 from .banners import router as banners_router
 from .fcm_token import router as fcm_token_router
+from .profile import router as profile_router
 from . import categories as categories_router
 
 router = APIRouter()
@@ -18,4 +19,5 @@ router.include_router(cart_router, prefix="/cart", tags=["Customer - Cart"])
 router.include_router(wishlist_router, prefix="/wishlist", tags=["Customer - Wishlist"])
 router.include_router(banners_router, prefix="/banners", tags=["Customer - Banners"])
 router.include_router(fcm_token_router, prefix="/fcm-token", tags=["Customer - FCM Token"])
+router.include_router(profile_router, prefix="/profile", tags=["Customer - Profile"])
 router.include_router(categories_router.router, prefix="/categories", tags=["Customer - Categories"])

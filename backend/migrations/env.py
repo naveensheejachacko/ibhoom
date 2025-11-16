@@ -31,7 +31,10 @@ config = context.config
 # Set the database URL from app settings
 # Normalize postgres:// to postgresql://
 db_url = normalize_database_url(settings.DATABASE_URL)
-config.set_main_option("sqlalchemy.url", db_url)
+# Escape % characters to prevent ConfigParser interpolation issues
+# ConfigParser uses % for interpolation, so we need to double them
+escaped_db_url = db_url.replace('%', '%%')
+config.set_main_option("sqlalchemy.url", escaped_db_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

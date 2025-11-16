@@ -74,6 +74,26 @@ const SellerRegistration: React.FC = () => {
       return false;
     }
 
+    if (!formData.business_type) {
+      setError('Business type is required');
+      return false;
+    }
+
+    if (!formData.city) {
+      setError('City is required');
+      return false;
+    }
+
+    if (!formData.state) {
+      setError('State is required');
+      return false;
+    }
+
+    if (!formData.pincode) {
+      setError('Pincode is required');
+      return false;
+    }
+
     return true;
   };
 
@@ -295,11 +315,12 @@ const SellerRegistration: React.FC = () => {
 
               <div>
                 <label htmlFor="business_type" className="block text-sm font-medium text-secondary-700 mb-2">
-                  Business Type
+                  Business Type *
                 </label>
                 <select
                   id="business_type"
                   name="business_type"
+                  required
                   value={formData.business_type}
                   onChange={handleInputChange}
                   className="input-field"
@@ -335,12 +356,13 @@ const SellerRegistration: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="city" className="block text-sm font-medium text-secondary-700 mb-2">
-                    City
+                    City *
                   </label>
                   <input
                     id="city"
                     name="city"
                     type="text"
+                    required
                     value={formData.city}
                     onChange={handleInputChange}
                     className="input-field"
@@ -349,12 +371,13 @@ const SellerRegistration: React.FC = () => {
                 </div>
                 <div>
                   <label htmlFor="state" className="block text-sm font-medium text-secondary-700 mb-2">
-                    State
+                    State *
                   </label>
                   <input
                     id="state"
                     name="state"
                     type="text"
+                    required
                     value={formData.state}
                     onChange={handleInputChange}
                     className="input-field"
@@ -365,7 +388,7 @@ const SellerRegistration: React.FC = () => {
 
               <div>
                 <label htmlFor="pincode" className="block text-sm font-medium text-secondary-700 mb-2">
-                  Pincode
+                  Pincode *
                 </label>
                 <div className="relative">
                   <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400 w-5 h-5" />
@@ -373,6 +396,7 @@ const SellerRegistration: React.FC = () => {
                     id="pincode"
                     name="pincode"
                     type="text"
+                    required
                     value={formData.pincode}
                     onChange={handleInputChange}
                     className="pl-10 input-field"

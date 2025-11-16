@@ -16,6 +16,7 @@ import AdminUsers from './pages/Admin/Users';
 import AdminSellers from './pages/Admin/Sellers';
 import AdminCommissions from './pages/Admin/Commissions';
 import AdminAttributes from './pages/Admin/Attributes';
+import AdminBanners from './pages/Admin/Banners';
 
 // Seller Pages
 import SellerDashboard from './pages/Seller/Dashboard';
@@ -52,6 +53,7 @@ function App() {
                       <Route path="users" element={<AdminUsers />} />
                       <Route path="sellers" element={<AdminSellers />} />
                       <Route path="commissions" element={<AdminCommissions />} />
+                      <Route path="banners" element={<AdminBanners />} />
                     </Routes>
                   </AdminLayout>
                 </ProtectedRoute>

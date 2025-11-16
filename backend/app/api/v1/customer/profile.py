@@ -24,12 +24,28 @@ async def update_profile(
     last_name: Optional[str] = Form(None),
     email: Optional[str] = Form(None),
     pincode: Optional[str] = Form(None),
+    current_password: Optional[str] = Form(None),
+    new_password: Optional[str] = Form(None),
     profile_picture: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_customer_user)
 ):
-    """Update customer's profile information"""
+    """Update customer's profile information (including password)"""
     try:
+        # Handle password update if both current_password and new_password are provided
+        if current_password and new_password:
+            password_data = PasswordUpdate(
+                current_password=current_password,
+                new_password=new_password
+            )
+            profile_service.update_password(db, current_user.id, password_data)
+        elif current_password or new_password:
+            # If only one is provided, it's an error
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Both current_password and new_password are required to change password"
+            )
+        
         # Prepare profile data
         profile_data = ProfileUpdate(
             first_name=first_name,

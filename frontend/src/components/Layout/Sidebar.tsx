@@ -12,7 +12,8 @@ import {
   UserCheck,
   PackageCheck,
   User,
-  List
+  List,
+  Image
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -33,6 +34,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
     { icon: Users, label: 'Users', path: '/admin/users' },
     { icon: UserCheck, label: 'Sellers', path: '/admin/sellers' },
     { icon: Percent, label: 'Commissions', path: '/admin/commissions' },
+    { icon: Image, label: 'Banners', path: '/admin/banners' },
     { icon: Settings, label: 'Settings', path: '/admin/settings' },
   ];
 

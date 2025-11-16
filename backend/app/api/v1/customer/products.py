@@ -104,20 +104,14 @@ async def get_all_products(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_customer_user)
 ):
-    """Get all products with location-based filtering (within 5km radius) (Customer only)"""
+    """Get all products (Customer only) - Location filtering is optional"""
     # Calculate skip from page if not provided
     if skip is None:
         skip = (page - 1) * limit
     
-    # Get customer location - auto-uses stored pincode if available
+    # Get customer location (optional - only used for filtering if provided)
     customer_lat, customer_lon = get_customer_location(latitude, longitude, city, current_user)
-    
-    # Enforce location requirement for 5km filtering
-    if not customer_lat or not customer_lon:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Location is required. Please provide either (latitude, longitude) or city parameter, or set your pincode in your profile to see products within 5km radius."
-        )
+    apply_location_filter = customer_lat is not None and customer_lon is not None
     
     # Query products with eager loading of seller and user relationships
     query = db.query(Product).options(
@@ -142,14 +136,33 @@ async def get_all_products(
             Product.tags.ilike(search_term)
         )
     
-    # Fetch more products to account for location filtering (fetch 3x to ensure enough results)
-    products = query.order_by(Product.created_at.desc()).offset(skip).limit(limit * 3).all()
+    # Get total count before pagination
+    total = query.count()
+    
+    # Apply sorting
+    if sort_by == "price":
+        if sort_order == "asc":
+            query = query.order_by(Product.customer_price.asc())
+        else:
+            query = query.order_by(Product.customer_price.desc())
+    elif sort_by == "name":
+        if sort_order == "asc":
+            query = query.order_by(Product.name.asc())
+        else:
+            query = query.order_by(Product.name.desc())
+    else:  # created_at
+        if sort_order == "asc":
+            query = query.order_by(Product.created_at.asc())
+        else:
+            query = query.order_by(Product.created_at.desc())
+    
+    products = query.offset(skip).limit(limit).all()
     ratings_map = get_rating_stats_for_products(db, [product.id for product in products])
     
-    # Add seller information to each product and apply location filtering
+    # Add seller information to each product (location filtering is optional)
     result = []
     for product in products:
-        # Skip products without sellers (location filtering requires seller)
+        # Skip products without sellers
         if not product.seller:
             continue
             
@@ -157,18 +170,14 @@ async def get_all_products(
         seller_name = f"{product.seller.user.first_name} {product.seller.user.last_name}"
         seller_email = product.seller.user.email
         
-        # Apply location filtering (required - 5km radius)
-        # Skip products from sellers without location data
-        if not product.seller.latitude or not product.seller.longitude:
-            continue
-        
-        # Check if seller is within radius (enforced 5km)
-        if not is_within_radius(
-            product.seller.latitude, product.seller.longitude,
-            customer_lat, customer_lon,
-            radius_km
-        ):
-            continue
+        # Apply location filtering only if location is provided and seller has location data
+        if apply_location_filter and product.seller.latitude and product.seller.longitude:
+            if not is_within_radius(
+                product.seller.latitude, product.seller.longitude,
+                customer_lat, customer_lon,
+                radius_km
+            ):
+                continue
         
         product_stats = ratings_map.get(product.id, {})
         
@@ -192,25 +201,13 @@ async def get_all_products(
         }
         result.append(product_dict)
     
-    # Apply sorting
-    if sort_by == "price":
-        result.sort(key=lambda x: x["customer_price"], reverse=(sort_order == "desc"))
-    elif sort_by == "name":
-        result.sort(key=lambda x: x["name"], reverse=(sort_order == "desc"))
-    else:  # created_at
-        result.sort(key=lambda x: x["created_at"], reverse=(sort_order == "desc"))
-    
-    # Apply pagination to filtered results
-    paginated_result = result[:limit]
-    
     # Calculate pagination metadata
-    # Note: Total is approximate due to location filtering happening after fetch
-    current_page = page  # Use the provided page parameter
-    pages = (len(result) + limit - 1) // limit if len(result) > 0 else 1
+    current_page = page
+    pages = (total + limit - 1) // limit if total > 0 else 1
     
     return PaginatedResponse(
-        items=paginated_result,
-        total=len(result),  # Total after location filtering (for current page range)
+        items=result,
+        total=total,
         page=current_page,
         size=limit,
         pages=pages
@@ -230,20 +227,14 @@ async def get_newly_arrived_products(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_customer_user)
 ):
-    """Get newly arrived products (Customer only) - Products added in last 7 days within 5km radius"""
+    """Get newly arrived products (Customer only) - Products added in last 7 days"""
     # Calculate skip from page if not provided
     if skip is None:
         skip = (page - 1) * limit
     
-    # Get customer location - auto-uses stored pincode if available
+    # Get customer location (optional - only used for filtering if provided)
     customer_lat, customer_lon = get_customer_location(latitude, longitude, city, current_user)
-    
-    # Enforce location requirement for 5km filtering
-    if not customer_lat or not customer_lon:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Location is required. Please provide either (latitude, longitude) or city parameter, or set your pincode in your profile to see products within 5km radius."
-        )
+    apply_location_filter = customer_lat is not None and customer_lon is not None
     
     from datetime import datetime, timedelta
     seven_days_ago = datetime.utcnow() - timedelta(days=7)
@@ -256,13 +247,16 @@ async def get_newly_arrived_products(
         Product.created_at >= seven_days_ago
     )
     
+    # Get total count before pagination
+    total = query.count()
+    
     products = query.order_by(Product.created_at.desc()).offset(skip).limit(limit).all()
     ratings_map = get_rating_stats_for_products(db, [product.id for product in products])
     
-    # Add seller information to each product
+    # Add seller information to each product (location filtering is optional)
     result = []
     for product in products:
-        # Skip products without sellers (location filtering requires seller)
+        # Skip products without sellers
         if not product.seller:
             continue
             
@@ -270,18 +264,14 @@ async def get_newly_arrived_products(
         seller_name = f"{product.seller.user.first_name} {product.seller.user.last_name}"
         seller_email = product.seller.user.email
         
-        # Apply location filtering (required - 5km radius)
-        # Skip products from sellers without location data
-        if not product.seller.latitude or not product.seller.longitude:
-            continue
-        
-        # Check if seller is within radius (enforced 5km)
-        if not is_within_radius(
-            product.seller.latitude, product.seller.longitude,
-            customer_lat, customer_lon,
-            radius_km
-        ):
-            continue
+        # Apply location filtering only if location is provided and seller has location data
+        if apply_location_filter and product.seller.latitude and product.seller.longitude:
+            if not is_within_radius(
+                product.seller.latitude, product.seller.longitude,
+                customer_lat, customer_lon,
+                radius_km
+            ):
+                continue
         
         product_stats = ratings_map.get(product.id, {})
         
@@ -340,20 +330,14 @@ async def get_products_by_category(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_customer_user)
 ):
-    """Get products by category with location-based filtering (within 5km radius) (Customer only)"""
+    """Get products by category (Customer only) - Location filtering is optional"""
     # Calculate skip from page if not provided
     if skip is None:
         skip = (page - 1) * limit
     
-    # Get customer location - auto-uses stored pincode if available
+    # Get customer location (optional - only used for filtering if provided)
     customer_lat, customer_lon = get_customer_location(latitude, longitude, city, current_user)
-    
-    # Enforce location requirement for 5km filtering
-    if not customer_lat or not customer_lon:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Location is required. Please provide either (latitude, longitude) or city parameter, or set your pincode in your profile to see products within 5km radius."
-        )
+    apply_location_filter = customer_lat is not None and customer_lon is not None
     
     # Query products with eager loading of seller and user relationships
     query = db.query(Product).options(
@@ -378,13 +362,33 @@ async def get_products_by_category(
             Product.tags.ilike(search_term)
         )
     
-    products = query.order_by(Product.created_at.desc()).offset(skip).limit(limit).all()
+    # Get total count before pagination
+    total = query.count()
+    
+    # Apply sorting
+    if sort_by == "price":
+        if sort_order == "asc":
+            query = query.order_by(Product.customer_price.asc())
+        else:
+            query = query.order_by(Product.customer_price.desc())
+    elif sort_by == "name":
+        if sort_order == "asc":
+            query = query.order_by(Product.name.asc())
+        else:
+            query = query.order_by(Product.name.desc())
+    else:  # created_at
+        if sort_order == "asc":
+            query = query.order_by(Product.created_at.asc())
+        else:
+            query = query.order_by(Product.created_at.desc())
+    
+    products = query.offset(skip).limit(limit).all()
     ratings_map = get_rating_stats_for_products(db, [product.id for product in products])
     
-    # Add seller information to each product
+    # Add seller information to each product (location filtering is optional)
     result = []
     for product in products:
-        # Skip products without sellers (location filtering requires seller)
+        # Skip products without sellers
         if not product.seller:
             continue
         
@@ -392,18 +396,14 @@ async def get_products_by_category(
         seller_name = f"{product.seller.user.first_name} {product.seller.user.last_name}"
         seller_email = product.seller.user.email
         
-        # Apply location filtering (required - 5km radius)
-        # Skip products from sellers without location data
-        if not product.seller.latitude or not product.seller.longitude:
-            continue
-        
-        # Check if seller is within radius (enforced 5km)
-        if not is_within_radius(
-            product.seller.latitude, product.seller.longitude,
-            customer_lat, customer_lon,
-            radius_km
-        ):
-            continue
+        # Apply location filtering only if location is provided and seller has location data
+        if apply_location_filter and product.seller.latitude and product.seller.longitude:
+            if not is_within_radius(
+                product.seller.latitude, product.seller.longitude,
+                customer_lat, customer_lon,
+                radius_km
+            ):
+                continue
         
         product_stats = ratings_map.get(product.id, {})
         
@@ -427,24 +427,13 @@ async def get_products_by_category(
         }
         result.append(product_dict)
     
-    # Apply sorting
-    if sort_by == "price":
-        result.sort(key=lambda x: x["customer_price"], reverse=(sort_order == "desc"))
-    elif sort_by == "name":
-        result.sort(key=lambda x: x["name"], reverse=(sort_order == "desc"))
-    else:  # created_at
-        result.sort(key=lambda x: x["created_at"], reverse=(sort_order == "desc"))
-    
-    # Apply pagination to filtered results
-    paginated_result = result[:limit]
-    
     # Calculate pagination metadata
-    current_page = page  # Use the provided page parameter
-    pages = (len(result) + limit - 1) // limit if len(result) > 0 else 1
+    current_page = page
+    pages = (total + limit - 1) // limit if total > 0 else 1
     
     return PaginatedResponse(
-        items=paginated_result,
-        total=len(result),  # Total after location filtering
+        items=result,
+        total=total,
         page=current_page,
         size=limit,
         pages=pages
@@ -486,16 +475,7 @@ async def get_products_by_seller(
     if not seller.is_approved:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Seller not available")
     
-    # Get customer location (optional - if provided, filter by radius)
-    customer_lat, customer_lon = get_customer_location(latitude, longitude, city, current_user)
-    
-    # If location is provided, check if seller is within radius
-    if customer_lat and customer_lon and seller.latitude and seller.longitude:
-        if not is_within_radius(seller.latitude, seller.longitude, customer_lat, customer_lon, radius_km):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Seller is outside your delivery area (beyond {radius_km}km radius)"
-            )
+    # Location filtering is optional - no validation required
     
     # Get products by seller
     query = db.query(Product).filter(

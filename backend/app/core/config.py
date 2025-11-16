@@ -50,8 +50,8 @@ class Settings(BaseSettings):
     MAX_COMMISSION_RATE: float = 30.0
     
     # Delivery Settings
-    MAX_DELIVERY_RADIUS_KM: float = 50.0  # Maximum delivery radius in kilometers (default: 50km)
-    DELIVERY_VALIDATION_STRICT: bool = True  # If True, block orders when location validation fails
+    MAX_DELIVERY_RADIUS_KM: float = 50.0  # Maximum delivery radius in kilometers (default: 50km) - Not enforced
+    DELIVERY_VALIDATION_STRICT: bool = False  # Location validation disabled - sellers can deliver to any address
     
     # Mapbox Geocoding
     MAPBOX_ACCESS_TOKEN: Optional[str] = None

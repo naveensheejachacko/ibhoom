@@ -135,3 +135,4 @@ After adding to `.env`:
 - ✅ It's safe to use in frontend code
 - ❌ Do NOT use private keys or service account JSON
 
+

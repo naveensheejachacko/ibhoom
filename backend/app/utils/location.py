@@ -217,78 +217,26 @@ def load_kerala_pincodes() -> Dict[str, Tuple[float, float, str]]:
 
 def geocode_pincode_kerala(pincode: str, db_session=None) -> Optional[Tuple[float, float]]:
     """
-    Geocode Kerala pincode using cache-first approach:
-    1. Check database cache
-    2. Check static database
-    3. Geocode via API and cache result
+    Geocode Kerala pincode using a simple approach:
+    1. Check static database (fast, no API call)
+    2. Geocode via API if not found in static database
     
     Args:
         pincode: Indian postal code (6 digits)
-        db_session: Database session (optional, for caching)
+        db_session: Database session (optional, ignored - kept for backward compatibility)
     
     Returns:
         Tuple of (latitude, longitude) or None if geocoding fails
     """
-    # Step 1: Try database cache first (fastest)
-    if db_session:
-        try:
-            from ..models.pincode_cache import PincodeCache
-            cached = db_session.query(PincodeCache).filter(
-                PincodeCache.pincode == pincode
-            ).first()
-            
-            if cached:
-                logger.info(f"Geocoded {pincode} from DB cache: ({cached.latitude}, {cached.longitude})")
-                return (cached.latitude, cached.longitude)
-        except Exception as e:
-            logger.warning(f"Cache lookup failed for {pincode}: {str(e)}")
-    
-    # Step 2: Try local static database (fast, no API call)
+    # Step 1: Try local static database (fast, no API call)
     pincode_db = load_kerala_pincodes()
     if pincode in pincode_db:
         lat, lon, city = pincode_db[pincode]
         logger.info(f"Geocoded {pincode} from static DB: {city} ({lat}, {lon})")
-        
-        # Cache it in database for next time
-        if db_session:
-            try:
-                from ..models.pincode_cache import PincodeCache
-                cache_entry = PincodeCache(
-                    pincode=pincode,
-                    latitude=lat,
-                    longitude=lon,
-                    district=city,
-                    state="Kerala",
-                    country="India"
-                )
-                db_session.add(cache_entry)
-                db_session.commit()
-            except Exception as e:
-                logger.warning(f"Failed to cache {pincode}: {str(e)}")
-        
         return (lat, lon)
     
-    # Step 3: Geocode via API (slower, but works for any pincode)
+    # Step 2: Geocode via API (slower, but works for any pincode)
     coords = geocode_pincode(pincode)
-    
-    # Cache the result in database
-    if coords and db_session:
-        try:
-            from ..models.pincode_cache import PincodeCache
-            lat, lon = coords
-            cache_entry = PincodeCache(
-                pincode=pincode,
-                latitude=lat,
-                longitude=lon,
-                state="Kerala",
-                country="India"
-            )
-            db_session.add(cache_entry)
-            db_session.commit()
-            logger.info(f"Cached geocoded pincode {pincode} in database")
-        except Exception as e:
-            logger.warning(f"Failed to cache {pincode}: {str(e)}")
-    
     return coords
 
 

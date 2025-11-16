@@ -7,7 +7,6 @@ from ..models.user import User
 from ..models.seller import Seller
 from ..schemas.order import OrderCreate, OrderStatusUpdate, PaymentStatusUpdate
 from ..core.config import settings
-from ..utils.location import geocode_pincode_kerala, haversine_distance
 import uuid
 from datetime import datetime
 import time

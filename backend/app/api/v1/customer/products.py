@@ -504,6 +504,7 @@ async def get_product_details(
         "commission_rate": float(product.commission_rate),
         "commission_amount": float(product.commission_amount),
         "customer_price": float(product.customer_price),
+        "tax_rate": float(product.tax_rate) if product.tax_rate is not None else 18.0,
         "stock_quantity": product.stock_quantity,
         "status": product.status,
         "tags": product.tags,

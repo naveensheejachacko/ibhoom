@@ -113,7 +113,12 @@ async def get_all_orders(
                 seller_name=seller_name,
                 quantity=item.quantity,
                 customer_unit_price=float(item.customer_unit_price),
-                total_customer_amount=float(item.total_customer_amount)
+                total_customer_amount=float(item.total_customer_amount),
+                tax_rate=float(item.tax_rate),
+                tax_unit_amount=float(item.tax_unit_amount),
+                total_tax_amount=float(item.total_tax_amount),
+                final_unit_price=float(item.final_unit_price),
+                total_final_amount=float(item.total_final_amount)
             ))
         
         order_responses.append(OrderListResponse(
@@ -121,6 +126,8 @@ async def get_all_orders(
             order_number=order.order_number,
             customer_id=order.customer_id,
             total_customer_amount=float(order.total_customer_amount),
+            total_tax_amount=float(order.total_tax_amount),
+            grand_total_amount=float(order.grand_total_amount),
             total_items=order.total_items,
             status=order.status,
             payment_status=order.payment_status,
@@ -202,7 +209,12 @@ async def get_pending_orders(
                 seller_name=seller_name,
                 quantity=item.quantity,
                 customer_unit_price=float(item.customer_unit_price),
-                total_customer_amount=float(item.total_customer_amount)
+            total_customer_amount=float(item.total_customer_amount),
+            tax_rate=float(item.tax_rate),
+            tax_unit_amount=float(item.tax_unit_amount),
+            total_tax_amount=float(item.total_tax_amount),
+            final_unit_price=float(item.final_unit_price),
+            total_final_amount=float(item.total_final_amount)
             ))
         
         order_responses.append(OrderListResponse(
@@ -210,6 +222,8 @@ async def get_pending_orders(
             order_number=order.order_number,
             customer_id=order.customer_id,
             total_customer_amount=float(order.total_customer_amount),
+        total_tax_amount=float(order.total_tax_amount),
+        grand_total_amount=float(order.grand_total_amount),
             total_items=order.total_items,
             status=order.status,
             payment_status=order.payment_status,
@@ -270,6 +284,11 @@ async def get_order(
             total_seller_amount=float(item.total_seller_amount),
             total_customer_amount=float(item.total_customer_amount),
             total_commission_amount=float(item.total_commission_amount),
+            tax_rate=float(item.tax_rate),
+            tax_unit_amount=float(item.tax_unit_amount),
+            total_tax_amount=float(item.total_tax_amount),
+            final_unit_price=float(item.final_unit_price),
+            total_final_amount=float(item.total_final_amount),
             product_name=item.product_name,
             variant_name=variant.variant_name if variant else None,
             product_image=product_image
@@ -283,6 +302,8 @@ async def get_order(
         total_customer_amount=float(order.total_customer_amount),
         total_seller_amount=float(order.total_seller_amount),
         total_commission_amount=float(order.total_commission_amount),
+        total_tax_amount=float(order.total_tax_amount),
+        grand_total_amount=float(order.grand_total_amount),
         status=order.status,
         payment_status=order.payment_status,
         delivery_address=order.delivery_address,

@@ -78,6 +78,7 @@ class ProductVariantResponse(ProductVariantBase):
     commission_rate: float
     commission_amount: float
     customer_price: float
+    tax_rate: float
     is_active: bool = True
     # Don't include attributes in response to avoid validation issues
     # attributes: List[ProductVariantAttributeResponse] = []
@@ -155,6 +156,7 @@ class ProductResponse(ProductBase):
     commission_rate: float
     commission_amount: float
     customer_price: float
+    tax_rate: float
     status: ProductStatus
     admin_notes: Optional[str] = None
     created_at: datetime
@@ -196,6 +198,13 @@ class ProductApprovalUpdate(BaseModel):
     status: ProductStatus
     admin_notes: Optional[str] = None  # This will be stored in rejection_reason field
     commission_rate: Optional[float] = None
+    tax_rate: Optional[float] = None
+    
+    @validator('tax_rate')
+    def validate_tax_rate(cls, v):
+        if v is not None and (v < 0 or v > 100):
+            raise ValueError('Tax rate must be between 0 and 100')
+        return v
 
 
 class ProductFilters(BaseModel):

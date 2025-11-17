@@ -237,22 +237,29 @@ def generate_invoice_pdf(order, output_path: Optional[Path] = None) -> BytesIO:
     # Use Unicode rupee symbol - ReportLab should handle it, but use "Rs." as fallback if needed
     # Try using rupee symbol, if it doesn't render, use "Rs."
     rupee_symbol = "₹"
-    items_data = [["Item", "Quantity", "Unit Price", "Total"]]
+    items_data = [["Item", "Quantity", "Unit Price", "Tax (Rate)", "Final Amount"]]
     
     for item in order.items:
         item_name = item.product_name
         quantity = item.quantity
         unit_price = float(item.customer_unit_price)
-        total = float(item.total_customer_amount)
+        tax_rate = float(item.tax_rate)
+        tax_unit_amount = float(item.tax_unit_amount)
+        final_total = float(item.total_final_amount)
+        tax_text = Paragraph(
+            f"{tax_rate:.2f}%<br/>{rupee_symbol}{tax_unit_amount:.2f}/unit",
+            styles['Normal']
+        )
         # Use Paragraph to ensure proper Unicode rendering
         items_data.append([
             item_name,
             str(quantity),
             Paragraph(f"{rupee_symbol}{unit_price:.2f}", styles['Normal']),
-            Paragraph(f"{rupee_symbol}{total:.2f}", styles['Normal'])
+            tax_text,
+            Paragraph(f"{rupee_symbol}{final_total:.2f}", styles['Normal'])
         ])
     
-    items_table = Table(items_data, colWidths=[3*inch, 1*inch, 1.5*inch, 1.5*inch])
+    items_table = Table(items_data, colWidths=[2.8*inch, 0.8*inch, 1.2*inch, 1.3*inch, 1.2*inch])
     items_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#34495e')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
@@ -272,14 +279,17 @@ def generate_invoice_pdf(order, output_path: Optional[Path] = None) -> BytesIO:
     
     # Totals
     subtotal = float(order.total_customer_amount)
+    tax_total = float(order.total_tax_amount)
+    grand_total = float(order.grand_total_amount)
     total_items = sum(item.quantity for item in order.items)
     rupee_symbol = "₹"
     
     totals_data = [
-        ["Subtotal:", Paragraph(f"{rupee_symbol}{subtotal:.2f}", styles['Normal'])],
+        ["Subtotal (before tax):", Paragraph(f"{rupee_symbol}{subtotal:.2f}", styles['Normal'])],
+        ["Tax:", Paragraph(f"{rupee_symbol}{tax_total:.2f}", styles['Normal'])],
         ["Total Items:", str(total_items)],
         ["", ""],
-        [Paragraph("<b>Total Amount:</b>", styles['Normal']), Paragraph(f"<b>{rupee_symbol}{subtotal:.2f}</b>", styles['Normal'])],
+        [Paragraph("<b>Grand Total:</b>", styles['Normal']), Paragraph(f"<b>{rupee_symbol}{grand_total:.2f}</b>", styles['Normal'])],
     ]
     
     totals_table = Table(totals_data, colWidths=[4.5*inch, 1.5*inch])

@@ -8,6 +8,7 @@ from .commission_service import get_commission_rate, calculate_commission
 import uuid
 import re
 from datetime import datetime
+from decimal import Decimal
 
 
 def generate_slug(name: str) -> str:
@@ -41,7 +42,6 @@ def generate_sku(seller_id: str, product_name: str) -> str:
     return sku
 
 
-def create_product(db: Session, product: ProductCreate, seller_id: str) -> Product:
     """Create a new product"""
     # Validate category exists
     category = db.query(Category).filter(Category.id == product.category_id).first()
@@ -70,6 +70,8 @@ def create_product(db: Session, product: ProductCreate, seller_id: str) -> Produ
     commission_calc = calculate_commission(product.seller_price, commission_rate)
     
     # Create product
+    default_tax_rate = Decimal('18.00')
+    
     db_product = Product(
         id=str(uuid.uuid4()),
         name=product.name,
@@ -86,7 +88,8 @@ def create_product(db: Session, product: ProductCreate, seller_id: str) -> Produ
         tags=product.tags,
         meta_title=product.meta_title,
         meta_description=product.meta_description,
-        status=ProductStatus.PENDING
+        status=ProductStatus.PENDING,
+        tax_rate=default_tax_rate
     )
     
     db.add(db_product)
@@ -166,7 +169,8 @@ def create_product(db: Session, product: ProductCreate, seller_id: str) -> Produ
             commission_amount=variant_commission_calc.commission_amount,
             customer_price=variant_commission_calc.customer_price,
             stock_quantity=variant_data.stock_quantity,
-            is_active=True  # Set variants as active by default
+            is_active=True,  # Set variants as active by default
+            tax_rate=default_tax_rate
         )
         db.add(variant)
         db.flush()
@@ -301,6 +305,16 @@ def approve_product(db: Session, product_id: str, approval: ProductApprovalUpdat
     db_product.status = approval.status
     db_product.rejection_reason = approval.admin_notes
     db_product.updated_at = datetime.utcnow()
+    
+    # Ensure tax rate is set during approval
+    tax_rate_value = approval.tax_rate
+    if tax_rate_value is None:
+        tax_rate_decimal = db_product.tax_rate or Decimal('18.00')
+    else:
+        tax_rate_decimal = Decimal(str(tax_rate_value))
+    db_product.tax_rate = tax_rate_decimal
+    for variant in db_product.variants:
+        variant.tax_rate = tax_rate_decimal
     
     # Update commission rate if provided
     if approval.commission_rate is not None:

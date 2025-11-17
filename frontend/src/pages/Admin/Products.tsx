@@ -54,6 +54,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onApprove, onReject,
           <span className="font-medium ml-2">{product.commission_rate}%</span>
         </div>
         <div>
+          <span className="text-secondary-600">Tax Rate:</span>
+          <span className="font-medium ml-2">{product.tax_rate || 18}%</span>
+        </div>
+        <div>
           <span className="text-secondary-600">Stock:</span>
           <span className="font-medium ml-2">{product.stock_quantity}</span>
         </div>
@@ -138,6 +142,7 @@ const Products: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [actionNotes, setActionNotes] = useState('');
   const [commissionRate, setCommissionRate] = useState(0);
+  const [taxRate, setTaxRate] = useState(18);
   const [modalAction, setModalAction] = useState<'approve' | 'reject' | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -192,6 +197,7 @@ const Products: React.FC = () => {
     setSelectedProduct(product);
     setModalAction('approve');
     setCommissionRate(product.commission_rate);
+    setTaxRate(product.tax_rate || 18);
     setActionNotes('');
     setShowModal(true);
   };
@@ -200,6 +206,7 @@ const Products: React.FC = () => {
     setSelectedProduct(product);
     setModalAction('reject');
     setCommissionRate(product.commission_rate);
+    setTaxRate(product.tax_rate || 18);
     setActionNotes('');
     setShowModal(true);
   };
@@ -212,12 +219,14 @@ const Products: React.FC = () => {
       await adminApi.approveProduct(selectedProduct.id, {
         status,
         admin_notes: actionNotes,
-        commission_rate: commissionRate
+        commission_rate: commissionRate,
+        tax_rate: taxRate
       });
       
       setShowModal(false);
       setActionNotes('');
       setCommissionRate(0);
+      setTaxRate(18);
       setSelectedProduct(null);
       setModalAction(null);
       fetchProducts();
@@ -380,24 +389,44 @@ const Products: React.FC = () => {
             </p>
             
             {modalAction === 'approve' && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-secondary-700 mb-2">
-                  Commission Rate (%)
-                </label>
-                <input
-                  type="number"
-                  value={commissionRate}
-                  onChange={(e) => setCommissionRate(parseFloat(e.target.value) || 0)}
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  className="input-field"
-                  placeholder="Enter commission rate"
-                />
-                <p className="text-xs text-secondary-500 mt-1">
-                  Current rate: {selectedProduct.commission_rate}%
-                </p>
-              </div>
+              <>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    Commission Rate (%)
+                  </label>
+                  <input
+                    type="number"
+                    value={commissionRate}
+                    onChange={(e) => setCommissionRate(parseFloat(e.target.value) || 0)}
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    className="input-field"
+                    placeholder="Enter commission rate"
+                  />
+                  <p className="text-xs text-secondary-500 mt-1">
+                    Current rate: {selectedProduct.commission_rate}%
+                  </p>
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    Tax Rate (%)
+                  </label>
+                  <input
+                    type="number"
+                    value={taxRate}
+                    onChange={(e) => setTaxRate(parseFloat(e.target.value) || 18)}
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    className="input-field"
+                    placeholder="Enter tax rate"
+                  />
+                  <p className="text-xs text-secondary-500 mt-1">
+                    Current rate: {selectedProduct.tax_rate || 18}% (Default: 18%)
+                  </p>
+                </div>
+              </>
             )}
             
             <div className="mb-4">
@@ -475,6 +504,10 @@ const Products: React.FC = () => {
                   <p className="text-secondary-900">{selectedProduct.commission_rate}%</p>
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-secondary-700">Tax Rate</label>
+                  <p className="text-secondary-900">{selectedProduct.tax_rate || 18}%</p>
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-secondary-700">Stock Quantity</label>
                   <p className="text-secondary-900">{selectedProduct.stock_quantity}</p>
                 </div>
@@ -530,6 +563,7 @@ const Products: React.FC = () => {
                           <th className="px-4 py-2 text-left text-xs font-medium text-secondary-700 uppercase">SKU</th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-secondary-700 uppercase">Seller Price</th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-secondary-700 uppercase">Commission</th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-secondary-700 uppercase">Tax Rate</th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-secondary-700 uppercase">Customer Price</th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-secondary-700 uppercase">Stock</th>
                           <th className="px-4 py-2 text-center text-xs font-medium text-secondary-700 uppercase">Status</th>
@@ -542,6 +576,7 @@ const Products: React.FC = () => {
                             <td className="px-4 py-2 text-sm text-secondary-600">{variant.sku}</td>
                             <td className="px-4 py-2 text-sm text-secondary-900 text-right">₹{variant.seller_price.toFixed(2)}</td>
                             <td className="px-4 py-2 text-sm text-secondary-600 text-right">{variant.commission_rate}%</td>
+                            <td className="px-4 py-2 text-sm text-secondary-600 text-right">{variant.tax_rate || 18}%</td>
                             <td className="px-4 py-2 text-sm text-secondary-900 text-right">₹{variant.customer_price.toFixed(2)}</td>
                             <td className="px-4 py-2 text-sm text-secondary-900 text-right">{variant.stock_quantity}</td>
                             <td className="px-4 py-2 text-center">

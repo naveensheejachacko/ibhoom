@@ -20,6 +20,7 @@ class ProfileResponse(BaseModel):
     email: str
     first_name: str
     last_name: str
+    phone: Optional[str]
     pincode: Optional[str]
     profile_picture: Optional[str]
     role: str

@@ -34,6 +34,7 @@ export interface Product {
   commission_rate: number;
   commission_amount: number;
   customer_price: number;
+  tax_rate?: number;
   stock_quantity: number;
   status: 'draft' | 'pending' | 'approved' | 'rejected' | 'blocked' | 'archived';
   tags: string;
@@ -70,6 +71,7 @@ export interface ProductVariant {
   commission_rate: number;
   commission_amount: number;
   customer_price: number;
+  tax_rate?: number;
   stock_quantity: number;
   weight?: number;
   dimensions?: string;

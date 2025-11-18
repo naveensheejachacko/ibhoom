@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 import enum
+from decimal import Decimal
 from ..core.database import Base
 
 
@@ -30,6 +31,7 @@ class Product(Base):
     commission_rate = Column(DECIMAL(5, 2), nullable=False)  # Commission % for this product
     commission_amount = Column(DECIMAL(10, 2), nullable=False)  # Calculated commission
     customer_price = Column(DECIMAL(10, 2), nullable=False)  # Final price customer pays
+    tax_rate = Column(DECIMAL(5, 2), nullable=False, default=Decimal('18.00'))  # Tax % applied on customer price
     stock_quantity = Column(Integer, default=0)
     status = Column(Enum(ProductStatus), default=ProductStatus.DRAFT)
     approval_date = Column(DateTime)
@@ -66,6 +68,7 @@ class ProductVariant(Base):
     commission_rate = Column(DECIMAL(5, 2), nullable=False)  # Commission % for this variant
     commission_amount = Column(DECIMAL(10, 2), nullable=False)  # Calculated commission
     customer_price = Column(DECIMAL(10, 2), nullable=False)  # Final price customer pays
+    tax_rate = Column(DECIMAL(5, 2), nullable=False, default=Decimal('18.00'))  # Tax % applied on customer price
     stock_quantity = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)

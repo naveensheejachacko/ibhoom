@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 import enum
+from decimal import Decimal
 from ..core.database import Base
 
 
@@ -33,7 +34,9 @@ class Order(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     order_number = Column(String(50), unique=True, nullable=False, index=True)
     customer_id = Column(String, ForeignKey("users.id"), nullable=False)
-    total_customer_amount = Column(DECIMAL(10, 2), nullable=False)  # Total amount customer pays
+    total_customer_amount = Column(DECIMAL(10, 2), nullable=False)  # Subtotal before tax
+    total_tax_amount = Column(DECIMAL(10, 2), nullable=False, default=Decimal('0.00'))  # Total tax collected
+    grand_total_amount = Column(DECIMAL(10, 2), nullable=False, default=Decimal('0.00'))  # Total amount customer pays (subtotal + tax)
     total_seller_amount = Column(DECIMAL(10, 2), nullable=False)  # Total amount sellers get
     total_commission_amount = Column(DECIMAL(10, 2), nullable=False)  # Total commission admin gets
     status = Column(Enum(OrderStatus), default=OrderStatus.PENDING)
@@ -78,8 +81,13 @@ class OrderItem(Base):
     commission_unit_rate = Column(DECIMAL(5, 2), nullable=False)  # Commission rate per unit
     commission_unit_amount = Column(DECIMAL(10, 2), nullable=False)  # Commission amount per unit
     total_seller_amount = Column(DECIMAL(10, 2), nullable=False)  # Total seller amount for this item
-    total_customer_amount = Column(DECIMAL(10, 2), nullable=False)  # Total customer amount for this item
+    total_customer_amount = Column(DECIMAL(10, 2), nullable=False)  # Total customer amount for this item (before tax)
     total_commission_amount = Column(DECIMAL(10, 2), nullable=False)  # Total commission for this item
+    tax_rate = Column(DECIMAL(5, 2), nullable=False, default=Decimal('18.00'))  # Tax rate applied to this item
+    tax_unit_amount = Column(DECIMAL(10, 2), nullable=False, default=Decimal('0.00'))  # Tax per unit
+    total_tax_amount = Column(DECIMAL(10, 2), nullable=False, default=Decimal('0.00'))  # Total tax for this item
+    final_unit_price = Column(DECIMAL(10, 2), nullable=False, default=Decimal('0.00'))  # Unit price including tax
+    total_final_amount = Column(DECIMAL(10, 2), nullable=False, default=Decimal('0.00'))  # Total including tax
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships

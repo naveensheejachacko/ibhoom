@@ -29,6 +29,11 @@ class OrderItemResponse(OrderItemBase):
     total_seller_amount: float
     total_customer_amount: float
     total_commission_amount: float
+    tax_rate: float
+    tax_unit_amount: float
+    total_tax_amount: float
+    final_unit_price: float
+    total_final_amount: float
     product_name: str
     variant_name: Optional[str] = None
     product_image: Optional[str] = None
@@ -49,6 +54,11 @@ class OrderListItemResponse(BaseModel):
     quantity: int
     customer_unit_price: float
     total_customer_amount: float
+    tax_rate: float
+    tax_unit_amount: float
+    total_tax_amount: float
+    final_unit_price: float
+    total_final_amount: float
     
     class Config:
         from_attributes = True
@@ -80,6 +90,8 @@ class OrderResponse(OrderBase):
     total_customer_amount: float
     total_seller_amount: float
     total_commission_amount: float
+    total_tax_amount: float
+    grand_total_amount: float
     status: OrderStatus
     payment_status: PaymentStatus
     admin_notes: Optional[str] = None
@@ -99,6 +111,8 @@ class OrderListResponse(BaseModel):
     order_number: str
     customer_id: str
     total_customer_amount: float
+    total_tax_amount: float
+    grand_total_amount: float
     total_items: int
     status: OrderStatus
     payment_status: PaymentStatus

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from ..models.order import Order, OrderItem, OrderStatus, PaymentStatus
 from ..models.product import Product, ProductVariant
 from ..models.user import User
@@ -22,6 +22,13 @@ def generate_order_number() -> str:
     return f"ORD-{timestamp}-{random_suffix}"
 
 
+TWO_PLACES = Decimal('0.01')
+
+
+def quantize_amount(value: Decimal) -> Decimal:
+    return value.quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
+
+
 def create_order(db: Session, order: OrderCreate, customer_id: str) -> Order:
     """Create a new order"""
     # Validate customer exists
@@ -30,9 +37,10 @@ def create_order(db: Session, order: OrderCreate, customer_id: str) -> Order:
         raise ValueError("Customer not found")
     
     # Validate and calculate totals
-    total_customer_amount = Decimal('0.0')
-    total_seller_amount = Decimal('0.0')
-    total_commission_amount = Decimal('0.0')
+    total_customer_amount = Decimal('0.00')
+    total_seller_amount = Decimal('0.00')
+    total_commission_amount = Decimal('0.00')
+    total_tax_amount = Decimal('0.00')
     order_items_data = []
     
     for item_data in order.items:
@@ -78,9 +86,25 @@ def create_order(db: Session, order: OrderCreate, customer_id: str) -> Order:
         # Location validation is suppressed - all orders are allowed regardless of location
         
         # Calculate item totals
-        total_seller_item = Decimal(str(seller_unit_price)) * item_data.quantity
-        total_customer_item = Decimal(str(customer_unit_price)) * item_data.quantity
-        total_commission_item = Decimal(str(commission_unit_amount)) * item_data.quantity
+        quantity_decimal = Decimal(item_data.quantity)
+        seller_unit_price_decimal = Decimal(str(seller_unit_price))
+        customer_unit_price_decimal = Decimal(str(customer_unit_price))
+        commission_unit_amount_decimal = Decimal(str(commission_unit_amount))
+        
+        total_seller_item = quantize_amount(seller_unit_price_decimal * quantity_decimal)
+        total_customer_item = quantize_amount(customer_unit_price_decimal * quantity_decimal)
+        total_commission_item = quantize_amount(commission_unit_amount_decimal * quantity_decimal)
+        
+        tax_rate_source = None
+        if item_data.product_variant_id and variant and variant.tax_rate is not None:
+            tax_rate_source = variant.tax_rate
+        elif product.tax_rate is not None:
+            tax_rate_source = product.tax_rate
+        tax_rate_decimal = Decimal(str(tax_rate_source)) if tax_rate_source is not None else Decimal('18.00')
+        tax_unit_amount = quantize_amount(customer_unit_price_decimal * (tax_rate_decimal / Decimal('100')))
+        final_unit_price = quantize_amount(customer_unit_price_decimal + tax_unit_amount)
+        total_tax_item = quantize_amount(tax_unit_amount * quantity_decimal)
+        total_final_amount = quantize_amount(final_unit_price * quantity_decimal)
         
         total_seller_amount += total_seller_item
         total_customer_amount += total_customer_item
@@ -97,10 +121,19 @@ def create_order(db: Session, order: OrderCreate, customer_id: str) -> Order:
             'total_seller_amount': total_seller_item,
             'total_customer_amount': total_customer_item,
             'total_commission_amount': total_commission_item,
+            'tax_rate': tax_rate_decimal,
+            'tax_unit_amount': tax_unit_amount,
+            'total_tax_amount': total_tax_item,
+            'final_unit_price': final_unit_price,
+            'total_final_amount': total_final_amount,
             'product_name': product.name
         })
+        
+        total_tax_amount += total_tax_item
     
     # Create order
+    grand_total_amount = quantize_amount(total_customer_amount + total_tax_amount)
+    
     db_order = Order(
         id=str(uuid.uuid4()),
         order_number=generate_order_number(),
@@ -108,6 +141,8 @@ def create_order(db: Session, order: OrderCreate, customer_id: str) -> Order:
         total_customer_amount=total_customer_amount,
         total_seller_amount=total_seller_amount,
         total_commission_amount=total_commission_amount,
+        total_tax_amount=total_tax_amount,
+        grand_total_amount=grand_total_amount,
         delivery_address=order.delivery_address,
         delivery_city=order.delivery_city,
         delivery_state=order.delivery_state,
@@ -326,7 +361,7 @@ def get_order_stats(db: Session) -> dict:
         
         # Calculate revenue (from delivered orders only)
         revenue_result = db.query(
-            db.func.sum(Order.total_customer_amount),
+            db.func.sum(Order.grand_total_amount),
             db.func.sum(Order.total_commission_amount)
         ).filter(Order.status == OrderStatus.DELIVERED).first()
         

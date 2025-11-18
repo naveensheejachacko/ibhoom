@@ -42,6 +42,7 @@ def generate_sku(seller_id: str, product_name: str) -> str:
     return sku
 
 
+def create_product(db: Session, product: ProductCreate, seller_id: str) -> Product:
     """Create a new product"""
     # Validate category exists
     category = db.query(Category).filter(Category.id == product.category_id).first()

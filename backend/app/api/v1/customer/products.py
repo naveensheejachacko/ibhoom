@@ -492,6 +492,33 @@ async def get_product_details(
             phone=product.seller.user.phone if product.seller.user else None
         )
     
+    # Calculate tax and final price for product
+    tax_rate = float(product.tax_rate) if product.tax_rate is not None else 18.0
+    customer_price = float(product.customer_price)
+    tax_amount = customer_price * (tax_rate / 100)
+    final_unit_price = customer_price + tax_amount
+    
+    # Process variants with calculated pricing
+    variants_with_pricing = []
+    for variant in product.variants:
+        variant_tax_rate = float(variant.tax_rate) if variant.tax_rate is not None else tax_rate
+        variant_customer_price = float(variant.customer_price)
+        variant_tax_amount = variant_customer_price * (variant_tax_rate / 100)
+        variant_final_price = variant_customer_price + variant_tax_amount
+        
+        variant_dict = {
+            "id": variant.id,
+            "variant_name": variant.variant_name,
+            "sku": variant.sku,
+            "stock_quantity": variant.stock_quantity,
+            "customer_price": variant_customer_price,
+            "tax_rate": variant_tax_rate,  # Percentage (e.g., 18.0 means 18%)
+            "tax_amount": round(variant_tax_amount, 2),  # Amount in currency
+            "final_unit_price": round(variant_final_price, 2),
+            "is_active": variant.is_active
+        }
+        variants_with_pricing.append(variant_dict)
+    
     # Get product response and add seller info
     product_dict = {
         "id": product.id,
@@ -500,11 +527,10 @@ async def get_product_details(
         "description": product.description,
         "category_id": product.category_id,
         "seller_id": product.seller_id,
-        "seller_price": float(product.seller_price),
-        "commission_rate": float(product.commission_rate),
-        "commission_amount": float(product.commission_amount),
-        "customer_price": float(product.customer_price),
-        "tax_rate": float(product.tax_rate) if product.tax_rate is not None else 18.0,
+        "customer_price": customer_price,
+        "tax_rate": tax_rate,  # Percentage (e.g., 18.0 means 18%)
+        "tax_amount": round(tax_amount, 2),  # Amount in currency
+        "final_unit_price": round(final_unit_price, 2),
         "stock_quantity": product.stock_quantity,
         "status": product.status,
         "tags": product.tags,
@@ -514,7 +540,7 @@ async def get_product_details(
         "created_at": product.created_at,
         "updated_at": product.updated_at,
         "images": product.images,
-        "variants": product.variants,
+        "variants": variants_with_pricing,
         "reviews": [],  # Will be populated if needed
         "average_rating": None,
         "total_reviews": 0,

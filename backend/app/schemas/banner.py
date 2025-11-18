@@ -14,6 +14,8 @@ class BannerBase(BaseModel):
     sort_order: int = Field(0, ge=0)
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
+    category_id: Optional[str] = None
+    product_id: Optional[str] = None
 
 
 class BannerCreate(BannerBase):
@@ -31,6 +33,8 @@ class BannerUpdate(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     is_active: Optional[bool] = None
+    category_id: Optional[str] = None
+    product_id: Optional[str] = None
 
 
 class BannerResponse(BannerBase):

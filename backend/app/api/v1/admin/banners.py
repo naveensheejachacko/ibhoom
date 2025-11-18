@@ -8,6 +8,8 @@ from ....core.dependencies import get_admin_user
 from ....core.config import settings
 from ....models.user import User
 from ....models.banner import Banner, BannerPosition, BannerStatus
+from ....models.category import Category
+from ....models.product import Product
 from ....schemas.banner import BannerCreate, BannerUpdate, BannerResponse, BannerListResponse
 from ....schemas.pagination import PaginatedResponse
 from ....utils.cloudinary_service import upload_image
@@ -25,6 +27,8 @@ async def create_banner(
     sort_order: int = Form(0),
     start_date: Optional[str] = Form(None),
     end_date: Optional[str] = Form(None),
+    category_id: Optional[str] = Form(None),
+    product_id: Optional[str] = Form(None),
     image: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_user)
@@ -62,6 +66,29 @@ async def create_banner(
                 detail="Failed to process image"
             )
         
+        # Validate category_id and product_id if provided
+        if category_id and product_id:
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="Cannot specify both category_id and product_id. Choose one or neither."
+            )
+        
+        if category_id:
+            category = db.query(Category).filter(Category.id == category_id).first()
+            if not category:
+                raise HTTPException(
+                    status_code=http_status.HTTP_404_NOT_FOUND,
+                    detail=f"Category with id {category_id} not found"
+                )
+        
+        if product_id:
+            product = db.query(Product).filter(Product.id == product_id).first()
+            if not product:
+                raise HTTPException(
+                    status_code=http_status.HTTP_404_NOT_FOUND,
+                    detail=f"Product with id {product_id} not found"
+                )
+        
         # Parse dates if provided
         parsed_start_date = None
         parsed_end_date = None
@@ -87,7 +114,9 @@ async def create_banner(
             status=status,
             sort_order=sort_order,
             start_date=parsed_start_date,
-            end_date=parsed_end_date
+            end_date=parsed_end_date,
+            category_id=category_id,
+            product_id=product_id
         )
         
         db.add(db_banner)
@@ -169,6 +198,8 @@ async def update_banner(
     sort_order: Optional[int] = Form(None),
     start_date: Optional[str] = Form(None),
     end_date: Optional[str] = Form(None),
+    category_id: Optional[str] = Form(None),
+    product_id: Optional[str] = Form(None),
     image: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_user)
@@ -204,6 +235,41 @@ async def update_banner(
                 import base64
                 base64_string = base64.b64encode(file_content).decode('utf-8')
                 banner.image_url = f"data:{image.content_type};base64,{base64_string}"
+        
+        # Validate category_id and product_id if provided
+        # Check if both are being set (even if one is None, we need to check the combination)
+        final_category_id = category_id if category_id is not None else banner.category_id
+        final_product_id = product_id if product_id is not None else banner.product_id
+        
+        if final_category_id and final_product_id:
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail="Cannot specify both category_id and product_id. Choose one or neither."
+            )
+        
+        if category_id is not None:
+            if category_id:  # If not empty string
+                category = db.query(Category).filter(Category.id == category_id).first()
+                if not category:
+                    raise HTTPException(
+                        status_code=http_status.HTTP_404_NOT_FOUND,
+                        detail=f"Category with id {category_id} not found"
+                    )
+                banner.category_id = category_id
+            else:  # Empty string means clear the mapping
+                banner.category_id = None
+        
+        if product_id is not None:
+            if product_id:  # If not empty string
+                product = db.query(Product).filter(Product.id == product_id).first()
+                if not product:
+                    raise HTTPException(
+                        status_code=http_status.HTTP_404_NOT_FOUND,
+                        detail=f"Product with id {product_id} not found"
+                    )
+                banner.product_id = product_id
+            else:  # Empty string means clear the mapping
+                banner.product_id = None
         
         # Update other fields
         if title is not None:

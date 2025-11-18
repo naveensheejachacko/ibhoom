@@ -91,22 +91,26 @@ async def get_my_orders(
                 seller_name=seller_name,
                 quantity=item.quantity,
                 customer_unit_price=float(item.customer_unit_price),
-            total_customer_amount=float(item.total_customer_amount),
-            tax_rate=float(item.tax_rate),
-            tax_unit_amount=float(item.tax_unit_amount),
-            total_tax_amount=float(item.total_tax_amount),
-            final_unit_price=float(item.final_unit_price),
-            total_final_amount=float(item.total_final_amount)
+                total_customer_amount=float(item.total_customer_amount),
+                tax_rate=float(item.tax_rate),
+                tax_unit_amount=float(item.tax_unit_amount),
+                total_tax_amount=float(item.total_tax_amount),
+                final_unit_price=float(item.final_unit_price),
+                total_final_amount=float(item.total_final_amount)
             ))
+        
+        # Calculate payable amount for this seller (sum of seller_amount for seller's items only)
+        seller_payable_amount = sum(float(item.total_seller_amount) for item in order.items if item.product.seller_id == seller_id)
         
         order_responses.append(OrderListResponse(
             id=order.id,
             order_number=order.order_number,
             customer_id=order.customer_id,
             total_customer_amount=float(order.total_customer_amount),
-        total_tax_amount=float(order.total_tax_amount),
-        grand_total_amount=float(order.grand_total_amount),
-            total_items=order.total_items,
+            total_tax_amount=float(order.total_tax_amount),
+            grand_total_amount=float(order.grand_total_amount),
+            payable_amount=seller_payable_amount,  # Amount payable to this seller
+            total_items=len(items),  # Only count seller's items
             status=order.status,
             payment_status=order.payment_status,
             created_at=order.created_at,

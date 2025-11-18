@@ -113,6 +113,7 @@ class OrderListResponse(BaseModel):
     total_customer_amount: float
     total_tax_amount: float
     grand_total_amount: float
+    payable_amount: Optional[float] = None  # Amount payable to seller (total_seller_amount)
     total_items: int
     status: OrderStatus
     payment_status: PaymentStatus

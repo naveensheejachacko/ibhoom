@@ -220,6 +220,7 @@ const Orders: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Order</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Items</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Amount</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Payable Amount</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Payment</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Date</th>
@@ -229,7 +230,7 @@ const Orders: React.FC = () => {
             <tbody className="bg-white divide-y divide-secondary-200">
               {orders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-secondary-500">
+                  <td colSpan={8} className="px-6 py-12 text-center text-secondary-500">
                     No orders found
                   </td>
                 </tr>
@@ -251,8 +252,19 @@ const Orders: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-secondary-900">
-                        ₹{order.total_customer_amount.toFixed(2)}
+                        ₹{order.grand_total_amount?.toFixed(2) || order.total_customer_amount.toFixed(2)}
                       </div>
+                      {order.total_tax_amount && (
+                        <div className="text-xs text-secondary-500">
+                          Tax: ₹{order.total_tax_amount.toFixed(2)}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-primary-600">
+                        ₹{order.payable_amount?.toFixed(2) || '0.00'}
+                      </div>
+                      <div className="text-xs text-secondary-500">To Seller</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
@@ -361,6 +373,31 @@ const Orders: React.FC = () => {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+
+              {/* Order Summary */}
+              <div className="border-t border-secondary-200 pt-4">
+                <h3 className="text-lg font-semibold text-secondary-900 mb-4">Order Summary</h3>
+                <div className="bg-secondary-50 rounded-lg p-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-secondary-600">Subtotal:</span>
+                    <span className="font-medium">₹{selectedOrder.total_customer_amount.toFixed(2)}</span>
+                  </div>
+                  {selectedOrder.total_tax_amount && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-secondary-600">Tax:</span>
+                      <span className="font-medium">₹{selectedOrder.total_tax_amount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm font-semibold pt-2 border-t border-secondary-200">
+                    <span className="text-secondary-900">Grand Total:</span>
+                    <span className="text-secondary-900">₹{selectedOrder.grand_total_amount?.toFixed(2) || selectedOrder.total_customer_amount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm pt-2 border-t border-secondary-200">
+                    <span className="text-secondary-600">Payable to Seller:</span>
+                    <span className="font-medium text-primary-600">₹{selectedOrder.payable_amount?.toFixed(2) || '0.00'}</span>
+                  </div>
                 </div>
               </div>
 

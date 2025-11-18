@@ -47,7 +47,9 @@ async def get_active_banners(
             "image_url": banner.image_url,
             "link_url": banner.link_url,
             "position": banner.position.value,
-            "sort_order": banner.sort_order
+            "sort_order": banner.sort_order,
+            "category_id": banner.category_id,
+            "product_id": banner.product_id
         })
     
     return result

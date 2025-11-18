@@ -1,0 +1,285 @@
+{
+	"info": {
+		"_postman_id": "banner-api-collection",
+		"name": "Customer Banner APIs",
+		"description": "APIs for fetching and tracking banners in the customer app",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get All Active Banners",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/banners",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"banners"
+					]
+				},
+				"description": "Get all active banners without any position filter"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Home Top Banners",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/banners?position=home_top",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"banners"
+					],
+					"query": [
+						{
+							"key": "position",
+							"value": "home_top",
+							"description": "Filter by banner position"
+						}
+					]
+				},
+				"description": "Get banners for home top position"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Home Middle Banners",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/banners?position=home_middle",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"banners"
+					],
+					"query": [
+						{
+							"key": "position",
+							"value": "home_middle"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Home Bottom Banners",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/banners?position=home_bottom",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"banners"
+					],
+					"query": [
+						{
+							"key": "position",
+							"value": "home_bottom"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Category Top Banners",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/banners?position=category_top",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"banners"
+					],
+					"query": [
+						{
+							"key": "position",
+							"value": "category_top"
+						}
+					]
+				},
+				"description": "Get banners for category top position"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Product Top Banners",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/banners?position=product_top",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"banners"
+					],
+					"query": [
+						{
+							"key": "position",
+							"value": "product_top"
+						}
+					]
+				},
+				"description": "Get banners for product top position"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Cart Top Banners",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/banners?position=cart_top",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"banners"
+					],
+					"query": [
+						{
+							"key": "position",
+							"value": "cart_top"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Checkout Top Banners",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/banners?position=checkout_top",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"banners"
+					],
+					"query": [
+						{
+							"key": "position",
+							"value": "checkout_top"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Track Banner Click",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/banners/{{banner_id}}/click",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"banners",
+						"{{banner_id}}",
+						"click"
+					]
+				},
+				"description": "Track when a customer clicks on a banner. Replace {{banner_id}} with actual banner ID."
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000/api/v1/customer",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "your_jwt_token_here",
+			"type": "string"
+		},
+		{
+			"key": "banner_id",
+			"value": "banner-uuid-here",
+			"type": "string"
+		}
+	]
+}
+

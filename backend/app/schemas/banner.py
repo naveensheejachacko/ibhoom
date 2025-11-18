@@ -58,6 +58,8 @@ class BannerListResponse(BaseModel):
     status: BannerStatus
     sort_order: int
     is_active: bool
+    category_id: Optional[str] = None
+    product_id: Optional[str] = None
     created_at: datetime
     
     class Config:

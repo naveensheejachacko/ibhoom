@@ -73,12 +73,15 @@ class ProductVariantUpdate(BaseModel):
         return v
 
 
-class ProductVariantResponse(ProductVariantBase):
+class ProductVariantResponse(BaseModel):
     id: str
-    commission_rate: float
-    commission_amount: float
-    customer_price: float
-    tax_rate: float
+    variant_name: Optional[str] = None
+    sku: Optional[str] = None
+    customer_price: float  # Customer unit price (including commission)
+    tax_rate: float  # Tax rate as percentage (e.g., 18.0 means 18%)
+    tax_amount: Optional[float] = None  # Tax amount per unit (customer_price * tax_rate / 100)
+    final_unit_price: Optional[float] = None  # Total unit price (customer_price + tax_amount)
+    stock_quantity: int = 0
     is_active: bool = True
     # Don't include attributes in response to avoid validation issues
     # attributes: List[ProductVariantAttributeResponse] = []
@@ -149,15 +152,22 @@ class ProductUpdate(BaseModel):
         return v
 
 
-class ProductResponse(ProductBase):
+class ProductResponse(BaseModel):
     id: str
+    name: str
     slug: str
+    description: Optional[str] = None
+    category_id: str
     seller_id: str
-    commission_rate: float
-    commission_amount: float
-    customer_price: float
-    tax_rate: float
+    customer_price: float  # Customer unit price (including commission)
+    tax_rate: float  # Tax rate as percentage (e.g., 18.0 means 18%)
+    tax_amount: Optional[float] = None  # Tax amount per unit (customer_price * tax_rate / 100)
+    final_unit_price: Optional[float] = None  # Total unit price (customer_price + tax_amount)
+    stock_quantity: int = 0
     status: ProductStatus
+    tags: Optional[str] = None
+    meta_title: Optional[str] = None
+    meta_description: Optional[str] = None
     admin_notes: Optional[str] = None
     created_at: datetime
     updated_at: datetime

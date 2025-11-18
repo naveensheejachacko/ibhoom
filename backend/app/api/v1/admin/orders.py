@@ -128,6 +128,7 @@ async def get_all_orders(
             total_customer_amount=float(order.total_customer_amount),
             total_tax_amount=float(order.total_tax_amount),
             grand_total_amount=float(order.grand_total_amount),
+            payable_amount=float(order.total_seller_amount),  # Amount payable to seller(s)
             total_items=order.total_items,
             status=order.status,
             payment_status=order.payment_status,
@@ -222,8 +223,9 @@ async def get_pending_orders(
             order_number=order.order_number,
             customer_id=order.customer_id,
             total_customer_amount=float(order.total_customer_amount),
-        total_tax_amount=float(order.total_tax_amount),
-        grand_total_amount=float(order.grand_total_amount),
+            total_tax_amount=float(order.total_tax_amount),
+            grand_total_amount=float(order.grand_total_amount),
+            payable_amount=float(order.total_seller_amount),  # Amount payable to seller(s)
             total_items=order.total_items,
             status=order.status,
             payment_status=order.payment_status,
@@ -231,7 +233,17 @@ async def get_pending_orders(
             items=items
         ))
     
-    return order_responses
+    # Calculate pagination metadata
+    current_page = page
+    pages = (total + limit - 1) // limit if total > 0 else 1
+    
+    return PaginatedResponse(
+        items=order_responses,
+        total=total,
+        page=current_page,
+        size=limit,
+        pages=pages
+    )
 
 
 @router.get("/{order_id}", response_model=OrderResponse)

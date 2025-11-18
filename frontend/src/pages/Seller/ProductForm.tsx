@@ -393,6 +393,8 @@ const ProductForm: React.FC = () => {
         ...formData,
         customer_price: calculateCustomerPrice(),
         tags: JSON.stringify(formData.tags),
+        // If product has variants, set product stock to 0 (it's not used)
+        stock_quantity: variants.length > 0 ? 0 : formData.stock_quantity,
         variants: variants.map(v => ({
           variant_name: v.variant_name,
           sku: v.sku,
@@ -552,24 +554,37 @@ const ProductForm: React.FC = () => {
               />
             </div>
 
-            <div>
-              <label htmlFor="stock_quantity" className="block text-sm font-medium text-secondary-700 mb-2">
-                Stock Quantity *
-              </label>
-              <input
-                id="stock_quantity"
-                name="stock_quantity"
-                type="number"
-                min="0"
-                required
-                value={formData.stock_quantity}
-                onChange={handleInputChange}
-                onFocus={handleNumberFocus}
-                onKeyDown={handleNumericKeyDown}
-                className="input-field"
-                placeholder="0"
-              />
-            </div>
+            {variants.length === 0 && (
+              <div>
+                <label htmlFor="stock_quantity" className="block text-sm font-medium text-secondary-700 mb-2">
+                  Stock Quantity *
+                </label>
+                <input
+                  id="stock_quantity"
+                  name="stock_quantity"
+                  type="number"
+                  min="0"
+                  required
+                  value={formData.stock_quantity}
+                  onChange={handleInputChange}
+                  onFocus={handleNumberFocus}
+                  onKeyDown={handleNumericKeyDown}
+                  className="input-field"
+                  placeholder="0"
+                />
+                <p className="text-xs text-secondary-500 mt-1">
+                  Enter the total stock quantity for this product
+                </p>
+              </div>
+            )}
+            {variants.length > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> For products with variants, stock is managed individually for each variant in the table below. 
+                  The product stock field is not used when variants exist.
+                </p>
+              </div>
+            )}
 
             <div className="bg-secondary-50 p-4 rounded-lg">
               <label className="block text-sm font-medium text-secondary-700 mb-2">

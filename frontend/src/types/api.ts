@@ -120,6 +120,9 @@ export interface OrderListResponse {
   order_number: string;
   customer_id: string;
   total_customer_amount: number;
+  total_tax_amount?: number;
+  grand_total_amount?: number;
+  payable_amount?: number;  // Amount payable to seller
   total_items: number;
   status: string;
   payment_status: string;

@@ -181,6 +181,9 @@ const Banners: React.FC = () => {
 
   const handleEdit = (banner: Banner) => {
     setEditingBanner(banner);
+    // Ensure mutual exclusivity: if category_id exists, clear product_id and vice versa
+    const categoryId = banner.category_id || '';
+    const productId = banner.product_id || '';
     setFormData({
       title: banner.title,
       description: banner.description || '',
@@ -190,8 +193,8 @@ const Banners: React.FC = () => {
       sort_order: banner.sort_order,
       start_date: banner.start_date ? banner.start_date.split('T')[0] : '',
       end_date: banner.end_date ? banner.end_date.split('T')[0] : '',
-      category_id: banner.category_id || '',
-      product_id: banner.product_id || '',
+      category_id: categoryId,
+      product_id: productId,
     });
     setImageFile(null);
     setImagePreview(banner.image_url);

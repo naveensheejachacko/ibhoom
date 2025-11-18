@@ -3,6 +3,7 @@ import { Image, Plus, Edit2, Trash2, Eye, Filter, Search, Calendar, Link as Link
 import { adminApi } from '../../lib/api';
 import { useToast } from '../../components/Toast';
 import Pagination from '../../components/Pagination';
+import { Category, Product } from '../../types/api';
 
 interface Banner {
   id: string;
@@ -15,6 +16,8 @@ interface Banner {
   sort_order: number;
   start_date?: string;
   end_date?: string;
+  category_id?: string;
+  product_id?: string;
   click_count: number;
   is_active: boolean;
   created_at: string;
@@ -44,13 +47,24 @@ const Banners: React.FC = () => {
     sort_order: 0,
     start_date: '',
     end_date: '',
+    category_id: '',
+    product_id: '',
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [loadingProducts, setLoadingProducts] = useState(false);
 
   useEffect(() => {
     fetchBanners();
   }, [currentPage, positionFilter, statusFilter]);
+
+  useEffect(() => {
+    fetchCategories();
+    fetchProducts();
+  }, []);
 
   const fetchBanners = async () => {
     try {
@@ -77,6 +91,30 @@ const Banners: React.FC = () => {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      setLoadingCategories(true);
+      const data = await adminApi.getCategories();
+      setCategories(Array.isArray(data) ? data : []);
+    } catch (error: any) {
+      console.error('Error fetching categories:', error);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      setLoadingProducts(true);
+      const data = await adminApi.getProducts({ limit: 1000, status: 'approved' });
+      setProducts(Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []));
+    } catch (error: any) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -99,6 +137,17 @@ const Banners: React.FC = () => {
       if (formData.end_date) {
         bannerData.end_date = formData.end_date;
       }
+      
+      // Handle category_id and product_id - only send one or neither
+      // For create, only include if they have values (don't send empty strings)
+      if (formData.category_id && formData.category_id.trim()) {
+        bannerData.category_id = formData.category_id;
+        // Don't include product_id
+      } else if (formData.product_id && formData.product_id.trim()) {
+        bannerData.product_id = formData.product_id;
+        // Don't include category_id
+      }
+      // If neither is selected, don't include either field
 
       if (editingBanner) {
         await adminApi.updateBanner(editingBanner.id, bannerData, imageFile || undefined);
@@ -141,6 +190,8 @@ const Banners: React.FC = () => {
       sort_order: banner.sort_order,
       start_date: banner.start_date ? banner.start_date.split('T')[0] : '',
       end_date: banner.end_date ? banner.end_date.split('T')[0] : '',
+      category_id: banner.category_id || '',
+      product_id: banner.product_id || '',
     });
     setImageFile(null);
     setImagePreview(banner.image_url);
@@ -157,6 +208,8 @@ const Banners: React.FC = () => {
       sort_order: 0,
       start_date: '',
       end_date: '',
+      category_id: '',
+      product_id: '',
     });
     setImageFile(null);
     setImagePreview(null);
@@ -515,6 +568,72 @@ const Banners: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                     className="input-field"
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    Category (Optional)
+                  </label>
+                  <select
+                    value={formData.category_id}
+                    onChange={(e) => {
+                      const categoryId = e.target.value;
+                      setFormData({ 
+                        ...formData, 
+                        category_id: categoryId,
+                        product_id: categoryId ? '' : formData.product_id // Clear product if category selected
+                      });
+                    }}
+                    className="input-field"
+                  >
+                    <option value="">None</option>
+                    {loadingCategories ? (
+                      <option disabled>Loading categories...</option>
+                    ) : (
+                      categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    Product (Optional)
+                  </label>
+                  <select
+                    value={formData.product_id}
+                    onChange={(e) => {
+                      const productId = e.target.value;
+                      setFormData({ 
+                        ...formData, 
+                        product_id: productId,
+                        category_id: productId ? '' : formData.category_id // Clear category if product selected
+                      });
+                    }}
+                    className="input-field"
+                    disabled={!!formData.category_id}
+                  >
+                    <option value="">None</option>
+                    {loadingProducts ? (
+                      <option disabled>Loading products...</option>
+                    ) : (
+                      products.map((product) => (
+                        <option key={product.id} value={product.id}>
+                          {product.name}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  {formData.category_id && (
+                    <p className="text-xs text-secondary-500 mt-1">
+                      Clear category selection to choose a product
+                    </p>
+                  )}
                 </div>
               </div>
 

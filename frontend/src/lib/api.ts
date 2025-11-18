@@ -443,6 +443,8 @@ export const adminApi = {
     formData.append('sort_order', data.sort_order.toString());
     if (data.start_date) formData.append('start_date', data.start_date);
     if (data.end_date) formData.append('end_date', data.end_date);
+    if (data.category_id) formData.append('category_id', data.category_id);
+    if (data.product_id) formData.append('product_id', data.product_id);
     if (imageFile) {
       formData.append('image', imageFile);
     }
@@ -464,6 +466,9 @@ export const adminApi = {
     if (data.sort_order !== undefined) formData.append('sort_order', data.sort_order.toString());
     if (data.start_date !== undefined) formData.append('start_date', data.start_date || '');
     if (data.end_date !== undefined) formData.append('end_date', data.end_date || '');
+    // Handle category_id and product_id - send empty string to clear, or value to set
+    if (data.category_id !== undefined) formData.append('category_id', data.category_id || '');
+    if (data.product_id !== undefined) formData.append('product_id', data.product_id || '');
     if (imageFile) {
       formData.append('image', imageFile);
     }

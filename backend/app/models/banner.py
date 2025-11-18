@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, Boolean, DateTime, Integer, Enum
+from sqlalchemy import Column, String, Text, Boolean, DateTime, Integer, Enum, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
@@ -41,6 +41,14 @@ class Banner(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Optional mappings to category or product
+    category_id = Column(String, ForeignKey("categories.id"), nullable=True)
+    product_id = Column(String, ForeignKey("products.id"), nullable=True)
+    
+    # Relationships
+    category = relationship("Category", backref="banners")
+    product = relationship("Product", backref="banners")
     
     def __repr__(self):
         return f"<Banner {self.title} - {self.position.value}>"

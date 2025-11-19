@@ -23,6 +23,7 @@ async def update_profile(
     first_name: Optional[str] = Form(None),
     last_name: Optional[str] = Form(None),
     email: Optional[str] = Form(None),
+    phone: Optional[str] = Form(None),
     pincode: Optional[str] = Form(None),
     current_password: Optional[str] = Form(None),
     new_password: Optional[str] = Form(None),
@@ -51,6 +52,7 @@ async def update_profile(
             first_name=first_name,
             last_name=last_name,
             email=email,
+            phone=phone,
             pincode=pincode
         )
         

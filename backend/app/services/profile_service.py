@@ -21,6 +21,8 @@ def update_profile(db: Session, user_id: str, profile_data: ProfileUpdate) -> Op
         user.last_name = profile_data.last_name
     if profile_data.email is not None:
         user.email = profile_data.email
+    if profile_data.phone is not None:
+        user.phone = profile_data.phone
     if profile_data.pincode is not None:
         user.pincode = profile_data.pincode
     if profile_data.profile_picture is not None:

@@ -6,6 +6,7 @@ class ProfileUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     email: Optional[EmailStr] = None
+    phone: Optional[str] = None
     pincode: Optional[str] = None
     profile_picture: Optional[str] = None
 

@@ -39,6 +39,11 @@ class CartItemResponse(BaseModel):
     quantity: int
     unit_price: Decimal
     total_price: Decimal
+    tax_rate: Decimal  # Tax percentage
+    tax_unit_amount: Decimal  # Tax on one unit
+    tax_total_amount: Decimal  # Tax on total quantity
+    final_unit_price: Decimal  # unit_price + tax_unit_amount
+    final_total_price: Decimal  # total_price + tax_total_amount
     product_image: Optional[str] = None
     stock_available: int
     in_stock: bool  # True if stock_available > 0
@@ -53,6 +58,8 @@ class CartResponse(BaseModel):
     items: List[CartItemResponse]
     total_items: int
     total_amount: Decimal
+    total_tax_amount: Decimal  # Total tax for all items
+    grand_total: Decimal  # total_amount + total_tax_amount
     item_count: int  # Number of distinct items
 
 

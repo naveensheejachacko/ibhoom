@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
-from typing import List
+from typing import List, Tuple
 from decimal import Decimal
 from ....core.database import get_db
 from ....core.dependencies import get_customer_user
@@ -13,6 +13,20 @@ from ....schemas.cart import (
 from ....services import cart_service
 
 router = APIRouter()
+
+
+def calculate_cart_item_tax(unit_price: Decimal, tax_rate: Decimal, quantity: int) -> Tuple[Decimal, Decimal, Decimal, Decimal]:
+    """Calculate tax amounts for cart item
+    
+    Returns:
+        (tax_unit_amount, tax_total_amount, final_unit_price, final_total_price)
+    """
+    tax_unit_amount = (unit_price * tax_rate / Decimal('100')).quantize(Decimal('0.01'))
+    tax_total_amount = (tax_unit_amount * quantity).quantize(Decimal('0.01'))
+    final_unit_price = unit_price + tax_unit_amount
+    final_total_price = (final_unit_price * quantity).quantize(Decimal('0.01'))
+    
+    return tax_unit_amount, tax_total_amount, final_unit_price, final_total_price
 
 
 @router.post("/", response_model=CartItemResponse, status_code=status.HTTP_201_CREATED)
@@ -58,8 +72,14 @@ async def add_to_cart(
         # Calculate prices
         unit_price = variant.customer_price if variant else product.customer_price
         total_price = unit_price * cart.quantity
+        tax_rate = variant.tax_rate if variant else product.tax_rate
         stock_available = variant.stock_quantity if variant else product.stock_quantity
         in_stock = stock_available > 0
+        
+        # Calculate tax
+        tax_unit_amount, tax_total_amount, final_unit_price, final_total_price = calculate_cart_item_tax(
+            unit_price, tax_rate, cart.quantity
+        )
         
         return CartItemResponse(
             id=cart.id,
@@ -70,6 +90,11 @@ async def add_to_cart(
             quantity=cart.quantity,
             unit_price=unit_price,
             total_price=total_price,
+            tax_rate=tax_rate,
+            tax_unit_amount=tax_unit_amount,
+            tax_total_amount=tax_total_amount,
+            final_unit_price=final_unit_price,
+            final_total_price=final_total_price,
             product_image=product_image,
             stock_available=stock_available,
             in_stock=in_stock,
@@ -95,6 +120,7 @@ async def get_cart(
     # Build response with product details
     items = []
     total_amount = Decimal('0.00')
+    total_tax_amount = Decimal('0.00')
     
     for cart_item in cart_items:
         
@@ -130,9 +156,17 @@ async def get_cart(
         # Calculate prices
         unit_price = variant.customer_price if variant else product.customer_price
         total_price = unit_price * cart_item.quantity
-        total_amount += total_price
+        tax_rate = variant.tax_rate if variant else product.tax_rate
         stock_available = variant.stock_quantity if variant else product.stock_quantity
         in_stock = stock_available > 0
+        
+        # Calculate tax
+        tax_unit_amount, tax_total_amount_item, final_unit_price, final_total_price = calculate_cart_item_tax(
+            unit_price, tax_rate, cart_item.quantity
+        )
+        
+        total_amount += total_price
+        total_tax_amount += tax_total_amount_item
         
         items.append(CartItemResponse(
             id=cart_item.id,
@@ -143,6 +177,11 @@ async def get_cart(
             quantity=cart_item.quantity,
             unit_price=unit_price,
             total_price=total_price,
+            tax_rate=tax_rate,
+            tax_unit_amount=tax_unit_amount,
+            tax_total_amount=tax_total_amount_item,
+            final_unit_price=final_unit_price,
+            final_total_price=final_total_price,
             product_image=product_image,
             stock_available=stock_available,
             in_stock=in_stock,
@@ -151,11 +190,14 @@ async def get_cart(
         ))
     
     total_items = sum(item.quantity for item in cart_items)
+    grand_total = total_amount + total_tax_amount
     
     return CartResponse(
         items=items,
         total_items=total_items,
         total_amount=total_amount,
+        total_tax_amount=total_tax_amount,
+        grand_total=grand_total,
         item_count=len(items)
     )
 
@@ -217,8 +259,14 @@ async def update_cart_item(
         # Calculate prices
         unit_price = variant.customer_price if variant else product.customer_price
         total_price = unit_price * cart_item.quantity
+        tax_rate = variant.tax_rate if variant else product.tax_rate
         stock_available = variant.stock_quantity if variant else product.stock_quantity
         in_stock = stock_available > 0
+        
+        # Calculate tax
+        tax_unit_amount, tax_total_amount, final_unit_price, final_total_price = calculate_cart_item_tax(
+            unit_price, tax_rate, cart_item.quantity
+        )
         
         return CartItemResponse(
             id=cart_item.id,
@@ -229,6 +277,11 @@ async def update_cart_item(
             quantity=cart_item.quantity,
             unit_price=unit_price,
             total_price=total_price,
+            tax_rate=tax_rate,
+            tax_unit_amount=tax_unit_amount,
+            tax_total_amount=tax_total_amount,
+            final_unit_price=final_unit_price,
+            final_total_price=final_total_price,
             product_image=product_image,
             stock_available=stock_available,
             in_stock=in_stock,
@@ -319,8 +372,14 @@ async def get_cart_item(
     # Calculate prices
     unit_price = variant.customer_price if variant else product.customer_price
     total_price = unit_price * cart_item.quantity
+    tax_rate = variant.tax_rate if variant else product.tax_rate
     stock_available = variant.stock_quantity if variant else product.stock_quantity
     in_stock = stock_available > 0
+    
+    # Calculate tax
+    tax_unit_amount, tax_total_amount, final_unit_price, final_total_price = calculate_cart_item_tax(
+        unit_price, tax_rate, cart_item.quantity
+    )
     
     return CartItemResponse(
         id=cart_item.id,
@@ -331,6 +390,11 @@ async def get_cart_item(
         quantity=cart_item.quantity,
         unit_price=unit_price,
         total_price=total_price,
+        tax_rate=tax_rate,
+        tax_unit_amount=tax_unit_amount,
+        tax_total_amount=tax_total_amount,
+        final_unit_price=final_unit_price,
+        final_total_price=final_total_price,
         product_image=product_image,
         stock_available=stock_available,
         in_stock=in_stock,

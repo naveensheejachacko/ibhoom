@@ -25,11 +25,51 @@ def calculate_level(db: Session, parent_id: Optional[str]) -> int:
     return parent.level + 1
 
 
+def check_circular_dependency(db: Session, category_id: str, proposed_parent_id: Optional[str]) -> bool:
+    """
+    Check if setting proposed_parent_id as parent would create a circular dependency.
+    Returns True if it would create a circular dependency, False otherwise.
+    """
+    if not proposed_parent_id:
+        return False
+    
+    # Check 1: Category cannot be its own parent
+    if category_id == proposed_parent_id:
+        return True
+    
+    # Check 2: Walk up the parent chain from proposed_parent_id
+    # If we encounter category_id, it means category_id is an ancestor
+    # of proposed_parent_id, so making proposed_parent_id the parent would create a cycle
+    visited = set()
+    current_id = proposed_parent_id
+    
+    while current_id:
+        # Prevent infinite loops in case of existing circular dependencies
+        if current_id in visited:
+            return True
+        
+        visited.add(current_id)
+        
+        # If we find category_id in the parent chain, it's circular
+        if current_id == category_id:
+            return True
+        
+        # Get the parent of current category
+        current = db.query(Category).filter(Category.id == current_id).first()
+        if not current or not current.parent_id:
+            break
+        
+        current_id = current.parent_id
+    
+    return False
+
+
 def create_category(db: Session, category: CategoryCreate) -> Category:
     """Create a new category"""
     # Normalize empty string parent_id to None
     if hasattr(category, 'parent_id') and category.parent_id == "":
         category.parent_id = None
+    
     # Generate unique slug
     base_slug = generate_slug(category.name)
     slug = base_slug
@@ -47,6 +87,9 @@ def create_category(db: Session, category: CategoryCreate) -> Category:
         parent = db.query(Category).filter(Category.id == category.parent_id).first()
         if not parent:
             raise ValueError("Parent category not found")
+    
+    # Note: For new categories, circular dependency check is not needed
+    # since the category doesn't exist yet and can't be in any chain
     
     db_category = Category(
         id=str(uuid.uuid4()),
@@ -144,8 +187,12 @@ def update_category(db: Session, category_id: str, category_update: CategoryUpda
         
         update_data["slug"] = slug
     
-    # Handle level recalculation if parent changed
+    # Handle level recalculation and circular dependency check if parent changed
     if "parent_id" in update_data:
+        # Check for circular dependency
+        if check_circular_dependency(db, category_id, update_data["parent_id"]):
+            raise ValueError("Cannot set parent: circular dependency detected. A category cannot be a descendant of itself.")
+        
         if update_data["parent_id"]:
             parent = db.query(Category).filter(Category.id == update_data["parent_id"]).first()
             if not parent:

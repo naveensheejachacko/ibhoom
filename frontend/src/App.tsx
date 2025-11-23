@@ -24,6 +24,7 @@ import SellerProducts from './pages/Seller/Products';
 import SellerProductForm from './pages/Seller/ProductForm';
 import SellerOrders from './pages/Seller/Orders';
 import ProfileSettings from './pages/Seller/ProfileSettings';
+import StockManagement from './pages/Seller/StockManagement';
 
 function App() {
   return (
@@ -71,6 +72,7 @@ function App() {
                       <Route path="products" element={<SellerProducts />} />
                       <Route path="products/new" element={<SellerProductForm />} />
                       <Route path="products/edit/:id" element={<SellerProductForm />} />
+                      <Route path="stock" element={<StockManagement />} />
                       <Route path="orders" element={<SellerOrders />} />
                       <Route path="profile" element={<ProfileSettings />} />
                     </Routes>

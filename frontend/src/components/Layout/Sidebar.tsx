@@ -13,7 +13,8 @@ import {
   PackageCheck,
   User,
   List,
-  Image
+  Image,
+  Archive
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -42,6 +43,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/seller' },
     { icon: Package, label: 'My Products', path: '/seller/products' },
     { icon: PackageCheck, label: 'Add Product', path: '/seller/products/new' },
+    { icon: Archive, label: 'Stock Management', path: '/seller/stock' },
     { icon: ShoppingCart, label: 'Orders', path: '/seller/orders' },
     { icon: User, label: 'Profile', path: '/seller/profile' },
     { icon: Settings, label: 'Settings', path: '/seller/settings' },

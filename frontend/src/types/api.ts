@@ -27,14 +27,20 @@ export interface SellerBasicInfo {
 export interface Product {
   id: string;
   name: string;
+  slug?: string;
   description: string;
   category_id: string;
   seller_id: string;
-  seller_price: number;
-  commission_rate: number;
-  commission_amount: number;
+  // For list responses
+  seller_price?: number;
+  commission_rate?: number;
+  commission_amount?: number;
+  sku?: string;
+  // For detail responses
   customer_price: number;
   tax_rate?: number;
+  tax_amount?: number;
+  final_unit_price?: number;
   stock_quantity: number;
   status: 'draft' | 'pending' | 'approved' | 'rejected' | 'blocked' | 'archived';
   tags: string;
@@ -45,10 +51,11 @@ export interface Product {
   admin_notes?: string;
   created_at: string;
   updated_at: string;
-  category: Category;
+  category?: Category;
   seller?: SellerBasicInfo;  // Seller basic details
   images: ProductImage[];
   variants: ProductVariant[];
+  reviews?: any[];
   seller_name?: string;
   seller_email?: string;
   average_rating?: number;
@@ -65,13 +72,16 @@ export interface ProductImage {
 
 export interface ProductVariant {
   id: string;
-  product_id: string;
+  product_id?: string;
+  variant_name?: string;
   sku: string;
-  seller_price: number;
-  commission_rate: number;
-  commission_amount: number;
+  seller_price?: number;
+  commission_rate?: number;
+  commission_amount?: number;
   customer_price: number;
   tax_rate?: number;
+  tax_amount?: number;
+  final_unit_price?: number;
   stock_quantity: number;
   weight?: number;
   dimensions?: string;

@@ -251,26 +251,38 @@ const Products: React.FC = () => {
                     {selectedProduct.status}
                   </span>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-secondary-700">Seller Price</label>
-                  <p className="text-secondary-900">₹{selectedProduct.seller_price}</p>
-                </div>
+                {selectedProduct.seller_price !== undefined && (
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700">Seller Price</label>
+                    <p className="text-secondary-900">₹{selectedProduct.seller_price}</p>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-secondary-700">Customer Price</label>
-                  <p className="text-secondary-900">₹{selectedProduct.customer_price}</p>
+                  <p className="text-secondary-900">₹{selectedProduct.customer_price?.toFixed(2)}</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-secondary-700">Commission Rate</label>
-                  <p className="text-secondary-900">{selectedProduct.commission_rate}%</p>
-                </div>
+                {selectedProduct.tax_rate !== undefined && (
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700">Tax Rate</label>
+                    <p className="text-secondary-900">{selectedProduct.tax_rate}%</p>
+                  </div>
+                )}
+                {selectedProduct.commission_rate !== undefined && (
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700">Commission Rate</label>
+                    <p className="text-secondary-900">{selectedProduct.commission_rate}%</p>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-secondary-700">Stock Quantity</label>
                   <p className="text-secondary-900">{selectedProduct.stock_quantity}</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-secondary-700">SKU</label>
-                  <p className="text-secondary-900">{selectedProduct.sku}</p>
-                </div>
+                {selectedProduct.sku && (
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700">SKU</label>
+                    <p className="text-secondary-900">{selectedProduct.sku}</p>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-secondary-700">Created</label>
                   <p className="text-secondary-900">{new Date(selectedProduct.created_at).toLocaleDateString()}</p>
@@ -325,8 +337,8 @@ const Products: React.FC = () => {
                         <tr>
                           <th className="px-4 py-2 text-left text-xs font-medium text-secondary-700 uppercase">Variant</th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-secondary-700 uppercase">SKU</th>
-                          <th className="px-4 py-2 text-right text-xs font-medium text-secondary-700 uppercase">Seller Price</th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-secondary-700 uppercase">Customer Price</th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-secondary-700 uppercase">Tax Rate</th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-secondary-700 uppercase">Stock</th>
                           <th className="px-4 py-2 text-center text-xs font-medium text-secondary-700 uppercase">Status</th>
                         </tr>
@@ -336,8 +348,8 @@ const Products: React.FC = () => {
                           <tr key={variant.id}>
                             <td className="px-4 py-2 text-sm text-secondary-900">{variant.variant_name || 'Default'}</td>
                             <td className="px-4 py-2 text-sm text-secondary-600">{variant.sku}</td>
-                            <td className="px-4 py-2 text-sm text-secondary-900 text-right">₹{variant.seller_price.toFixed(2)}</td>
-                            <td className="px-4 py-2 text-sm text-secondary-900 text-right">₹{variant.customer_price.toFixed(2)}</td>
+                            <td className="px-4 py-2 text-sm text-secondary-900 text-right">₹{variant.customer_price?.toFixed(2) || 'N/A'}</td>
+                            <td className="px-4 py-2 text-sm text-secondary-900 text-right">{variant.tax_rate || 18}%</td>
                             <td className="px-4 py-2 text-sm text-secondary-900 text-right">{variant.stock_quantity}</td>
                             <td className="px-4 py-2 text-center">
                               <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${

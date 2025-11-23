@@ -581,6 +581,38 @@ export const sellerApi = {
     const response = await api.put('/api/v1/seller/notifications/mark-all-read');
     return response.data;
   },
+
+  // Stock Management
+  getStockInventory: async (params?: { low_stock_only?: boolean; search?: string }) => {
+    const response = await api.get('/api/v1/seller/stock', { params });
+    return response.data;
+  },
+
+  updateProductStock: async (productId: string, stockQuantity: number, notes?: string) => {
+    const response = await api.put(`/api/v1/seller/stock/product/${productId}`, {
+      stock_quantity: stockQuantity,
+      notes
+    });
+    return response.data;
+  },
+
+  updateVariantStock: async (variantId: string, stockQuantity: number, notes?: string) => {
+    const response = await api.put(`/api/v1/seller/stock/variant/${variantId}`, {
+      stock_quantity: stockQuantity,
+      notes
+    });
+    return response.data;
+  },
+
+  bulkUpdateStock: async (updates: Array<{ variant_id: string; stock_quantity: number; notes?: string }>) => {
+    const response = await api.post('/api/v1/seller/stock/bulk-update', { updates });
+    return response.data;
+  },
+
+  getLowStockCount: async () => {
+    const response = await api.get('/api/v1/seller/stock/low-stock-count');
+    return response.data;
+  },
 };
 
 // Customer API

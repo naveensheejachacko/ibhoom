@@ -531,7 +531,36 @@ const Products: React.FC = () => {
                     <p className="text-secondary-900">{selectedProduct.seller.business_name}</p>
                   </div>
                 )}
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700">Return Policy</label>
+                  <p className="text-secondary-900">
+                    {selectedProduct.has_return_policy ? (
+                      <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                        ✓ Enabled
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
+                        ✗ Not Available
+                      </span>
+                    )}
+                  </p>
+                </div>
+                {selectedProduct.has_return_policy && (
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700">Return Period</label>
+                    <p className="text-secondary-900">{selectedProduct.return_period_days || 30} Days</p>
+                  </div>
+                )}
               </div>
+              
+              {selectedProduct.has_return_policy && selectedProduct.return_policy_description && (
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700">Return Policy Details</label>
+                  <p className="text-secondary-900 mt-1 whitespace-pre-wrap bg-gray-50 p-3 rounded-lg">
+                    {selectedProduct.return_policy_description}
+                  </p>
+                </div>
+              )}
               
               <div>
                 <label className="block text-sm font-medium text-secondary-700">Description</label>

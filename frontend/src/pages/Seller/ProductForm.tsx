@@ -19,6 +19,9 @@ interface ProductFormData {
   meta_title: string;
   meta_description: string;
   images: ProductImage[];
+  has_return_policy: boolean;
+  return_period_days: number;
+  return_policy_description: string;
 }
 
 interface ProductImage {
@@ -59,7 +62,10 @@ const ProductForm: React.FC = () => {
     tags: [],
     meta_title: '',
     meta_description: '',
-    images: []
+    images: [],
+    has_return_policy: true,
+    return_period_days: 30,
+    return_policy_description: 'Easy 30-day returns. Items must be in original condition with tags attached.'
   });
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -132,6 +138,15 @@ const ProductForm: React.FC = () => {
     try {
       setIsLoading(true);
       const product = await sellerApi.getProduct(id);
+      console.log('📦 Loaded product data:', product);
+      console.log('📁 Category ID:', product.category_id);
+      console.log('🔄 Return policy:', {
+        has_return_policy: product.has_return_policy,
+        return_period_days: product.return_period_days,
+        return_policy_description: product.return_policy_description
+      });
+      console.log('🎨 Variants:', product.variants);
+      
       setFormData({
         name: product.name || '',
         description: product.description || '',
@@ -145,10 +160,26 @@ const ProductForm: React.FC = () => {
         tags: product.tags ? JSON.parse(product.tags) : [],
         meta_title: product.meta_title || '',
         meta_description: product.meta_description || '',
-        images: product.images || []
+        images: product.images || [],
+        has_return_policy: product.has_return_policy !== undefined ? product.has_return_policy : true,
+        return_period_days: product.return_period_days || 30,
+        return_policy_description: product.return_policy_description || 'Easy 30-day returns. Items must be in original condition with tags attached.'
       });
+      
+      // Load variants if they exist
+      if (product.variants && product.variants.length > 0) {
+        console.log('✅ Loading variants:', product.variants.length);
+        const loadedVariants = product.variants.map((v: any) => ({
+          variant_name: v.variant_name || '',
+          sku: v.sku || '',
+          seller_price: v.seller_price || 0,
+          stock_quantity: v.stock_quantity || 0,
+          attributes: {}
+        }));
+        setVariants(loadedVariants);
+      }
     } catch (error) {
-      console.error('Error loading product:', error);
+      console.error('❌ Error loading product:', error);
       setError('Failed to load product details');
     } finally {
       setIsLoading(false);
@@ -644,6 +675,67 @@ const ProductForm: React.FC = () => {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Return Policy */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium text-secondary-900">Return Policy</h3>
+          
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="has_return_policy"
+                checked={formData.has_return_policy}
+                onChange={(e) => setFormData({ ...formData, has_return_policy: e.target.checked })}
+                className="w-4 h-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500"
+              />
+              <label htmlFor="has_return_policy" className="text-sm font-medium text-secondary-700">
+                Allow returns for this product
+              </label>
+            </div>
+
+            {formData.has_return_policy && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    Return Period (Days) <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.return_period_days}
+                    onChange={(e) => setFormData({ ...formData, return_period_days: parseInt(e.target.value) })}
+                    className="input-field"
+                    required={formData.has_return_policy}
+                  >
+                    <option value="7">7 Days</option>
+                    <option value="14">14 Days</option>
+                    <option value="30">30 Days</option>
+                    <option value="60">60 Days</option>
+                    <option value="90">90 Days</option>
+                  </select>
+                  <p className="text-xs text-secondary-600 mt-1">
+                    Customers can return within this period after delivery
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    Return Policy Description
+                  </label>
+                  <textarea
+                    value={formData.return_policy_description}
+                    onChange={(e) => setFormData({ ...formData, return_policy_description: e.target.value })}
+                    className="input-field"
+                    rows={3}
+                    placeholder="e.g., Easy 30-day returns. Items must be in original condition with tags attached."
+                  />
+                  <p className="text-xs text-secondary-600 mt-1">
+                    Describe your return policy terms and conditions
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Product Images */}

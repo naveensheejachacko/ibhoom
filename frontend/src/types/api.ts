@@ -29,6 +29,7 @@ export interface Product {
   name: string;
   slug?: string;
   description: string;
+  short_description?: string;
   category_id: string;
   seller_id: string;
   // For list responses
@@ -49,6 +50,10 @@ export interface Product {
   meta_title?: string;
   meta_description?: string;
   admin_notes?: string;
+  // Return Policy fields
+  has_return_policy?: boolean;
+  return_period_days?: number;
+  return_policy_description?: string;
   created_at: string;
   updated_at: string;
   category?: Category;

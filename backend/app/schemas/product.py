@@ -77,6 +77,8 @@ class ProductVariantResponse(BaseModel):
     id: str
     variant_name: Optional[str] = None
     sku: Optional[str] = None
+    seller_price: Optional[float] = None  # Seller's base price for variant
+    commission_rate: Optional[float] = None  # Commission rate for variant
     customer_price: float  # Customer unit price (including commission)
     tax_rate: float  # Tax rate as percentage (e.g., 18.0 means 18%)
     tax_amount: Optional[float] = None  # Tax amount per unit (customer_price * tax_rate / 100)
@@ -175,8 +177,12 @@ class ProductResponse(BaseModel):
     name: str
     slug: str
     description: Optional[str] = None
+    short_description: Optional[str] = None
+    sku: Optional[str] = None
     category_id: str
     seller_id: str
+    seller_price: Optional[float] = None  # Seller's base price
+    commission_rate: Optional[float] = None  # Commission rate
     customer_price: float  # Customer unit price (including commission)
     tax_rate: float  # Tax rate as percentage (e.g., 18.0 means 18%)
     tax_amount: Optional[float] = None  # Tax amount per unit (customer_price * tax_rate / 100)

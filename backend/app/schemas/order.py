@@ -98,6 +98,10 @@ class OrderResponse(OrderBase):
     seller_notes: Optional[str] = None
     return_reason: Optional[str] = None
     return_notes: Optional[str] = None
+    return_requested_at: Optional[datetime] = None
+    refund_amount: Optional[float] = None
+    refund_date: Optional[datetime] = None
+    refund_notes: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     items: List[OrderItemResponse] = []
@@ -155,5 +159,17 @@ class ReturnRequest(BaseModel):
 
 
 class ReturnStatusUpdate(BaseModel):
-    status: OrderStatus  # RETURN_APPROVED, RETURN_REJECTED, or RETURNED
-    return_notes: Optional[str] = None 
+    status: OrderStatus  # RETURN_APPROVED, RETURN_REJECTED, RETURN_PICKED_UP, RETURN_RECEIVED, etc.
+    return_notes: Optional[str] = None
+
+
+class RefundUpdate(BaseModel):
+    """Update refund status for an order"""
+    refund_amount: float
+    refund_notes: Optional[str] = None
+    
+    @validator('refund_amount')
+    def validate_refund_amount(cls, v):
+        if v <= 0:
+            raise ValueError('Refund amount must be positive')
+        return v 

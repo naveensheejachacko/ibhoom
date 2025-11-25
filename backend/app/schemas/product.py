@@ -114,6 +114,9 @@ class ProductBase(BaseModel):
     tags: Optional[str] = None  # JSON string for SQLite compatibility
     meta_title: Optional[str] = None
     meta_description: Optional[str] = None
+    has_return_policy: bool = False  # Whether product allows returns
+    return_period_days: int = 7  # Number of days for return
+    return_policy_description: Optional[str] = None  # Details about return policy
     
     @validator('seller_price')
     def validate_seller_price(cls, v):
@@ -125,6 +128,12 @@ class ProductBase(BaseModel):
     def validate_stock_quantity(cls, v):
         if v < 0:
             raise ValueError('Stock quantity cannot be negative')
+        return v
+    
+    @validator('return_period_days')
+    def validate_return_period(cls, v):
+        if v < 0 or v > 90:
+            raise ValueError('Return period must be between 0 and 90 days')
         return v
 
 
@@ -144,11 +153,20 @@ class ProductUpdate(BaseModel):
     dimensions: Optional[str] = None
     meta_title: Optional[str] = None
     meta_description: Optional[str] = None
+    has_return_policy: Optional[bool] = None
+    return_period_days: Optional[int] = None
+    return_policy_description: Optional[str] = None
     
     @validator('seller_price')
     def validate_seller_price(cls, v):
         if v is not None and v <= 0:
             raise ValueError('Seller price must be positive')
+        return v
+    
+    @validator('return_period_days')
+    def validate_return_period(cls, v):
+        if v is not None and (v < 0 or v > 90):
+            raise ValueError('Return period must be between 0 and 90 days')
         return v
 
 
@@ -169,6 +187,9 @@ class ProductResponse(BaseModel):
     meta_title: Optional[str] = None
     meta_description: Optional[str] = None
     admin_notes: Optional[str] = None
+    has_return_policy: bool = False
+    return_period_days: int = 7
+    return_policy_description: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     images: List[ProductImageResponse] = []

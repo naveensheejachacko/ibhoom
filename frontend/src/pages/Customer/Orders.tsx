@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Search, Eye, FileText, Download, X, Clock, Package, CheckCircle } from 'lucide-react';
+import { ShoppingCart, Search, Eye, FileText, Download, X, Clock, Package, CheckCircle, RotateCcw } from 'lucide-react';
 import { customerApi } from '../../lib/api';
 import { useToast } from '../../components/Toast';
 import type { OrderListResponse } from '../../types/api';
@@ -12,6 +12,8 @@ const Orders: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<OrderListResponse | null>(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnReason, setReturnReason] = useState('');
 
   useEffect(() => {
     fetchOrders();
@@ -70,6 +72,31 @@ const Orders: React.FC = () => {
     }
   };
 
+  const handleRequestReturn = (order: OrderListResponse) => {
+    setSelectedOrder(order);
+    setReturnReason('');
+    setShowReturnModal(true);
+  };
+
+  const handleSubmitReturn = async () => {
+    if (!selectedOrder || !returnReason.trim()) {
+      toast.show('Please provide a reason for return', { type: 'error' });
+      return;
+    }
+
+    try {
+      await customerApi.requestReturn(selectedOrder.id, { return_reason: returnReason });
+      toast.show('Return request submitted successfully', { type: 'success' });
+      setShowReturnModal(false);
+      setReturnReason('');
+      fetchOrders(); // Refresh orders list
+    } catch (error: any) {
+      console.error('Error requesting return:', error);
+      const errorMessage = error.response?.data?.detail || 'Failed to submit return request';
+      toast.show(errorMessage, { type: 'error' });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
@@ -81,6 +108,10 @@ const Orders: React.FC = () => {
       case 'return requested': return 'bg-orange-100 text-orange-800';
       case 'return approved': return 'bg-teal-100 text-teal-800';
       case 'return rejected': return 'bg-red-100 text-red-800';
+      case 'return picked up': return 'bg-purple-100 text-purple-800';
+      case 'return received': return 'bg-blue-100 text-blue-800';
+      case 'refund processing': return 'bg-yellow-100 text-yellow-800';
+      case 'refund completed': return 'bg-green-100 text-green-800';
       case 'returned': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -148,6 +179,10 @@ const Orders: React.FC = () => {
               <option value="dispatched">Dispatched</option>
               <option value="delivered">Delivered</option>
               <option value="cancelled">Cancelled</option>
+              <option value="return requested">Return Requested</option>
+              <option value="return approved">Return Approved</option>
+              <option value="return rejected">Return Rejected</option>
+              <option value="refund completed">Refund Completed</option>
             </select>
           </div>
           <div className="flex items-end">
@@ -225,13 +260,23 @@ const Orders: React.FC = () => {
                           View
                         </button>
                         {order.status === 'delivered' && (
-                          <button
-                            onClick={() => handleDownloadInvoice(order.id, order.order_number)}
-                            className="text-green-600 hover:text-green-900 flex items-center gap-1"
-                            title="Download Invoice"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handleDownloadInvoice(order.id, order.order_number)}
+                              className="text-green-600 hover:text-green-900 flex items-center gap-1"
+                              title="Download Invoice"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleRequestReturn(order)}
+                              className="text-orange-600 hover:text-orange-900 flex items-center gap-1"
+                              title="Request Return"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                              Return
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -312,9 +357,79 @@ const Orders: React.FC = () => {
                       <Download className="w-4 h-4" />
                       Download Invoice
                     </button>
+                    <button
+                      onClick={() => handleRequestReturn(selectedOrder)}
+                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-2"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      Request Return
+                    </button>
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Return Request Modal */}
+      {showReturnModal && selectedOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="p-6 border-b border-secondary-200">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-xl font-bold text-secondary-900">Request Return</h2>
+                  <p className="text-sm text-secondary-500">Order: {selectedOrder.order_number}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowReturnModal(false);
+                    setReturnReason('');
+                  }}
+                  className="text-secondary-400 hover:text-secondary-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  Reason for Return <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={returnReason}
+                  onChange={(e) => setReturnReason(e.target.value)}
+                  placeholder="Please provide a detailed reason for returning this order..."
+                  rows={4}
+                  className="w-full px-4 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                />
+              </div>
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> Once submitted, your return request will be reviewed by the seller/admin. 
+                  You will be notified once the request is approved or rejected.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowReturnModal(false);
+                    setReturnReason('');
+                  }}
+                  className="flex-1 px-4 py-2 border border-secondary-300 text-secondary-700 rounded-lg hover:bg-secondary-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmitReturn}
+                  disabled={!returnReason.trim()}
+                  className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:bg-secondary-300 disabled:cursor-not-allowed"
+                >
+                  Submit Request
+                </button>
+              </div>
             </div>
           </div>
         </div>

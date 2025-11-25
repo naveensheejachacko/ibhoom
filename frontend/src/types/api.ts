@@ -143,6 +143,11 @@ export interface OrderListResponse {
   payment_status: string;
   created_at: string;
   items: OrderListItem[];
+  return_reason?: string;
+  return_requested_at?: string;
+  refund_amount?: number;
+  refund_date?: string;
+  refund_notes?: string;
 }
 
 export interface OrderListItem {

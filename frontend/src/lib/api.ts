@@ -311,6 +311,21 @@ export const adminApi = {
     });
     return response.data;
   },
+
+  handleReturn: async (id: string, data: { status: string, admin_notes?: string }) => {
+    const response = await api.put(`/api/v1/admin/orders/${id}/return`, data);
+    return response.data;
+  },
+
+  processRefund: async (id: string, data: { refund_amount: number, refund_notes?: string }) => {
+    const response = await api.post(`/api/v1/admin/orders/${id}/refund`, data);
+    return response.data;
+  },
+
+  completeRefund: async (id: string, data: { refund_notes?: string }) => {
+    const response = await api.post(`/api/v1/admin/orders/${id}/refund/complete`, data);
+    return response.data;
+  },
   
   // Commissions
   getCommissions: async () => {

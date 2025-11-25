@@ -15,6 +15,9 @@ const Orders: React.FC = () => {
   const [paymentFilter, setPaymentFilter] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<OrderListResponse | null>(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundAmount, setRefundAmount] = useState<string>('');
+  const [refundNotes, setRefundNotes] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -107,6 +110,58 @@ const Orders: React.FC = () => {
     }
   };
 
+  const handleReturnAction = async (orderId: string, status: string, notes?: string) => {
+    try {
+      await adminApi.handleReturn(orderId, { status, admin_notes: notes });
+      toast.show(`Return ${status.replace('_', ' ')} successfully`, { type: 'success' });
+      fetchOrders();
+      setShowOrderModal(false);
+    } catch (error: any) {
+      console.error('Error handling return:', error);
+      toast.show(error.response?.data?.detail || 'Failed to handle return', { type: 'error' });
+    }
+  };
+
+  const handleInitiateRefund = () => {
+    if (!selectedOrder) return;
+    setRefundAmount(selectedOrder.total_customer_amount.toString());
+    setRefundNotes('');
+    setShowRefundModal(true);
+  };
+
+  const handleProcessRefund = async () => {
+    if (!selectedOrder || !refundAmount) {
+      toast.show('Please enter refund amount', { type: 'error' });
+      return;
+    }
+
+    try {
+      await adminApi.processRefund(selectedOrder.id, {
+        refund_amount: parseFloat(refundAmount),
+        refund_notes: refundNotes
+      });
+      toast.show('Refund initiated successfully', { type: 'success' });
+      setShowRefundModal(false);
+      setShowOrderModal(false);
+      fetchOrders();
+    } catch (error: any) {
+      console.error('Error processing refund:', error);
+      toast.show(error.response?.data?.detail || 'Failed to process refund', { type: 'error' });
+    }
+  };
+
+  const handleCompleteRefund = async (orderId: string, notes?: string) => {
+    try {
+      await adminApi.completeRefund(orderId, { refund_notes: notes });
+      toast.show('Refund marked as completed', { type: 'success' });
+      fetchOrders();
+      setShowOrderModal(false);
+    } catch (error: any) {
+      console.error('Error completing refund:', error);
+      toast.show(error.response?.data?.detail || 'Failed to complete refund', { type: 'error' });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
@@ -118,6 +173,10 @@ const Orders: React.FC = () => {
       case 'return requested': return 'bg-orange-100 text-orange-800';
       case 'return approved': return 'bg-teal-100 text-teal-800';
       case 'return rejected': return 'bg-red-100 text-red-800';
+      case 'return picked up': return 'bg-purple-100 text-purple-800';
+      case 'return received': return 'bg-blue-100 text-blue-800';
+      case 'refund processing': return 'bg-yellow-100 text-yellow-800';
+      case 'refund completed': return 'bg-green-100 text-green-800';
       case 'returned': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -213,6 +272,12 @@ const Orders: React.FC = () => {
               <option value="delivered">Delivered</option>
               <option value="cancelled">Cancelled</option>
               <option value="return requested">Return Requested</option>
+              <option value="return approved">Return Approved</option>
+              <option value="return rejected">Return Rejected</option>
+              <option value="return picked up">Return Picked Up</option>
+              <option value="return received">Return Received</option>
+              <option value="refund processing">Refund Processing</option>
+              <option value="refund completed">Refund Completed</option>
             </select>
           </div>
           <div>
@@ -438,6 +503,51 @@ const Orders: React.FC = () => {
                 </div>
               </div>
 
+              {/* Return & Refund Information */}
+              {(selectedOrder.status.includes('return') || selectedOrder.status.includes('refund')) && (
+                <div className="border-t border-secondary-200 pt-4">
+                  <h3 className="text-lg font-semibold text-secondary-900 mb-4">Return & Refund Information</h3>
+                  <div className="bg-orange-50 rounded-lg p-4 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-secondary-600">Return Status:</span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedOrder.status)}`}>
+                        {selectedOrder.status}
+                      </span>
+                    </div>
+                    {selectedOrder.return_reason && (
+                      <div className="flex flex-col text-sm">
+                        <span className="text-secondary-600 mb-1">Return Reason:</span>
+                        <span className="font-medium text-secondary-900">{selectedOrder.return_reason}</span>
+                      </div>
+                    )}
+                    {selectedOrder.return_requested_at && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-secondary-600">Requested At:</span>
+                        <span className="font-medium">{new Date(selectedOrder.return_requested_at).toLocaleString()}</span>
+                      </div>
+                    )}
+                    {selectedOrder.refund_amount && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-secondary-600">Refund Amount:</span>
+                        <span className="font-medium text-primary-600">₹{selectedOrder.refund_amount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {selectedOrder.refund_date && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-secondary-600">Refund Date:</span>
+                        <span className="font-medium">{new Date(selectedOrder.refund_date).toLocaleString()}</span>
+                      </div>
+                    )}
+                    {selectedOrder.refund_notes && (
+                      <div className="flex flex-col text-sm">
+                        <span className="text-secondary-600 mb-1">Refund Notes:</span>
+                        <span className="font-medium text-secondary-900">{selectedOrder.refund_notes}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Invoice Actions */}
               {selectedOrder.status === 'delivered' && (
                 <div>
@@ -492,20 +602,134 @@ const Orders: React.FC = () => {
                   {selectedOrder.status === 'return requested' ? (
                     <>
                       <button
-                        onClick={() => handleStatusUpdate(selectedOrder.id, 'return approved')}
+                        onClick={() => handleReturnAction(selectedOrder.id, 'return_approved')}
                         className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm"
                       >
                         Approve Return
                       </button>
                       <button
-                        onClick={() => handleStatusUpdate(selectedOrder.id, 'return rejected')}
+                        onClick={() => handleReturnAction(selectedOrder.id, 'return_rejected')}
                         className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
                       >
                         Reject Return
                       </button>
                     </>
                   ) : null}
+                  {selectedOrder.status === 'return approved' ? (
+                    <button
+                      onClick={() => handleReturnAction(selectedOrder.id, 'return_picked_up')}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
+                    >
+                      Mark as Picked Up
+                    </button>
+                  ) : null}
+                  {selectedOrder.status === 'return picked up' ? (
+                    <button
+                      onClick={() => handleReturnAction(selectedOrder.id, 'return_received')}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                    >
+                      Mark as Received
+                    </button>
+                  ) : null}
+                  {selectedOrder.status === 'return received' ? (
+                    <button
+                      onClick={handleInitiateRefund}
+                      className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm"
+                    >
+                      Process Refund
+                    </button>
+                  ) : null}
+                  {selectedOrder.status === 'refund processing' ? (
+                    <button
+                      onClick={() => handleCompleteRefund(selectedOrder.id)}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                    >
+                      Mark Refund Completed
+                    </button>
+                  ) : null}
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Refund Modal */}
+      {showRefundModal && selectedOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="p-6 border-b border-secondary-200">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-xl font-bold text-secondary-900">Process Refund</h2>
+                  <p className="text-sm text-secondary-500">Order: {selectedOrder.order_number}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowRefundModal(false);
+                    setRefundAmount('');
+                    setRefundNotes('');
+                  }}
+                  className="text-secondary-400 hover:text-secondary-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  Refund Amount <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-500">
+                    ₹
+                  </span>
+                  <input
+                    type="number"
+                    value={refundAmount}
+                    onChange={(e) => setRefundAmount(e.target.value)}
+                    placeholder="Enter refund amount"
+                    step="0.01"
+                    min="0"
+                    max={selectedOrder.total_customer_amount}
+                    className="w-full pl-8 pr-4 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+                <p className="text-xs text-secondary-500 mt-1">
+                  Order Total: ₹{selectedOrder.total_customer_amount.toFixed(2)}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  Refund Notes (Optional)
+                </label>
+                <textarea
+                  value={refundNotes}
+                  onChange={(e) => setRefundNotes(e.target.value)}
+                  placeholder="Add notes about the refund..."
+                  rows={3}
+                  className="w-full px-4 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowRefundModal(false);
+                    setRefundAmount('');
+                    setRefundNotes('');
+                  }}
+                  className="flex-1 px-4 py-2 border border-secondary-300 text-secondary-700 rounded-lg hover:bg-secondary-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleProcessRefund}
+                  disabled={!refundAmount || parseFloat(refundAmount) <= 0}
+                  className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors disabled:bg-secondary-300 disabled:cursor-not-allowed"
+                >
+                  Process Refund
+                </button>
               </div>
             </div>
           </div>

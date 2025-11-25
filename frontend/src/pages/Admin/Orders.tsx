@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Search, Filter, Eye, Package, Truck, CheckCircle, X, Clock, FileText, Download } from 'lucide-react';
+import { Search, Eye, Package, Truck, CheckCircle, X, XCircle, Clock, FileText, Download, RefreshCw } from 'lucide-react';
 import { adminApi } from '../../lib/api';
 import { useToast } from '../../components/Toast';
 import Pagination from '../../components/Pagination';
@@ -10,6 +10,7 @@ const Orders: React.FC = () => {
   const [orders, setOrders] = useState<OrderListResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeSearchTerm, setActiveSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<OrderListResponse | null>(null);
@@ -21,12 +22,12 @@ const Orders: React.FC = () => {
 
   useEffect(() => {
     fetchOrders();
-  }, [statusFilter, paymentFilter, currentPage]);
+  }, [statusFilter, paymentFilter, currentPage, activeSearchTerm]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [statusFilter, paymentFilter]);
+  }, [statusFilter, paymentFilter, activeSearchTerm]);
 
   const fetchOrders = async () => {
     try {
@@ -37,6 +38,7 @@ const Orders: React.FC = () => {
       };
       if (statusFilter) params.status = statusFilter;
       if (paymentFilter) params.payment_status = paymentFilter;
+      if (activeSearchTerm) params.search = activeSearchTerm;
       const data = await adminApi.getOrders(params);
       // Handle paginated response
       if (data.items) {
@@ -133,6 +135,16 @@ const Orders: React.FC = () => {
     }
   };
 
+  const getPaymentStatusLabel = (paymentStatus: string) => {
+    switch (paymentStatus) {
+      case 'cod_pending': return 'Cash on Delivery';
+      case 'cod_collected': return 'Payment Collected';
+      case 'paid': return 'Paid Online';
+      case 'refunded': return 'Refunded';
+      default: return paymentStatus.replace('_', ' ');
+    }
+  };
+
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
@@ -165,8 +177,25 @@ const Orders: React.FC = () => {
                 placeholder="Order number..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setActiveSearchTerm(searchTerm);
+                  }
+                }}
                 className="w-full pl-10 pr-4 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
+              {searchTerm && (
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setActiveSearchTerm('');
+                  }}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary-400 hover:text-secondary-600"
+                  title="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
           <div>
@@ -194,18 +223,26 @@ const Orders: React.FC = () => {
               className="w-full px-4 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="">All Payments</option>
-              <option value="cod_pending">COD Pending</option>
-              <option value="cod_collected">COD Collected</option>
-              <option value="paid">Paid</option>
+              <option value="cod_pending">Cash on Delivery</option>
+              <option value="cod_collected">Payment Collected</option>
+              <option value="paid">Paid Online</option>
               <option value="refunded">Refunded</option>
             </select>
           </div>
-          <div className="flex items-end">
+          <div className="flex items-end gap-2">
+            <button
+              onClick={() => setActiveSearchTerm(searchTerm)}
+              className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center justify-center gap-2"
+            >
+              <Search className="w-4 h-4" />
+              Search
+            </button>
             <button
               onClick={fetchOrders}
-              className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              className="px-4 py-2 bg-secondary-600 text-white rounded-lg hover:bg-secondary-700 transition-colors"
+              title="Refresh"
             >
-              Refresh
+              <RefreshCw className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -279,7 +316,7 @@ const Orders: React.FC = () => {
                         order.payment_status === 'cod_pending' ? 'bg-yellow-100 text-yellow-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
-                        {order.payment_status.replace('_', ' ')}
+                        {getPaymentStatusLabel(order.payment_status)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-500">

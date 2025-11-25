@@ -293,6 +293,10 @@ def update_order_status_admin(db: Session, order_id: str, status_update: OrderSt
         if current_status not in [OrderStatus.DISPATCHED, OrderStatus.READY_FOR_DISPATCH]:
             raise ValueError(f"Can only mark as delivered from dispatched or ready_for_dispatch status, current: {current_status.value}")
         
+        # Auto-update COD payment status when delivered
+        if db_order.payment_status == PaymentStatus.COD_PENDING:
+            db_order.payment_status = PaymentStatus.COD_COLLECTED
+        
         # Note: Invoice generation is now done on-demand when requested
         # We don't save invoices to disk to save space - they're generated on-the-fly
         # This prevents disk space issues as the number of orders grows

@@ -50,6 +50,7 @@ async def get_all_orders(
     customer_id: Optional[str] = Query(None),
     status: Optional[OrderStatus] = Query(None),
     payment_status: Optional[PaymentStatus] = Query(None),
+    search: Optional[str] = Query(None, description="Search by order number"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_user)
 ):
@@ -70,6 +71,8 @@ async def get_all_orders(
         query = query.filter(Order.status == status)
     if payment_status:
         query = query.filter(Order.payment_status == payment_status)
+    if search:
+        query = query.filter(Order.order_number.ilike(f"%{search}%"))
     
     # Get total count before pagination
     total = query.count()

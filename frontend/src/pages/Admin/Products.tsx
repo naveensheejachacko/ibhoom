@@ -137,6 +137,7 @@ const Products: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -150,14 +151,23 @@ const Products: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   const itemsPerPage = 20;
 
+  // Debounce search term to avoid triggering search on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500); // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   useEffect(() => {
     fetchProducts();
-  }, [currentPage, statusFilter, searchTerm]);
+  }, [currentPage, statusFilter, debouncedSearchTerm]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [statusFilter, searchTerm]);
+  }, [statusFilter, debouncedSearchTerm]);
 
   const fetchProducts = async () => {
     try {
@@ -171,8 +181,8 @@ const Products: React.FC = () => {
         params.status = statusFilter;
       }
       
-      if (searchTerm) {
-        params.search = searchTerm;
+      if (debouncedSearchTerm) {
+        params.search = debouncedSearchTerm;
       }
       
       const data = await adminApi.getProducts(params);

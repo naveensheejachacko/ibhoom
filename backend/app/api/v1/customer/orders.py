@@ -336,6 +336,7 @@ async def request_return(
 ):
     """Request return for an order (Customer only)"""
     from ....services import order_service
+    from datetime import timedelta
     
     order = order_service.get_order(db, order_id)
     if not order:
@@ -345,8 +346,10 @@ async def request_return(
     if order.customer_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to access this order")
     
-    # Check if return already requested or processed (check first before checking delivered)
-    if order.status in [OrderStatus.RETURN_REQUESTED, OrderStatus.RETURN_APPROVED, OrderStatus.RETURN_REJECTED, OrderStatus.RETURNED]:
+    # Check if return already requested or processed
+    if order.status in [OrderStatus.RETURN_REQUESTED, OrderStatus.RETURN_APPROVED, OrderStatus.RETURN_REJECTED, 
+                        OrderStatus.RETURN_PICKED_UP, OrderStatus.RETURN_RECEIVED, 
+                        OrderStatus.REFUND_PROCESSING, OrderStatus.REFUND_COMPLETED]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Return already {order.status.value} for this order"
@@ -359,9 +362,29 @@ async def request_return(
             detail="Only delivered orders can be returned"
         )
     
+    # Check if all products in order have return policy
+    for item in order.items:
+        product = db.query(Product).filter(Product.id == item.product_id).first()
+        if not product or not product.has_return_policy:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Product '{item.product_name}' does not have a return policy"
+            )
+        
+        # Check if return period has expired
+        delivered_date = order.updated_at  # Assuming updated_at is set when delivered
+        days_since_delivery = (datetime.utcnow() - delivered_date).days
+        
+        if days_since_delivery > product.return_period_days:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Return period ({product.return_period_days} days) has expired for product '{item.product_name}'"
+            )
+    
     # Update order to return requested
     order.status = OrderStatus.RETURN_REQUESTED
     order.return_reason = return_request.return_reason
+    order.return_requested_at = datetime.utcnow()
     order.updated_at = datetime.utcnow()
     
     db.commit()

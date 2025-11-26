@@ -21,6 +21,28 @@ const DynamicCategorySelector: React.FC<DynamicCategorySelectorProps> = ({
 }) => {
   const [categoryPath, setCategoryPath] = useState<string[]>([]);
 
+  // Build full category path from selected category ID when editing
+  useEffect(() => {
+    if (selectedCategoryId && categories.length > 0) {
+      const buildPath = (categoryId: string): string[] => {
+        const category = categories.find(cat => cat.id === categoryId);
+        if (!category) return [];
+        
+        if (!category.parent_id) {
+          // This is a root category
+          return [categoryId];
+        } else {
+          // This has a parent, recursively build path
+          const parentPath = buildPath(category.parent_id);
+          return [...parentPath, categoryId];
+        }
+      };
+      
+      const path = buildPath(selectedCategoryId);
+      setCategoryPath(path);
+    }
+  }, [selectedCategoryId, categories]);
+
   // Get categories at a specific level driven by current path
   const getCategoriesAtLevel = (level: number) => {
     if (level === 0) return categories.filter(cat => !cat.parent_id);

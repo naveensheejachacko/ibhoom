@@ -18,7 +18,10 @@ class OrderStatus(str, enum.Enum):
     RETURN_REQUESTED = "return requested"    # Customer requested return
     RETURN_APPROVED = "return approved"      # Admin approved return
     RETURN_REJECTED = "return rejected"      # Admin rejected return
-    RETURNED = "returned"                    # Admin accepted return completion
+    RETURN_PICKED_UP = "return picked up"    # Return item picked up
+    RETURN_RECEIVED = "return received"      # Return item received and verified
+    REFUND_PROCESSING = "refund processing"  # Refund being processed
+    REFUND_COMPLETED = "refund completed"    # Refund completed successfully
 
 
 class PaymentStatus(str, enum.Enum):
@@ -51,6 +54,10 @@ class Order(Base):
     seller_notes = Column(Text)  # Seller's notes (for rejections, etc.)
     return_reason = Column(Text)  # Customer's reason for return
     return_notes = Column(Text)   # Admin's notes for return processing
+    return_requested_at = Column(DateTime)  # When return was requested
+    refund_amount = Column(DECIMAL(10, 2))  # Amount refunded
+    refund_date = Column(DateTime)  # When refund was completed
+    refund_notes = Column(Text)  # Notes about refund
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     

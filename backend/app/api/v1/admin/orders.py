@@ -10,7 +10,7 @@ from ....models.order import Order, OrderItem, OrderStatus, PaymentStatus
 from ....models.product import Product, ProductVariant, ProductImage
 from ....schemas.order import (
     OrderResponse, OrderListResponse, OrderListItemResponse, OrderItemResponse,
-    OrderStatusUpdate, PaymentStatusUpdate, OrderStats, ReturnStatusUpdate
+    OrderStatusUpdate, PaymentStatusUpdate, OrderStats, ReturnStatusUpdate, RefundUpdate
 )
 from ....schemas.pagination import PaginatedResponse
 from ....services import order_service
@@ -50,6 +50,7 @@ async def get_all_orders(
     customer_id: Optional[str] = Query(None),
     status: Optional[OrderStatus] = Query(None),
     payment_status: Optional[PaymentStatus] = Query(None),
+    search: Optional[str] = Query(None, description="Search by order number"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_user)
 ):
@@ -70,6 +71,8 @@ async def get_all_orders(
         query = query.filter(Order.status == status)
     if payment_status:
         query = query.filter(Order.payment_status == payment_status)
+    if search:
+        query = query.filter(Order.order_number.ilike(f"%{search}%"))
     
     # Get total count before pagination
     total = query.count()
@@ -389,7 +392,7 @@ async def handle_return(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_user)
 ):
-    """Handle return request (Admin only - approve, reject, or accept return completion)"""
+    """Handle return request (Admin only - approve, reject, pick up, receive, etc.)"""
     try:
         updated_order = order_service.handle_return(db, order_id, return_update)
         if not updated_order:
@@ -397,6 +400,78 @@ async def handle_return(
         return updated_order
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/{order_id}/refund", response_model=OrderResponse)
+async def process_refund(
+    order_id: str,
+    refund_update: RefundUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_admin_user)
+):
+    """Process refund for a returned order (Admin only)"""
+    from datetime import datetime
+    
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+    
+    # Check if return has been received
+    if order.status != OrderStatus.RETURN_RECEIVED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Can only process refund after return has been received"
+        )
+    
+    # Validate refund amount doesn't exceed order total
+    if refund_update.refund_amount > float(order.grand_total_amount):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Refund amount cannot exceed order total of Rs. {float(order.grand_total_amount):.2f}"
+        )
+    
+    # Update order with refund information
+    order.status = OrderStatus.REFUND_PROCESSING
+    order.refund_amount = refund_update.refund_amount
+    order.refund_notes = refund_update.refund_notes
+    order.updated_at = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(order)
+    
+    return order
+
+
+@router.post("/{order_id}/refund/complete", response_model=OrderResponse)
+async def complete_refund(
+    order_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_admin_user)
+):
+    """Mark refund as completed (Admin only)"""
+    from datetime import datetime
+    
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+    
+    # Check if refund is being processed
+    if order.status != OrderStatus.REFUND_PROCESSING:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Refund must be in processing state to complete"
+        )
+    
+    # Update order status and refund date
+    order.status = OrderStatus.REFUND_COMPLETED
+    order.payment_status = PaymentStatus.REFUNDED
+    order.refund_date = datetime.utcnow()
+    order.updated_at = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(order)
+    
+    return order
 
 
 @router.get("/{order_id}/invoice")

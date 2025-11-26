@@ -37,6 +37,9 @@ class Product(Base):
     approval_date = Column(DateTime)
     rejection_reason = Column(Text)
     is_active = Column(Boolean, default=True)
+    has_return_policy = Column(Boolean, default=False)  # Whether product allows returns
+    return_period_days = Column(Integer, default=7)  # Number of days for return (e.g., 7, 14, 30)
+    return_policy_description = Column(Text)  # Details about the return policy
     meta_title = Column(String(255))
     meta_description = Column(String(500))
     tags = Column(Text)  # JSON string for SQLite compatibility

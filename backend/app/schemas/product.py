@@ -77,6 +77,8 @@ class ProductVariantResponse(BaseModel):
     id: str
     variant_name: Optional[str] = None
     sku: Optional[str] = None
+    seller_price: Optional[float] = None  # Seller's base price for variant
+    commission_rate: Optional[float] = None  # Commission rate for variant
     customer_price: float  # Customer unit price (including commission)
     tax_rate: float  # Tax rate as percentage (e.g., 18.0 means 18%)
     tax_amount: Optional[float] = None  # Tax amount per unit (customer_price * tax_rate / 100)
@@ -114,6 +116,9 @@ class ProductBase(BaseModel):
     tags: Optional[str] = None  # JSON string for SQLite compatibility
     meta_title: Optional[str] = None
     meta_description: Optional[str] = None
+    has_return_policy: bool = False  # Whether product allows returns
+    return_period_days: int = 7  # Number of days for return
+    return_policy_description: Optional[str] = None  # Details about return policy
     
     @validator('seller_price')
     def validate_seller_price(cls, v):
@@ -125,6 +130,12 @@ class ProductBase(BaseModel):
     def validate_stock_quantity(cls, v):
         if v < 0:
             raise ValueError('Stock quantity cannot be negative')
+        return v
+    
+    @validator('return_period_days')
+    def validate_return_period(cls, v):
+        if v < 0 or v > 90:
+            raise ValueError('Return period must be between 0 and 90 days')
         return v
 
 
@@ -144,11 +155,20 @@ class ProductUpdate(BaseModel):
     dimensions: Optional[str] = None
     meta_title: Optional[str] = None
     meta_description: Optional[str] = None
+    has_return_policy: Optional[bool] = None
+    return_period_days: Optional[int] = None
+    return_policy_description: Optional[str] = None
     
     @validator('seller_price')
     def validate_seller_price(cls, v):
         if v is not None and v <= 0:
             raise ValueError('Seller price must be positive')
+        return v
+    
+    @validator('return_period_days')
+    def validate_return_period(cls, v):
+        if v is not None and (v < 0 or v > 90):
+            raise ValueError('Return period must be between 0 and 90 days')
         return v
 
 
@@ -157,8 +177,12 @@ class ProductResponse(BaseModel):
     name: str
     slug: str
     description: Optional[str] = None
+    short_description: Optional[str] = None
+    sku: Optional[str] = None
     category_id: str
     seller_id: str
+    seller_price: Optional[float] = None  # Seller's base price
+    commission_rate: Optional[float] = None  # Commission rate
     customer_price: float  # Customer unit price (including commission)
     tax_rate: float  # Tax rate as percentage (e.g., 18.0 means 18%)
     tax_amount: Optional[float] = None  # Tax amount per unit (customer_price * tax_rate / 100)
@@ -169,6 +193,9 @@ class ProductResponse(BaseModel):
     meta_title: Optional[str] = None
     meta_description: Optional[str] = None
     admin_notes: Optional[str] = None
+    has_return_policy: bool = False
+    return_period_days: int = 7
+    return_policy_description: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     images: List[ProductImageResponse] = []

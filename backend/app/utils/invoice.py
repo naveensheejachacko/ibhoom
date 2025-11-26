@@ -23,8 +23,19 @@ import os
 # Company details
 COMPANY_NAME = "ibhoom"
 COMPANY_ADDRESS = "Kerala, India"
-COMPANY_EMAIL = "support@ibhoom.com"
-COMPANY_PHONE = "+91 XXX XXX XXXX"
+COMPANY_EMAIL = "ibhoomstore@gmail.com"
+COMPANY_PHONE = "+91 99475 53510"
+
+
+def get_payment_status_label(payment_status: str) -> str:
+    """Convert payment status to user-friendly label"""
+    status_map = {
+        'cod_pending': 'Cash on Delivery',
+        'cod_collected': 'Payment Collected',
+        'paid': 'Paid Online',
+        'refunded': 'Refunded'
+    }
+    return status_map.get(payment_status, payment_status.replace('_', ' ').title())
 
 
 def create_logo_placeholder(output_path: Path) -> str:
@@ -63,7 +74,7 @@ def create_logo_placeholder(output_path: Path) -> str:
 
 def generate_invoice_pdf(order, output_path: Optional[Path] = None) -> BytesIO:
     """
-    Generate a PDF invoice for a delivered order
+    Generate a modern PDF invoice for a delivered order
     
     Args:
         order: Order model instance
@@ -74,30 +85,65 @@ def generate_invoice_pdf(order, output_path: Optional[Path] = None) -> BytesIO:
     """
     buffer = BytesIO()
     
-    # Create PDF document
-    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    # Create PDF document with modern margins
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.4*inch, bottomMargin=0.4*inch, 
+                           leftMargin=0.5*inch, rightMargin=0.5*inch)
     
     # Container for the 'Flowable' objects
     elements = []
     
     # Get styles
     styles = getSampleStyleSheet()
+    
+    # Modern color scheme
+    primary_color = colors.HexColor('#1e40af')  # Modern blue
+    accent_color = colors.HexColor('#3b82f6')   # Light blue
+    dark_text = colors.HexColor('#1f2937')      # Dark gray
+    light_text = colors.HexColor('#6b7280')     # Medium gray
+    
+    # Modern title style
     title_style = ParagraphStyle(
-        'CustomTitle',
+        'ModernTitle',
         parent=styles['Heading1'],
-        fontSize=24,
-        textColor=colors.HexColor('#2c3e50'),
-        spaceAfter=30,
-        alignment=TA_CENTER
+        fontSize=20,
+        textColor=primary_color,
+        fontName='Helvetica-Bold',
+        spaceAfter=6,
+        spaceBefore=0,
+        alignment=TA_RIGHT,
+        leading=22
+    )
+    
+    # Heading style
+    heading_style = ParagraphStyle(
+        'ModernHeading',
+        parent=styles['Heading2'],
+        fontSize=11,
+        textColor=primary_color,
+        fontName='Helvetica-Bold',
+        spaceAfter=8,
+        spaceBefore=16,
+        alignment=TA_LEFT
     )
     
     # Company info style
     company_style = ParagraphStyle(
         'CompanyStyle',
         parent=styles['Normal'],
-        fontSize=12,
-        textColor=colors.HexColor('#34495e'),
-        alignment=TA_LEFT
+        fontSize=10,
+        textColor=light_text,
+        alignment=TA_LEFT,
+        leading=14
+    )
+    
+    # Info text style
+    info_style = ParagraphStyle(
+        'InfoStyle',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=dark_text,
+        alignment=TA_LEFT,
+        leading=14
     )
     
     # Invoice header with logo and company info
@@ -133,111 +179,111 @@ def generate_invoice_pdf(order, output_path: Optional[Path] = None) -> BytesIO:
             # Create placeholder logo as last resort
             logo_path = create_logo_placeholder(logo_dir)
     
-    # Header with company name (always show text to ensure full name displays)
-    # Logo is optional, company name text is always displayed
-    company_header = Paragraph(f"<b>{COMPANY_NAME}</b>", title_style)
+    # Modern two-column header layout
+    # Left column: Logo and company info | Right column: Invoice details
     
-    company_info = f"""
-    <b>{COMPANY_NAME}</b><br/>
-    {COMPANY_ADDRESS}<br/>
-    Email: {COMPANY_EMAIL}<br/>
-    Phone: {COMPANY_PHONE}
-    """
-    
-    # Create header table with logo (if available) and company info
-    header_data = []
+    # Prepare logo
+    logo_element = None
     if logo_path and os.path.exists(logo_path):
         try:
-            logo_img = Image(logo_path, width=2*inch, height=0.6*inch)
-            # Show both logo and company name
-            header_data.append([logo_img, company_header])
-        except:
-            header_data.append([company_header, ""])
-    else:
-        header_data.append([company_header, ""])
+            logo_element = Image(logo_path, width=1.8*inch, height=0.55*inch)
+        except Exception:
+            pass
     
-    # Company info table (separate from logo)
-    company_info_table = Table([[Paragraph(company_info, company_style), ""]], colWidths=[4*inch, 2.5*inch])
-    company_info_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-    ]))
+    # Company contact info
+    company_contact = f"""
+    {COMPANY_ADDRESS}<br/>
+    {COMPANY_EMAIL}<br/>
+    {COMPANY_PHONE}
+    """
     
-    # Add header if logo exists, otherwise just company name
-    if header_data:
-        header_table = Table(header_data, colWidths=[3*inch, 3.5*inch])
-        header_table.setStyle(TableStyle([
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+    # Invoice details
+    invoice_date = order.updated_at.strftime("%d %b, %Y") if order.updated_at else datetime.now().strftime("%d %b, %Y")
+    order_date = order.created_at.strftime("%d %b, %Y")
+    
+    # Right-aligned style for invoice details
+    right_info_style = ParagraphStyle(
+        'RightInfoStyle',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=dark_text,
+        alignment=TA_RIGHT,
+        leading=14
+    )
+    
+    # Create invoice section with title and details together (right aligned)
+    invoice_section = f"""
+    <font size="20" color="#1e40af"><b>INVOICE</b></font><br/>
+    <b>Invoice #:</b> {order.order_number}<br/>
+    <b>Invoice Date:</b> {invoice_date}<br/>
+    <b>Order Date:</b> {order_date}<br/>
+    <b>Payment:</b> {get_payment_status_label(order.payment_status.value)}
+    """
+    
+    # Build header table
+    if logo_element:
+        left_content = [[logo_element], [Paragraph(company_contact, company_style)]]
+        left_table = Table(left_content, colWidths=[2.5*inch])
+        left_table.setStyle(TableStyle([
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('BOTTOMPADDING', (0, 0), (0, 0), 8),
         ]))
-        elements.append(header_table)
+    else:
+        left_table = Paragraph(company_contact, company_style)
     
-    # Add company info
-    elements.append(company_info_table)
-    elements.append(Spacer(1, 0.3*inch))
-    
-    # Invoice title and number
-    invoice_title = Paragraph(f"<b>INVOICE</b>", title_style)
-    elements.append(invoice_title)
-    elements.append(Spacer(1, 0.2*inch))
-    
-    # Invoice details table
-    invoice_date = order.updated_at.strftime("%B %d, %Y") if order.updated_at else datetime.now().strftime("%B %d, %Y")
-    order_date = order.created_at.strftime("%B %d, %Y")
-    
-    invoice_details_data = [
-        ["Invoice Number:", order.order_number],
-        ["Invoice Date:", invoice_date],
-        ["Order Date:", order_date],
-        ["Payment Status:", order.payment_status.value.replace("_", " ").title()],
-    ]
-    
-    invoice_details_table = Table(invoice_details_data, colWidths=[2*inch, 4.5*inch])
-    invoice_details_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#ecf0f1')),
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-        ('ALIGN', (1, 0), (1, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-        ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-        ('TOPPADDING', (0, 0), (-1, -1), 8),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+    # Main header table with proper alignment
+    header_table = Table([[left_table, Paragraph(invoice_section, right_info_style)]], colWidths=[3.5*inch, 3.5*inch])
+    header_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 20),
     ]))
-    elements.append(invoice_details_table)
-    elements.append(Spacer(1, 0.3*inch))
+    elements.append(header_table)
     
-    # Customer information
+    # Divider line
+    line_table = Table([[""]], colWidths=[7*inch])
+    line_table.setStyle(TableStyle([
+        ('LINEABOVE', (0, 0), (-1, 0), 2, accent_color),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+    ]))
+    elements.append(line_table)
+    
+    # Modern Bill To section
+    elements.append(Paragraph("BILL TO", heading_style))
+    
     customer_name = f"{order.customer.first_name} {order.customer.last_name}" if order.customer else "Customer"
     customer_email = order.customer.email if order.customer else ""
     
-    customer_data = [
-        ["<b>Bill To:</b>", ""],
-        [customer_name, ""],
-        [customer_email, ""],
-        [f"{order.delivery_address}", ""],
-        [f"{order.delivery_city}, {order.delivery_state} - {order.delivery_pincode}", ""],
-        [f"Phone: {order.phone}", ""],
-    ]
+    customer_info = f"""
+    <b>{customer_name}</b><br/>
+    {customer_email}<br/>
+    {order.delivery_address}<br/>
+    {order.delivery_city}, {order.delivery_state} - {order.delivery_pincode}<br/>
+    Phone: {order.phone}
+    """
     
-    customer_table = Table(customer_data, colWidths=[3.25*inch, 3.25*inch])
-    customer_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-        ('TOPPADDING', (0, 0), (-1, -1), 6),
+    customer_box = Table([[Paragraph(customer_info, info_style)]], colWidths=[7*inch])
+    customer_box.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f9fafb')),
+        ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#e5e7eb')),
+        ('TOPPADDING', (0, 0), (-1, -1), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+        ('LEFTPADDING', (0, 0), (-1, -1), 12),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 12),
     ]))
-    elements.append(customer_table)
-    elements.append(Spacer(1, 0.3*inch))
+    elements.append(customer_box)
+    elements.append(Spacer(1, 0.25*inch))
     
-    # Order items table
-    # Use Unicode rupee symbol - ReportLab should handle it, but use "Rs." as fallback if needed
-    # Try using rupee symbol, if it doesn't render, use "Rs."
-    rupee_symbol = "₹"
-    items_data = [["Item", "Quantity", "Unit Price", "Tax (Rate)", "Final Amount"]]
+    # Modern items section
+    elements.append(Paragraph("ITEMS", heading_style))
+    
+    # Use Rs. instead of rupee symbol to avoid rendering issues
+    rupee_symbol = "Rs."
+    
+    # Modern item table with clean design
+    items_data = [["ITEM", "QTY", "PRICE", "TAX", "AMOUNT"]]
+    
+    # Small font style for table content
+    small_style = ParagraphStyle('SmallStyle', parent=styles['Normal'], fontSize=9, leading=11)
     
     for item in order.items:
         item_name = item.product_name
@@ -246,73 +292,106 @@ def generate_invoice_pdf(order, output_path: Optional[Path] = None) -> BytesIO:
         tax_rate = float(item.tax_rate)
         tax_unit_amount = float(item.tax_unit_amount)
         final_total = float(item.total_final_amount)
-        tax_text = Paragraph(
-            f"{tax_rate:.2f}%<br/>{rupee_symbol}{tax_unit_amount:.2f}/unit",
-            styles['Normal']
-        )
-        # Use Paragraph to ensure proper Unicode rendering
+        
         items_data.append([
-            item_name,
+            Paragraph(item_name, small_style),
             str(quantity),
-            Paragraph(f"{rupee_symbol}{unit_price:.2f}", styles['Normal']),
-            tax_text,
-            Paragraph(f"{rupee_symbol}{final_total:.2f}", styles['Normal'])
+            f"{rupee_symbol} {unit_price:.2f}",
+            f"{tax_rate:.1f}%",
+            f"{rupee_symbol} {final_total:.2f}"
         ])
     
-    items_table = Table(items_data, colWidths=[2.8*inch, 0.8*inch, 1.2*inch, 1.3*inch, 1.2*inch])
+    items_table = Table(items_data, colWidths=[3.2*inch, 0.6*inch, 1.1*inch, 0.9*inch, 1.2*inch])
     items_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#34495e')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('ALIGN', (1, 0), (1, -1), 'CENTER'),
-        ('ALIGN', (2, 0), (-1, -1), 'RIGHT'),
+        # Header row
+        ('BACKGROUND', (0, 0), (-1, 0), primary_color),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 11),
-        ('FONTSIZE', (0, 1), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
-        ('TOPPADDING', (0, 0), (-1, -1), 10),
-        ('GRID', (0, 0), (-1, -1), 1, colors.grey),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+        ('ALIGN', (1, 0), (-1, 0), 'CENTER'),
+        ('ALIGN', (-1, 0), (-1, 0), 'RIGHT'),
+        ('TOPPADDING', (0, 0), (-1, 0), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        
+        # Content rows
+        ('FONTSIZE', (0, 1), (-1, -1), 9),
+        ('ALIGN', (0, 1), (0, -1), 'LEFT'),
+        ('ALIGN', (1, 1), (-1, -1), 'CENTER'),
+        ('ALIGN', (-1, 1), (-1, -1), 'RIGHT'),
+        ('TOPPADDING', (0, 1), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+        ('LEFTPADDING', (0, 0), (0, -1), 10),
+        ('RIGHTPADDING', (-1, 0), (-1, -1), 10),
+        
+        # Borders
+        ('LINEBELOW', (0, 0), (-1, 0), 2, primary_color),
+        ('LINEBELOW', (0, 1), (-1, -1), 0.5, colors.HexColor('#e5e7eb')),
+        ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#e5e7eb')),
+        
+        # Alternating row colors
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f9fafb')]),
     ]))
     elements.append(items_table)
-    elements.append(Spacer(1, 0.3*inch))
+    elements.append(Spacer(1, 0.25*inch))
     
-    # Totals
+    # Modern totals section - right aligned
     subtotal = float(order.total_customer_amount)
     tax_total = float(order.total_tax_amount)
     grand_total = float(order.grand_total_amount)
     total_items = sum(item.quantity for item in order.items)
-    rupee_symbol = "₹"
+    
+    # Summary style
+    summary_style = ParagraphStyle('SummaryStyle', parent=styles['Normal'], 
+                                   fontSize=10, textColor=dark_text, alignment=TA_RIGHT)
+    summary_bold_style = ParagraphStyle('SummaryBoldStyle', parent=styles['Normal'], 
+                                        fontSize=10, textColor=dark_text, 
+                                        fontName='Helvetica-Bold', alignment=TA_RIGHT)
+    total_style = ParagraphStyle('TotalStyle', parent=styles['Normal'], 
+                                 fontSize=13, textColor=primary_color, 
+                                 fontName='Helvetica-Bold', alignment=TA_RIGHT)
     
     totals_data = [
-        ["Subtotal (before tax):", Paragraph(f"{rupee_symbol}{subtotal:.2f}", styles['Normal'])],
-        ["Tax:", Paragraph(f"{rupee_symbol}{tax_total:.2f}", styles['Normal'])],
-        ["Total Items:", str(total_items)],
+        [Paragraph("Subtotal:", summary_style), Paragraph(f"{rupee_symbol} {subtotal:.2f}", summary_style)],
+        [Paragraph("Tax:", summary_style), Paragraph(f"{rupee_symbol} {tax_total:.2f}", summary_style)],
+        [Paragraph("Total Items:", summary_style), Paragraph(str(total_items), summary_style)],
         ["", ""],
-        [Paragraph("<b>Grand Total:</b>", styles['Normal']), Paragraph(f"<b>{rupee_symbol}{grand_total:.2f}</b>", styles['Normal'])],
+        [Paragraph("TOTAL", total_style), Paragraph(f"{rupee_symbol} {grand_total:.2f}", total_style)],
     ]
     
-    totals_table = Table(totals_data, colWidths=[4.5*inch, 1.5*inch])
+    totals_table = Table(totals_data, colWidths=[5.2*inch, 1.8*inch])
     totals_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
-        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-        ('FONTNAME', (0, 3), (1, 3), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 2), 10),
-        ('FONTSIZE', (0, 3), (1, 3), 12),
-        ('TEXTCOLOR', (0, 3), (1, 3), colors.HexColor('#2c3e50')),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-        ('TOPPADDING', (0, 0), (-1, -1), 8),
-        ('LINEABOVE', (0, 3), (-1, 3), 2, colors.HexColor('#34495e')),
+        ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
+        ('TOPPADDING', (0, 0), (-1, 2), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, 2), 6),
+        ('TOPPADDING', (0, 4), (-1, 4), 10),
+        ('BOTTOMPADDING', (0, 4), (-1, 4), 10),
+        ('LINEABOVE', (0, 4), (-1, 4), 2, primary_color),
+        ('BACKGROUND', (0, 4), (-1, 4), colors.HexColor('#eff6ff')),
     ]))
     elements.append(totals_table)
-    elements.append(Spacer(1, 0.4*inch))
+    elements.append(Spacer(1, 0.3*inch))
     
-    # Footer
-    footer_text = f"""
-    <i>Thank you for your business!</i><br/>
-    <i>This is a computer-generated invoice and does not require a signature.</i>
-    """
-    footer = Paragraph(footer_text, styles['Normal'])
+    # Modern footer
+    footer_style = ParagraphStyle('FooterStyle', parent=styles['Normal'], 
+                                  fontSize=9, textColor=light_text, 
+                                  alignment=TA_CENTER, leading=12)
+    
+    # Divider line before footer
+    footer_line = Table([[""]], colWidths=[7*inch])
+    footer_line.setStyle(TableStyle([
+        ('LINEABOVE', (0, 0), (-1, 0), 1, colors.HexColor('#e5e7eb')),
+        ('TOPPADDING', (0, 0), (-1, 0), 15),
+    ]))
+    elements.append(footer_line)
+    
+    footer_text = """
+    <b>Thank you for your business!</b><br/>
+    This is a computer-generated invoice and does not require a signature.<br/>
+    For any queries, please contact us at {email} or call {phone}
+    """.format(email=COMPANY_EMAIL, phone=COMPANY_PHONE)
+    
+    footer = Paragraph(footer_text, footer_style)
     elements.append(footer)
     
     # Build PDF

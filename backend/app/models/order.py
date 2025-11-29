@@ -42,8 +42,8 @@ class Order(Base):
     grand_total_amount = Column(DECIMAL(10, 2), nullable=False, default=Decimal('0.00'))  # Total amount customer pays (subtotal + tax)
     total_seller_amount = Column(DECIMAL(10, 2), nullable=False)  # Total amount sellers get
     total_commission_amount = Column(DECIMAL(10, 2), nullable=False)  # Total commission admin gets
-    status = Column(Enum(OrderStatus), default=OrderStatus.PENDING)
-    payment_status = Column(Enum(PaymentStatus), default=PaymentStatus.COD_PENDING)
+    status = Column(Enum(OrderStatus, name='orderstatus', native_enum=True, create_type=False), default=OrderStatus.PENDING)
+    payment_status = Column(Enum(PaymentStatus, name='paymentstatus', native_enum=True, create_type=False), default=PaymentStatus.COD_PENDING)
     delivery_address = Column(Text, nullable=False)
     delivery_city = Column(String(100), nullable=False)
     delivery_state = Column(String(100), nullable=False) 

@@ -113,7 +113,7 @@ export interface Order {
   total_customer_amount: number;
   total_seller_amount: number;
   total_commission_amount: number;
-  status: 'pending' | 'rejected' | 'processing' | 'ready for dispatch' | 'dispatched' | 'delivered' | 'cancelled' | 'return requested' | 'return approved' | 'return rejected' | 'returned';
+  status: 'PENDING' | 'REJECTED' | 'PROCESSING' | 'READY_FOR_DISPATCH' | 'DISPATCHED' | 'DELIVERED' | 'CANCELLED' | 'RETURN_REQUESTED' | 'RETURN_APPROVED' | 'RETURN_REJECTED' | 'RETURN_PICKED_UP' | 'RETURN_RECEIVED' | 'REFUND_PROCESSING' | 'REFUND_COMPLETED';
   payment_status: 'cod_pending' | 'cod_collected' | 'paid' | 'refunded';
   delivery_address: string;
   delivery_city: string;
@@ -134,10 +134,17 @@ export interface OrderListResponse {
   id: string;
   order_number: string;
   customer_id: string;
+  customer_name?: string;
   total_customer_amount: number;
   total_tax_amount?: number;
   grand_total_amount?: number;
   payable_amount?: number;  // Amount payable to seller
+  commission_amount?: number;  // Total commission admin gets for this order
+  delivery_address?: string;
+  delivery_city?: string;
+  delivery_state?: string;
+  delivery_pincode?: string;
+  phone?: string;
   total_items: number;
   status: string;
   payment_status: string;

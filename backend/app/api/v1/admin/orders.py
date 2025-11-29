@@ -61,6 +61,7 @@ async def get_all_orders(
     
     # Build query with eager loading
     query = db.query(Order).options(
+        joinedload(Order.customer),
         joinedload(Order.items).joinedload(OrderItem.product).joinedload(Product.seller),
         joinedload(Order.items).joinedload(OrderItem.variant)
     )
@@ -124,18 +125,35 @@ async def get_all_orders(
                 total_final_amount=float(item.total_final_amount)
             ))
         
+        # Build customer display name (fallback to email if no name)
+        customer_name = None
+        customer_phone = None
+        if order.customer:
+            customer_name = order.customer.full_name or order.customer.email
+            customer_phone = order.customer.phone
+        
+        # Prefer phone stored on order, fallback to customer's phone
+        phone = order.phone or customer_phone
+
         order_responses.append(OrderListResponse(
             id=order.id,
             order_number=order.order_number,
             customer_id=order.customer_id,
+            customer_name=customer_name,
             total_customer_amount=float(order.total_customer_amount),
             total_tax_amount=float(order.total_tax_amount),
             grand_total_amount=float(order.grand_total_amount),
             payable_amount=float(order.total_seller_amount),  # Amount payable to seller(s)
+            commission_amount=float(order.total_commission_amount),
             total_items=order.total_items,
             status=order.status,
             payment_status=order.payment_status,
             created_at=order.created_at,
+            delivery_address=order.delivery_address,
+            delivery_city=order.delivery_city,
+            delivery_state=order.delivery_state,
+            delivery_pincode=order.delivery_pincode,
+            phone=phone,
             items=items
         ))
     
@@ -167,6 +185,7 @@ async def get_pending_orders(
     
     # Build query with eager loading
     query = db.query(Order).options(
+        joinedload(Order.customer),
         joinedload(Order.items).joinedload(OrderItem.product).joinedload(Product.seller),
         joinedload(Order.items).joinedload(OrderItem.variant)
     ).filter(Order.status == OrderStatus.PENDING)
@@ -221,18 +240,29 @@ async def get_pending_orders(
             total_final_amount=float(item.total_final_amount)
             ))
         
+        customer_name = None
+        if order.customer:
+            customer_name = order.customer.full_name or order.customer.email
+
         order_responses.append(OrderListResponse(
             id=order.id,
             order_number=order.order_number,
             customer_id=order.customer_id,
+            customer_name=customer_name,
             total_customer_amount=float(order.total_customer_amount),
             total_tax_amount=float(order.total_tax_amount),
             grand_total_amount=float(order.grand_total_amount),
             payable_amount=float(order.total_seller_amount),  # Amount payable to seller(s)
+            commission_amount=float(order.total_commission_amount),
             total_items=order.total_items,
             status=order.status,
             payment_status=order.payment_status,
             created_at=order.created_at,
+            delivery_address=order.delivery_address,
+            delivery_city=order.delivery_city,
+            delivery_state=order.delivery_state,
+            delivery_pincode=order.delivery_pincode,
+            phone=order.phone,
             items=items
         ))
     

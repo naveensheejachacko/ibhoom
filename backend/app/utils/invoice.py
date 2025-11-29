@@ -252,13 +252,15 @@ def generate_invoice_pdf(order, output_path: Optional[Path] = None) -> BytesIO:
     
     customer_name = f"{order.customer.first_name} {order.customer.last_name}" if order.customer else "Customer"
     customer_email = order.customer.email if order.customer else ""
+    # Prefer phone stored on order, but fall back to customer's phone if needed
+    customer_phone = order.phone or (order.customer.phone if getattr(order, "customer", None) else "")
     
     customer_info = f"""
     <b>{customer_name}</b><br/>
     {customer_email}<br/>
     {order.delivery_address}<br/>
     {order.delivery_city}, {order.delivery_state} - {order.delivery_pincode}<br/>
-    Phone: {order.phone}
+    Phone: {customer_phone}
     """
     
     customer_box = Table([[Paragraph(customer_info, info_style)]], colWidths=[7*inch])

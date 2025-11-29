@@ -114,10 +114,17 @@ class OrderListResponse(BaseModel):
     id: str
     order_number: str
     customer_id: str
+    customer_name: Optional[str] = None
     total_customer_amount: float
     total_tax_amount: float
     grand_total_amount: float
     payable_amount: Optional[float] = None  # Amount payable to seller (total_seller_amount)
+    commission_amount: Optional[float] = None  # Total commission admin gets for this order
+    delivery_address: Optional[str] = None
+    delivery_city: Optional[str] = None
+    delivery_state: Optional[str] = None
+    delivery_pincode: Optional[str] = None
+    phone: Optional[str] = None
     total_items: int
     status: OrderStatus
     payment_status: PaymentStatus

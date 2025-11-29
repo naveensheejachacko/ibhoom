@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Eye, Package, Truck, CheckCircle, X, XCircle, Clock, FileText, Download, RefreshCw } from 'lucide-react';
+import { Search, Eye, Package, Truck, CheckCircle, X, XCircle, Clock, FileText, Download, RefreshCw, RotateCcw } from 'lucide-react';
 import { adminApi } from '../../lib/api';
 import { useToast } from '../../components/Toast';
 import Pagination from '../../components/Pagination';
@@ -113,7 +113,7 @@ const Orders: React.FC = () => {
   const handleReturnAction = async (orderId: string, status: string, notes?: string) => {
     try {
       await adminApi.handleReturn(orderId, { status, admin_notes: notes });
-      toast.show(`Return ${status.replace('_', ' ')} successfully`, { type: 'success' });
+      toast.show(`Return ${status} successfully`, { type: 'success' });
       fetchOrders();
       setShowOrderModal(false);
     } catch (error: any) {
@@ -164,34 +164,46 @@ const Orders: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'processing': return 'bg-blue-100 text-blue-800';
-      case 'ready for dispatch': return 'bg-purple-100 text-purple-800';
-      case 'dispatched': return 'bg-indigo-100 text-indigo-800';
-      case 'delivered': return 'bg-green-100 text-green-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      case 'return requested': return 'bg-orange-100 text-orange-800';
-      case 'return approved': return 'bg-teal-100 text-teal-800';
-      case 'return rejected': return 'bg-red-100 text-red-800';
-      case 'return picked up': return 'bg-purple-100 text-purple-800';
-      case 'return received': return 'bg-blue-100 text-blue-800';
-      case 'refund processing': return 'bg-yellow-100 text-yellow-800';
-      case 'refund completed': return 'bg-green-100 text-green-800';
-      case 'returned': return 'bg-gray-100 text-gray-800';
+      case 'PENDING': return 'bg-yellow-100 text-yellow-800';
+      case 'REJECTED': return 'bg-red-100 text-red-800';
+      case 'PROCESSING': return 'bg-blue-100 text-blue-800';
+      case 'READY_FOR_DISPATCH': return 'bg-purple-100 text-purple-800';
+      case 'DISPATCHED': return 'bg-indigo-100 text-indigo-800';
+      case 'DELIVERED': return 'bg-green-100 text-green-800';
+      case 'CANCELLED': return 'bg-red-100 text-red-800';
+      case 'RETURN_REQUESTED': return 'bg-orange-100 text-orange-800';
+      case 'RETURN_APPROVED': return 'bg-teal-100 text-teal-800';
+      case 'RETURN_REJECTED': return 'bg-red-100 text-red-800';
+      case 'RETURN_PICKED_UP': return 'bg-purple-100 text-purple-800';
+      case 'RETURN_RECEIVED': return 'bg-blue-100 text-blue-800';
+      case 'REFUND_PROCESSING': return 'bg-yellow-100 text-yellow-800';
+      case 'REFUND_COMPLETED': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'pending': return <Clock className="w-4 h-4" />;
-      case 'processing': return <Package className="w-4 h-4" />;
-      case 'ready for dispatch': return <Package className="w-4 h-4" />;
-      case 'dispatched': return <Truck className="w-4 h-4" />;
-      case 'delivered': return <CheckCircle className="w-4 h-4" />;
-      case 'cancelled': return <XCircle className="w-4 h-4" />;
+      case 'PENDING': return <Clock className="w-4 h-4" />;
+      case 'REJECTED': return <XCircle className="w-4 h-4" />;
+      case 'PROCESSING': return <Package className="w-4 h-4" />;
+      case 'READY_FOR_DISPATCH': return <Package className="w-4 h-4" />;
+      case 'DISPATCHED': return <Truck className="w-4 h-4" />;
+      case 'DELIVERED': return <CheckCircle className="w-4 h-4" />;
+      case 'CANCELLED': return <XCircle className="w-4 h-4" />;
+      case 'RETURN_REQUESTED': return <RotateCcw className="w-4 h-4" />;
+      case 'RETURN_APPROVED': return <CheckCircle className="w-4 h-4" />;
+      case 'RETURN_REJECTED': return <XCircle className="w-4 h-4" />;
+      case 'RETURN_PICKED_UP': return <Package className="w-4 h-4" />;
+      case 'RETURN_RECEIVED': return <CheckCircle className="w-4 h-4" />;
+      case 'REFUND_PROCESSING': return <Clock className="w-4 h-4" />;
+      case 'REFUND_COMPLETED': return <CheckCircle className="w-4 h-4" />;
       default: return <Clock className="w-4 h-4" />;
     }
+  };
+
+  const formatStatus = (status: string) => {
+    return status.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
   const getPaymentStatusLabel = (paymentStatus: string) => {
@@ -322,6 +334,7 @@ const Orders: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Order</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Items</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Amount</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Commission</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Payable Amount</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Payment</th>
@@ -363,6 +376,12 @@ const Orders: React.FC = () => {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-secondary-900">
+                        ₹{order.commission_amount?.toFixed(2) || '0.00'}
+                      </div>
+                      <div className="text-xs text-secondary-500">Commission</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-primary-600">
                         ₹{order.payable_amount?.toFixed(2) || '0.00'}
                       </div>
@@ -371,7 +390,7 @@ const Orders: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
                         {getStatusIcon(order.status)}
-                        {order.status}
+                        {formatStatus(order.status)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -399,7 +418,7 @@ const Orders: React.FC = () => {
                           <Eye className="w-4 h-4" />
                           View
                         </button>
-                        {order.status === 'delivered' && (
+                        {order.status === 'DELIVERED' && (
                           <button
                             onClick={() => handleDownloadInvoice(order.id, order.order_number)}
                             className="text-green-600 hover:text-green-900 flex items-center gap-1"
@@ -434,9 +453,24 @@ const Orders: React.FC = () => {
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-secondary-200">
               <div className="flex justify-between items-start">
-                <div>
+                        <div>
                   <h2 className="text-xl font-bold text-secondary-900">Order Details</h2>
                   <p className="text-sm text-secondary-500">{selectedOrder.order_number}</p>
+                  {(selectedOrder.customer_name || selectedOrder.phone) && (
+                    <p className="text-sm text-secondary-500 mt-1">
+                      {selectedOrder.customer_name && <span>{selectedOrder.customer_name}</span>}
+                      {selectedOrder.customer_name && selectedOrder.phone && <span> • </span>}
+                      {selectedOrder.phone && <span>{selectedOrder.phone}</span>}
+                    </p>
+                  )}
+                  {selectedOrder.delivery_address && (
+                    <p className="text-xs text-secondary-500 mt-1">
+                      {selectedOrder.delivery_address}
+                      {selectedOrder.delivery_city && `, ${selectedOrder.delivery_city}`}
+                      {selectedOrder.delivery_state && `, ${selectedOrder.delivery_state}`}
+                      {selectedOrder.delivery_pincode && ` - ${selectedOrder.delivery_pincode}`}
+                    </p>
+                  )}
                 </div>
                 <button
                   onClick={() => setShowOrderModal(false)}
@@ -482,6 +516,15 @@ const Orders: React.FC = () => {
               <div className="border-t border-secondary-200 pt-4">
                 <h3 className="text-lg font-semibold text-secondary-900 mb-4">Order Summary</h3>
                 <div className="bg-secondary-50 rounded-lg p-4 space-y-2">
+                  {(selectedOrder.customer_name || selectedOrder.phone) && (
+                    <div className="flex justify-between text-sm pb-2 border-b border-secondary-200">
+                      <span className="text-secondary-600">Customer:</span>
+                      <span className="font-medium text-secondary-900">
+                        {selectedOrder.customer_name || 'Customer'}
+                        {selectedOrder.phone && ` • ${selectedOrder.phone}`}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm">
                     <span className="text-secondary-600">Subtotal:</span>
                     <span className="font-medium">₹{selectedOrder.total_customer_amount.toFixed(2)}</span>
@@ -490,6 +533,12 @@ const Orders: React.FC = () => {
                     <div className="flex justify-between text-sm">
                       <span className="text-secondary-600">Tax:</span>
                       <span className="font-medium">₹{selectedOrder.total_tax_amount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {selectedOrder.commission_amount !== undefined && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-secondary-600">Commission (Admin):</span>
+                      <span className="font-medium">₹{selectedOrder.commission_amount.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-sm font-semibold pt-2 border-t border-secondary-200">
@@ -511,7 +560,7 @@ const Orders: React.FC = () => {
                     <div className="flex justify-between text-sm">
                       <span className="text-secondary-600">Return Status:</span>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedOrder.status)}`}>
-                        {selectedOrder.status}
+                        {formatStatus(selectedOrder.status)}
                       </span>
                     </div>
                     {selectedOrder.return_reason && (
@@ -549,7 +598,7 @@ const Orders: React.FC = () => {
               )}
 
               {/* Invoice Actions */}
-              {selectedOrder.status === 'delivered' && (
+              {selectedOrder.status === 'DELIVERED' && (
                 <div>
                   <h3 className="text-lg font-semibold text-secondary-900 mb-4">Invoice</h3>
                   <div className="flex gap-2">
@@ -575,63 +624,63 @@ const Orders: React.FC = () => {
               <div>
                 <h3 className="text-lg font-semibold text-secondary-900 mb-4">Update Status</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {selectedOrder.status === 'pending' || selectedOrder.status === 'processing' ? (
+                  {selectedOrder.status === 'PENDING' || selectedOrder.status === 'PROCESSING' ? (
                     <button
-                      onClick={() => handleStatusUpdate(selectedOrder.id, 'ready for dispatch')}
+                      onClick={() => handleStatusUpdate(selectedOrder.id, 'READY_FOR_DISPATCH')}
                       className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
                     >
                       Ready for Dispatch
                     </button>
                   ) : null}
-                  {selectedOrder.status === 'ready for dispatch' ? (
+                  {selectedOrder.status === 'READY_FOR_DISPATCH' ? (
                     <button
-                      onClick={() => handleStatusUpdate(selectedOrder.id, 'dispatched')}
+                      onClick={() => handleStatusUpdate(selectedOrder.id, 'DISPATCHED')}
                       className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
                     >
                       Dispatch
                     </button>
                   ) : null}
-                  {(selectedOrder.status === 'ready for dispatch' || selectedOrder.status === 'dispatched') ? (
+                  {(selectedOrder.status === 'READY_FOR_DISPATCH' || selectedOrder.status === 'DISPATCHED') ? (
                     <button
-                      onClick={() => handleStatusUpdate(selectedOrder.id, 'delivered')}
+                      onClick={() => handleStatusUpdate(selectedOrder.id, 'DELIVERED')}
                       className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
                     >
                       Mark Delivered
                     </button>
                   ) : null}
-                  {selectedOrder.status === 'return requested' ? (
+                  {selectedOrder.status === 'RETURN_REQUESTED' ? (
                     <>
                       <button
-                        onClick={() => handleReturnAction(selectedOrder.id, 'return_approved')}
+                        onClick={() => handleReturnAction(selectedOrder.id, 'RETURN_APPROVED')}
                         className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm"
                       >
                         Approve Return
                       </button>
                       <button
-                        onClick={() => handleReturnAction(selectedOrder.id, 'return_rejected')}
+                        onClick={() => handleReturnAction(selectedOrder.id, 'RETURN_REJECTED')}
                         className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
                       >
                         Reject Return
                       </button>
                     </>
                   ) : null}
-                  {selectedOrder.status === 'return approved' ? (
+                  {selectedOrder.status === 'RETURN_APPROVED' ? (
                     <button
-                      onClick={() => handleReturnAction(selectedOrder.id, 'return_picked_up')}
+                      onClick={() => handleReturnAction(selectedOrder.id, 'RETURN_PICKED_UP')}
                       className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
                     >
                       Mark as Picked Up
                     </button>
                   ) : null}
-                  {selectedOrder.status === 'return picked up' ? (
+                  {selectedOrder.status === 'RETURN_PICKED_UP' ? (
                     <button
-                      onClick={() => handleReturnAction(selectedOrder.id, 'return_received')}
+                      onClick={() => handleReturnAction(selectedOrder.id, 'RETURN_RECEIVED')}
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
                     >
                       Mark as Received
                     </button>
                   ) : null}
-                  {selectedOrder.status === 'return received' ? (
+                  {selectedOrder.status === 'RETURN_RECEIVED' ? (
                     <button
                       onClick={handleInitiateRefund}
                       className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm"
@@ -639,7 +688,7 @@ const Orders: React.FC = () => {
                       Process Refund
                     </button>
                   ) : null}
-                  {selectedOrder.status === 'refund processing' ? (
+                  {selectedOrder.status === 'REFUND_PROCESSING' ? (
                     <button
                       onClick={() => handleCompleteRefund(selectedOrder.id)}
                       className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"

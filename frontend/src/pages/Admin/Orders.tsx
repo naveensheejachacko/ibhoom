@@ -453,7 +453,7 @@ const Orders: React.FC = () => {
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-secondary-200">
               <div className="flex justify-between items-start">
-                        <div>
+                <div>
                   <h2 className="text-xl font-bold text-secondary-900">Order Details</h2>
                   <p className="text-sm text-secondary-500">{selectedOrder.order_number}</p>
                   {(selectedOrder.customer_name || selectedOrder.phone) && (

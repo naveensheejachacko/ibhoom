@@ -89,6 +89,9 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
     );
 
     return new Promise((resolve, reject) => {
+      // Try WebP first (better compression), fallback to JPEG if not supported
+      const supportsWebP = canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+      
       canvas.toBlob(
         (blob) => {
           if (!blob) {
@@ -100,8 +103,8 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
           reader.addEventListener('error', (error) => reject(error));
           reader.readAsDataURL(blob);
         },
-        'image/jpeg',
-        0.9 // Quality
+        supportsWebP ? 'image/webp' : 'image/jpeg',
+        supportsWebP ? 0.85 : 0.9 // WebP quality 0.85, JPEG quality 0.9
       );
     });
   };

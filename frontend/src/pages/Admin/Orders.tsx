@@ -164,40 +164,40 @@ const Orders: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'PENDING': return 'bg-yellow-100 text-yellow-800';
-      case 'REJECTED': return 'bg-red-100 text-red-800';
-      case 'PROCESSING': return 'bg-blue-100 text-blue-800';
-      case 'READY_FOR_DISPATCH': return 'bg-purple-100 text-purple-800';
-      case 'DISPATCHED': return 'bg-indigo-100 text-indigo-800';
-      case 'DELIVERED': return 'bg-green-100 text-green-800';
-      case 'CANCELLED': return 'bg-red-100 text-red-800';
-      case 'RETURN_REQUESTED': return 'bg-orange-100 text-orange-800';
-      case 'RETURN_APPROVED': return 'bg-teal-100 text-teal-800';
-      case 'RETURN_REJECTED': return 'bg-red-100 text-red-800';
-      case 'RETURN_PICKED_UP': return 'bg-purple-100 text-purple-800';
-      case 'RETURN_RECEIVED': return 'bg-blue-100 text-blue-800';
-      case 'REFUND_PROCESSING': return 'bg-yellow-100 text-yellow-800';
-      case 'REFUND_COMPLETED': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      case 'processing': return 'bg-blue-100 text-blue-800';
+      case 'ready for dispatch': return 'bg-purple-100 text-purple-800';
+      case 'dispatched': return 'bg-indigo-100 text-indigo-800';
+      case 'delivered': return 'bg-green-100 text-green-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'return requested': return 'bg-orange-100 text-orange-800';
+      case 'return approved': return 'bg-teal-100 text-teal-800';
+      case 'return rejected': return 'bg-red-100 text-red-800';
+      case 'return picked up': return 'bg-purple-100 text-purple-800';
+      case 'return received': return 'bg-blue-100 text-blue-800';
+      case 'refund processing': return 'bg-yellow-100 text-yellow-800';
+      case 'refund completed': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'PENDING': return <Clock className="w-4 h-4" />;
-      case 'REJECTED': return <XCircle className="w-4 h-4" />;
-      case 'PROCESSING': return <Package className="w-4 h-4" />;
-      case 'READY_FOR_DISPATCH': return <Package className="w-4 h-4" />;
-      case 'DISPATCHED': return <Truck className="w-4 h-4" />;
-      case 'DELIVERED': return <CheckCircle className="w-4 h-4" />;
-      case 'CANCELLED': return <XCircle className="w-4 h-4" />;
-      case 'RETURN_REQUESTED': return <RotateCcw className="w-4 h-4" />;
-      case 'RETURN_APPROVED': return <CheckCircle className="w-4 h-4" />;
-      case 'RETURN_REJECTED': return <XCircle className="w-4 h-4" />;
-      case 'RETURN_PICKED_UP': return <Package className="w-4 h-4" />;
-      case 'RETURN_RECEIVED': return <CheckCircle className="w-4 h-4" />;
-      case 'REFUND_PROCESSING': return <Clock className="w-4 h-4" />;
-      case 'REFUND_COMPLETED': return <CheckCircle className="w-4 h-4" />;
+      case 'pending': return <Clock className="w-4 h-4" />;
+      case 'rejected': return <XCircle className="w-4 h-4" />;
+      case 'processing': return <Package className="w-4 h-4" />;
+      case 'ready for dispatch': return <Package className="w-4 h-4" />;
+      case 'dispatched': return <Truck className="w-4 h-4" />;
+      case 'delivered': return <CheckCircle className="w-4 h-4" />;
+      case 'cancelled': return <XCircle className="w-4 h-4" />;
+      case 'return requested': return <RotateCcw className="w-4 h-4" />;
+      case 'return approved': return <CheckCircle className="w-4 h-4" />;
+      case 'return rejected': return <XCircle className="w-4 h-4" />;
+      case 'return picked up': return <Package className="w-4 h-4" />;
+      case 'return received': return <CheckCircle className="w-4 h-4" />;
+      case 'refund processing': return <Clock className="w-4 h-4" />;
+      case 'refund completed': return <CheckCircle className="w-4 h-4" />;
       default: return <Clock className="w-4 h-4" />;
     }
   };
@@ -418,7 +418,7 @@ const Orders: React.FC = () => {
                           <Eye className="w-4 h-4" />
                           View
                         </button>
-                        {order.status === 'DELIVERED' && (
+                        {order.status === 'delivered' && (
                           <button
                             onClick={() => handleDownloadInvoice(order.id, order.order_number)}
                             className="text-green-600 hover:text-green-900 flex items-center gap-1"
@@ -598,7 +598,7 @@ const Orders: React.FC = () => {
               )}
 
               {/* Invoice Actions */}
-              {selectedOrder.status === 'DELIVERED' && (
+              {selectedOrder.status === 'delivered' && (
                 <div>
                   <h3 className="text-lg font-semibold text-secondary-900 mb-4">Invoice</h3>
                   <div className="flex gap-2">
@@ -624,63 +624,63 @@ const Orders: React.FC = () => {
               <div>
                 <h3 className="text-lg font-semibold text-secondary-900 mb-4">Update Status</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {selectedOrder.status === 'PENDING' || selectedOrder.status === 'PROCESSING' ? (
+                  {selectedOrder.status === 'pending' || selectedOrder.status === 'processing' ? (
                     <button
-                      onClick={() => handleStatusUpdate(selectedOrder.id, 'READY_FOR_DISPATCH')}
+                      onClick={() => handleStatusUpdate(selectedOrder.id, 'ready for dispatch')}
                       className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
                     >
                       Ready for Dispatch
                     </button>
                   ) : null}
-                  {selectedOrder.status === 'READY_FOR_DISPATCH' ? (
+                  {selectedOrder.status === 'ready for dispatch' ? (
                     <button
-                      onClick={() => handleStatusUpdate(selectedOrder.id, 'DISPATCHED')}
+                      onClick={() => handleStatusUpdate(selectedOrder.id, 'dispatched')}
                       className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
                     >
                       Dispatch
                     </button>
                   ) : null}
-                  {(selectedOrder.status === 'READY_FOR_DISPATCH' || selectedOrder.status === 'DISPATCHED') ? (
+                  {(selectedOrder.status === 'ready for dispatch' || selectedOrder.status === 'dispatched') ? (
                     <button
-                      onClick={() => handleStatusUpdate(selectedOrder.id, 'DELIVERED')}
+                      onClick={() => handleStatusUpdate(selectedOrder.id, 'delivered')}
                       className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
                     >
                       Mark Delivered
                     </button>
                   ) : null}
-                  {selectedOrder.status === 'RETURN_REQUESTED' ? (
+                  {selectedOrder.status === 'return requested' ? (
                     <>
                       <button
-                        onClick={() => handleReturnAction(selectedOrder.id, 'RETURN_APPROVED')}
+                        onClick={() => handleReturnAction(selectedOrder.id, 'return approved')}
                         className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm"
                       >
                         Approve Return
                       </button>
                       <button
-                        onClick={() => handleReturnAction(selectedOrder.id, 'RETURN_REJECTED')}
+                        onClick={() => handleReturnAction(selectedOrder.id, 'return rejected')}
                         className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
                       >
                         Reject Return
                       </button>
                     </>
                   ) : null}
-                  {selectedOrder.status === 'RETURN_APPROVED' ? (
+                  {selectedOrder.status === 'return approved' ? (
                     <button
-                      onClick={() => handleReturnAction(selectedOrder.id, 'RETURN_PICKED_UP')}
+                      onClick={() => handleReturnAction(selectedOrder.id, 'return picked up')}
                       className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
                     >
                       Mark as Picked Up
                     </button>
                   ) : null}
-                  {selectedOrder.status === 'RETURN_PICKED_UP' ? (
+                  {selectedOrder.status === 'return picked up' ? (
                     <button
-                      onClick={() => handleReturnAction(selectedOrder.id, 'RETURN_RECEIVED')}
+                      onClick={() => handleReturnAction(selectedOrder.id, 'return received')}
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
                     >
                       Mark as Received
                     </button>
                   ) : null}
-                  {selectedOrder.status === 'RETURN_RECEIVED' ? (
+                  {selectedOrder.status === 'return received' ? (
                     <button
                       onClick={handleInitiateRefund}
                       className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm"
@@ -688,7 +688,7 @@ const Orders: React.FC = () => {
                       Process Refund
                     </button>
                   ) : null}
-                  {selectedOrder.status === 'REFUND_PROCESSING' ? (
+                  {selectedOrder.status === 'refund processing' ? (
                     <button
                       onClick={() => handleCompleteRefund(selectedOrder.id)}
                       className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"

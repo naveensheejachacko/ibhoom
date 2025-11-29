@@ -113,7 +113,7 @@ export interface Order {
   total_customer_amount: number;
   total_seller_amount: number;
   total_commission_amount: number;
-  status: 'PENDING' | 'REJECTED' | 'PROCESSING' | 'READY_FOR_DISPATCH' | 'DISPATCHED' | 'DELIVERED' | 'CANCELLED' | 'RETURN_REQUESTED' | 'RETURN_APPROVED' | 'RETURN_REJECTED' | 'RETURN_PICKED_UP' | 'RETURN_RECEIVED' | 'REFUND_PROCESSING' | 'REFUND_COMPLETED';
+  status: 'pending' | 'rejected' | 'processing' | 'ready for dispatch' | 'dispatched' | 'delivered' | 'cancelled' | 'return requested' | 'return approved' | 'return rejected' | 'return picked up' | 'return received' | 'refund processing' | 'refund completed';
   payment_status: 'cod_pending' | 'cod_collected' | 'paid' | 'refunded';
   delivery_address: string;
   delivery_city: string;

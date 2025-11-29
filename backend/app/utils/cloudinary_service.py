@@ -105,25 +105,46 @@ def upload_image(
                 detail="File size must be less than 10MB"
             )
         
-        # Optimize image if PIL is available
+        # Convert and compress image to WebP if PIL is available
         if PIL_AVAILABLE:
             try:
-                # Open image with PIL to validate
+                original_size = len(file_content)
+                # Open image with PIL
                 image = Image.open(io.BytesIO(file_content))
-                # Convert to RGB if needed (for PNG with transparency)
+                
+                # Convert RGBA/LA/P to RGB for better compression (white background)
                 if image.mode in ('RGBA', 'LA', 'P'):
                     rgb_image = Image.new('RGB', image.size, (255, 255, 255))
                     if image.mode == 'P':
                         image = image.convert('RGBA')
-                    rgb_image.paste(image, mask=image.split()[-1] if image.mode in ('RGBA', 'LA') else None)
+                    if image.mode in ('RGBA', 'LA'):
+                        rgb_image.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else image.split()[-1])
+                    else:
+                        rgb_image.paste(image)
                     image = rgb_image
+                elif image.mode not in ('RGB', 'L'):
+                    # Convert other modes to RGB
+                    image = image.convert('RGB')
                 
-                # Save optimized image to bytes
+                # Resize if image is too large (max 2000px on longest side)
+                max_dimension = 2000
+                if max(image.size) > max_dimension:
+                    ratio = max_dimension / max(image.size)
+                    new_size = (int(image.size[0] * ratio), int(image.size[1] * ratio))
+                    image = image.resize(new_size, Image.Resampling.LANCZOS)
+                
+                # Save as WebP with compression
                 output = io.BytesIO()
-                image.save(output, format='JPEG', quality=85, optimize=True)
+                # WebP quality: 85 is a good balance between quality and file size
+                # method=6 is slower but better compression
+                image.save(output, format='WEBP', quality=85, method=6, optimize=True)
+                compressed_size = len(output.getvalue())
                 file_content = output.getvalue()
+                compression_ratio = (1 - compressed_size / original_size) * 100
+                print(f"✅ Image converted to WebP: {compressed_size:,} bytes (original: {original_size:,} bytes, {compression_ratio:.1f}% reduction)")
             except Exception as e:
                 # If image processing fails, use original file
+                print(f"⚠️  Image processing failed, using original: {str(e)}")
                 pass
         
         # Upload options
@@ -273,6 +294,48 @@ def upload_base64_image(
         # Validate decoded bytes
         if not image_bytes or len(image_bytes) < 100:
             raise ValueError(f"Invalid base64 image data: decoded bytes too short ({len(image_bytes) if image_bytes else 0} bytes, minimum 100)")
+        
+        # Convert and compress image to WebP if PIL is available
+        if PIL_AVAILABLE:
+            try:
+                original_size = len(image_bytes)
+                # Open image with PIL
+                image = Image.open(io.BytesIO(image_bytes))
+                
+                # Convert RGBA/LA/P to RGB for better compression (white background)
+                if image.mode in ('RGBA', 'LA', 'P'):
+                    rgb_image = Image.new('RGB', image.size, (255, 255, 255))
+                    if image.mode == 'P':
+                        image = image.convert('RGBA')
+                    if image.mode in ('RGBA', 'LA'):
+                        rgb_image.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else image.split()[-1])
+                    else:
+                        rgb_image.paste(image)
+                    image = rgb_image
+                elif image.mode not in ('RGB', 'L'):
+                    # Convert other modes to RGB
+                    image = image.convert('RGB')
+                
+                # Resize if image is too large (max 2000px on longest side)
+                max_dimension = 2000
+                if max(image.size) > max_dimension:
+                    ratio = max_dimension / max(image.size)
+                    new_size = (int(image.size[0] * ratio), int(image.size[1] * ratio))
+                    image = image.resize(new_size, Image.Resampling.LANCZOS)
+                
+                # Save as WebP with compression
+                output = io.BytesIO()
+                # WebP quality: 85 is a good balance between quality and file size
+                # method=6 is slower but better compression
+                image.save(output, format='WEBP', quality=85, method=6, optimize=True)
+                compressed_size = len(output.getvalue())
+                image_bytes = output.getvalue()
+                compression_ratio = (1 - compressed_size / original_size) * 100
+                print(f"✅ Image converted to WebP: {compressed_size:,} bytes (original: {original_size:,} bytes, {compression_ratio:.1f}% reduction)")
+            except Exception as e:
+                # If image processing fails, use original file
+                print(f"⚠️  Image processing failed, using original: {str(e)}")
+                pass
         
         # Upload to Cloudinary using bytes
         upload_options = {

@@ -134,7 +134,7 @@ async def get_all_orders(
         
         # Prefer phone stored on order, fallback to customer's phone
         phone = order.phone or customer_phone
-
+        
         order_responses.append(OrderListResponse(
             id=order.id,
             order_number=order.order_number,
@@ -243,7 +243,7 @@ async def get_pending_orders(
         customer_name = None
         if order.customer:
             customer_name = order.customer.full_name or order.customer.email
-
+        
         order_responses.append(OrderListResponse(
             id=order.id,
             order_number=order.order_number,

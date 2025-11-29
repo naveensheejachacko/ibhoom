@@ -63,9 +63,9 @@ const ProductForm: React.FC = () => {
     meta_title: '',
     meta_description: '',
     images: [],
-    has_return_policy: true,
-    return_period_days: 30,
-    return_policy_description: 'Easy 30-day returns. Items must be in original condition with tags attached.'
+    has_return_policy: false,
+    return_period_days: 7,
+    return_policy_description: ''
   });
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -161,9 +161,9 @@ const ProductForm: React.FC = () => {
         meta_title: product.meta_title || '',
         meta_description: product.meta_description || '',
         images: product.images || [],
-        has_return_policy: product.has_return_policy !== undefined ? product.has_return_policy : true,
-        return_period_days: product.return_period_days || 30,
-        return_policy_description: product.return_policy_description || 'Easy 30-day returns. Items must be in original condition with tags attached.'
+        has_return_policy: product.has_return_policy !== undefined ? product.has_return_policy : false,
+        return_period_days: product.return_period_days || 7,
+        return_policy_description: product.return_policy_description || ''
       });
       
       // Load variants if they exist

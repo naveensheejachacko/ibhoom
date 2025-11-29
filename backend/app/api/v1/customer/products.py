@@ -537,6 +537,9 @@ async def get_product_details(
         "meta_title": product.meta_title,
         "meta_description": product.meta_description,
         "admin_notes": None,  # Admin notes not exposed to customers (stored in rejection_reason field)
+        "has_return_policy": product.has_return_policy,
+        "return_period_days": product.return_period_days,
+        "return_policy_description": product.return_policy_description,
         "created_at": product.created_at,
         "updated_at": product.updated_at,
         "images": product.images,

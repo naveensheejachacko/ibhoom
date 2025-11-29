@@ -406,50 +406,47 @@ def cancel_order(db: Session, order_id: str, admin_notes: Optional[str] = None) 
 
 
 def handle_return(db: Session, order_id: str, return_update) -> Optional[Order]:
-    """Handle return request (Admin only - approve, reject, or accept return completion)"""
+    """Handle return request (Admin only - approve, reject, pickup, receive)"""
     db_order = db.query(Order).filter(Order.id == order_id).first()
     if not db_order:
         return None
     
-    # Only return_requested orders can be processed
-    if db_order.status != OrderStatus.RETURN_REQUESTED:
-        raise ValueError(f"Can only process return from return_requested status, current: {db_order.status.value}")
+    current_status = db_order.status
+    new_status = return_update.status
     
-    # Validate return status
-    allowed_return_statuses = [
-        OrderStatus.RETURN_APPROVED,
-        OrderStatus.RETURN_REJECTED,
-        OrderStatus.RETURNED
-    ]
+    # Define valid status transitions
+    valid_transitions = {
+        OrderStatus.RETURN_REQUESTED: [OrderStatus.RETURN_APPROVED, OrderStatus.RETURN_REJECTED],
+        OrderStatus.RETURN_APPROVED: [OrderStatus.RETURN_PICKED_UP],
+        OrderStatus.RETURN_PICKED_UP: [OrderStatus.RETURN_RECEIVED]
+    }
     
-    if return_update.status not in allowed_return_statuses:
-        raise ValueError(f"Admin can only set return status to: {[s.value for s in allowed_return_statuses]}")
+    # Check if the transition is valid
+    if current_status not in valid_transitions:
+        raise ValueError(f"Cannot update return status from current status: {current_status.value}")
     
-    # Can approve or reject from return_requested
-    if return_update.status in [OrderStatus.RETURN_APPROVED, OrderStatus.RETURN_REJECTED]:
-        db_order.status = return_update.status
-        if return_update.return_notes:
-            db_order.return_notes = return_update.return_notes
+    if new_status not in valid_transitions[current_status]:
+        allowed = [s.value for s in valid_transitions[current_status]]
+        raise ValueError(f"From status '{current_status.value}', can only transition to: {allowed}")
     
-    # Can mark as returned from return_approved
-    elif return_update.status == OrderStatus.RETURNED:
-        if db_order.status != OrderStatus.RETURN_APPROVED:
-            raise ValueError(f"Can only mark as returned from return_approved status, current: {db_order.status.value}")
-        
-        db_order.status = OrderStatus.RETURNED
-        if return_update.return_notes:
-            db_order.return_notes = return_update.return_notes
+    # Update the status
+    db_order.status = new_status
     
-        # Restore stock when return is completed
-    for item in db_order.items:
-        if item.product_variant_id:
-            variant = db.query(ProductVariant).filter(ProductVariant.id == item.product_variant_id).first()
-            if variant:
-                variant.stock_quantity += item.quantity
-        else:
-            product = db.query(Product).filter(Product.id == item.product_id).first()
-            if product:
-                product.stock_quantity += item.quantity
+    # Update return notes if provided
+    if return_update.return_notes:
+        db_order.return_notes = return_update.return_notes
+    
+    # Restore stock when return is received (item verified)
+    if new_status == OrderStatus.RETURN_RECEIVED:
+        for item in db_order.items:
+            if item.product_variant_id:
+                variant = db.query(ProductVariant).filter(ProductVariant.id == item.product_variant_id).first()
+                if variant:
+                    variant.stock_quantity += item.quantity
+            else:
+                product = db.query(Product).filter(Product.id == item.product_id).first()
+                if product:
+                    product.stock_quantity += item.quantity
     
     db_order.updated_at = datetime.utcnow()
     

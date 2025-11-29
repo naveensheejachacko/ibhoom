@@ -379,7 +379,7 @@ async def request_return(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Return period ({product.return_period_days} days) has expired for product '{item.product_name}'"
-            )
+        )
     
     # Update order to return requested
     order.status = OrderStatus.RETURN_REQUESTED

@@ -8,20 +8,20 @@ from ..core.database import Base
 
 
 class OrderStatus(str, enum.Enum):
-    PENDING = "pending"                      # Initial status when order placed
-    REJECTED = "rejected"                    # Seller rejected the order
-    PROCESSING = "processing"                # Seller accepted, preparing order
-    READY_FOR_DISPATCH = "ready for dispatch" # Seller packed, ready to dispatch
-    DISPATCHED = "dispatched"                # Admin dispatched the order
-    DELIVERED = "delivered"                   # Admin marked as delivered
-    CANCELLED = "cancelled"                  # Cancelled by seller or admin
-    RETURN_REQUESTED = "return requested"    # Customer requested return
-    RETURN_APPROVED = "return approved"      # Admin approved return
-    RETURN_REJECTED = "return rejected"      # Admin rejected return
-    RETURN_PICKED_UP = "return picked up"    # Return item picked up
-    RETURN_RECEIVED = "return received"      # Return item received and verified
-    REFUND_PROCESSING = "refund processing"  # Refund being processed
-    REFUND_COMPLETED = "refund completed"    # Refund completed successfully
+    PENDING = "PENDING"                      # Initial status when order placed
+    REJECTED = "REJECTED"                    # Seller rejected the order
+    PROCESSING = "PROCESSING"                # Seller accepted, preparing order
+    READY_FOR_DISPATCH = "READY_FOR_DISPATCH" # Seller packed, ready to dispatch
+    DISPATCHED = "DISPATCHED"                # Admin dispatched the order
+    DELIVERED = "DELIVERED"                   # Admin marked as delivered
+    CANCELLED = "CANCELLED"                  # Cancelled by seller or admin
+    RETURN_REQUESTED = "RETURN_REQUESTED"    # Customer requested return
+    RETURN_APPROVED = "RETURN_APPROVED"      # Admin approved return
+    RETURN_REJECTED = "RETURN_REJECTED"      # Admin rejected return
+    RETURN_PICKED_UP = "RETURN_PICKED_UP"    # Return item picked up
+    RETURN_RECEIVED = "RETURN_RECEIVED"      # Return item received and verified
+    REFUND_PROCESSING = "REFUND_PROCESSING"  # Refund being processed
+    REFUND_COMPLETED = "REFUND_COMPLETED"    # Refund completed successfully
 
 
 class PaymentStatus(str, enum.Enum):

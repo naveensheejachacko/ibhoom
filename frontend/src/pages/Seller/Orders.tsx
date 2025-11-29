@@ -55,27 +55,46 @@ const Orders: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'processing': return 'bg-blue-100 text-blue-800';
-      case 'ready for dispatch': return 'bg-purple-100 text-purple-800';
-      case 'dispatched': return 'bg-indigo-100 text-indigo-800';
-      case 'delivered': return 'bg-green-100 text-green-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
+      case 'PENDING': return 'bg-yellow-100 text-yellow-800';
+      case 'REJECTED': return 'bg-red-100 text-red-800';
+      case 'PROCESSING': return 'bg-blue-100 text-blue-800';
+      case 'READY_FOR_DISPATCH': return 'bg-purple-100 text-purple-800';
+      case 'DISPATCHED': return 'bg-indigo-100 text-indigo-800';
+      case 'DELIVERED': return 'bg-green-100 text-green-800';
+      case 'CANCELLED': return 'bg-red-100 text-red-800';
+      case 'RETURN_REQUESTED': return 'bg-orange-100 text-orange-800';
+      case 'RETURN_APPROVED': return 'bg-teal-100 text-teal-800';
+      case 'RETURN_REJECTED': return 'bg-red-100 text-red-800';
+      case 'RETURN_PICKED_UP': return 'bg-purple-100 text-purple-800';
+      case 'RETURN_RECEIVED': return 'bg-blue-100 text-blue-800';
+      case 'REFUND_PROCESSING': return 'bg-yellow-100 text-yellow-800';
+      case 'REFUND_COMPLETED': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'pending': return <Clock className="w-4 h-4" />;
-      case 'processing': return <Package className="w-4 h-4" />;
-      case 'ready for dispatch': return <Package className="w-4 h-4" />;
-      case 'dispatched': return <CheckCircle className="w-4 h-4" />;
-      case 'delivered': return <CheckCircle className="w-4 h-4" />;
-      case 'cancelled': return <X className="w-4 h-4" />;
+      case 'PENDING': return <Clock className="w-4 h-4" />;
+      case 'REJECTED': return <X className="w-4 h-4" />;
+      case 'PROCESSING': return <Package className="w-4 h-4" />;
+      case 'READY_FOR_DISPATCH': return <Package className="w-4 h-4" />;
+      case 'DISPATCHED': return <CheckCircle className="w-4 h-4" />;
+      case 'DELIVERED': return <CheckCircle className="w-4 h-4" />;
+      case 'CANCELLED': return <X className="w-4 h-4" />;
+      case 'RETURN_REQUESTED': return <Package className="w-4 h-4" />;
+      case 'RETURN_APPROVED': return <CheckCircle className="w-4 h-4" />;
+      case 'RETURN_REJECTED': return <X className="w-4 h-4" />;
+      case 'RETURN_PICKED_UP': return <Package className="w-4 h-4" />;
+      case 'RETURN_RECEIVED': return <CheckCircle className="w-4 h-4" />;
+      case 'REFUND_PROCESSING': return <Clock className="w-4 h-4" />;
+      case 'REFUND_COMPLETED': return <CheckCircle className="w-4 h-4" />;
       default: return <Clock className="w-4 h-4" />;
     }
+  };
+
+  const formatStatus = (status: string) => {
+    return status.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
   const filteredOrders = orders.filter(order => {
@@ -199,7 +218,7 @@ const Orders: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
                         {getStatusIcon(order.status)}
-                        {order.status}
+                        {formatStatus(order.status)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-500">

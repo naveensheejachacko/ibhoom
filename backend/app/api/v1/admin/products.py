@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from datetime import datetime
 from ....core.database import get_db
 from ....core.dependencies import get_admin_user
 from ....models.user import User
@@ -82,6 +83,7 @@ async def get_all_products(
             "commission_rate": float(product.commission_rate),
             "stock_quantity": product.stock_quantity,
             "status": product.status,
+            "is_newly_arrived": product.is_newly_arrived,
             "created_at": product.created_at,
             "images": product.images,
             "seller_name": seller_name,
@@ -141,6 +143,7 @@ async def get_pending_products(
             "commission_rate": float(product.commission_rate),
             "stock_quantity": product.stock_quantity,
             "status": product.status,
+            "is_newly_arrived": product.is_newly_arrived,
             "created_at": product.created_at,
             "images": product.images,
             "seller_name": seller_name,
@@ -199,6 +202,27 @@ async def recalculate_product_commission(
     if not updated_product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
     return updated_product
+
+
+@router.put("/{product_id}/toggle-newly-arrived", response_model=ProductResponse)
+async def toggle_newly_arrived(
+    product_id: str,
+    is_newly_arrived: bool,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_admin_user)
+):
+    """Toggle newly arrived status for a product (Admin only)"""
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+    
+    product.is_newly_arrived = is_newly_arrived
+    product.updated_at = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(product)
+    
+    return product
 
 
 @router.delete("/{product_id}")

@@ -54,6 +54,8 @@ export interface Product {
   has_return_policy?: boolean;
   return_period_days?: number;
   return_policy_description?: string;
+  // Newly Arrived (Admin only)
+  is_newly_arrived?: boolean;
   created_at: string;
   updated_at: string;
   category?: Category;

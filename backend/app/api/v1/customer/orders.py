@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Form, File, UploadFile
 from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import datetime
 from pathlib import Path
 import logging
+import json
 from ....core.database import get_db
 from ....core.dependencies import get_customer_user
 from ....models.user import User
@@ -13,6 +14,7 @@ from ....models.product import Product, ProductVariant, ProductImage
 from ....schemas.order import OrderCreate, OrderResponse, OrderListResponse, OrderListItemResponse, OrderItemResponse, ReturnRequest
 from ....schemas.pagination import PaginatedResponse
 from ....services import order_service
+from ....utils.return_image_service import save_return_images, json_to_images
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -94,6 +96,9 @@ async def create_order(
                 product_image=product_image
             ))
         
+        # Parse return images for response
+        return_images_list = json_to_images(db_order.return_images) if db_order.return_images else None
+        
         # Return properly constructed response
         return OrderResponse(
             id=db_order.id,
@@ -115,7 +120,9 @@ async def create_order(
             admin_notes=db_order.admin_notes,
             seller_notes=db_order.seller_notes,
             return_reason=db_order.return_reason,
+            return_images=return_images_list,
             return_notes=db_order.return_notes,
+            return_requested_at=db_order.return_requested_at,
             created_at=db_order.created_at,
             updated_at=db_order.updated_at,
             items=items_with_details
@@ -299,6 +306,9 @@ async def get_my_order(
             product_image=product_image
         ))
     
+    # Parse return images for response
+    return_images_list = json_to_images(order.return_images) if order.return_images else None
+    
     # Create order response with enhanced items
     return OrderResponse(
         id=order.id,
@@ -320,7 +330,9 @@ async def get_my_order(
         admin_notes=order.admin_notes,
         seller_notes=order.seller_notes,
         return_reason=order.return_reason,
+        return_images=return_images_list,
         return_notes=order.return_notes,
+        return_requested_at=order.return_requested_at,
         created_at=order.created_at,
         updated_at=order.updated_at,
         items=items_with_details
@@ -330,11 +342,17 @@ async def get_my_order(
 @router.post("/{order_id}/return", response_model=OrderResponse)
 async def request_return(
     order_id: str,
-    return_request: ReturnRequest,
+    return_reason: str = Form(..., description="Reason for return"),
+    images: Optional[List[UploadFile]] = File(None, description="Optional return images (max 5)"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_customer_user)
 ):
-    """Request return for an order (Customer only)"""
+    """
+    Request return for an order with optional images (Customer only)
+    
+    - **return_reason**: Required reason for return
+    - **images**: Optional list of images (max 5 images, 5MB each)
+    """
     from ....services import order_service
     from datetime import timedelta
     
@@ -381,16 +399,109 @@ async def request_return(
                 detail=f"Return period ({product.return_period_days} days) has expired for product '{item.product_name}'"
         )
     
+    # Handle image uploads
+    return_images_json = None
+    if images:
+        try:
+            # Filter out None values (in case some files are not provided)
+            image_files = [img for img in images if img is not None]
+            if image_files:
+                saved_paths = await save_return_images(image_files, max_files=5)
+                return_images_json = json.dumps(saved_paths)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e)
+            )
+        except Exception as e:
+            logger.error(f"Error saving return images: {str(e)}", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to save return images"
+        )
+    
     # Update order to return requested
     order.status = OrderStatus.RETURN_REQUESTED
-    order.return_reason = return_request.return_reason
+    order.return_reason = return_reason
+    order.return_images = return_images_json
     order.return_requested_at = datetime.utcnow()
     order.updated_at = datetime.utcnow()
     
     db.commit()
     db.refresh(order)
     
-    return order
+    # Build response with return images
+    items_with_details = []
+    for item in order.items:
+        product = item.product
+        variant = item.variant if item.product_variant_id else None
+        
+        # Get product image
+        primary_image = db.query(ProductImage).filter(
+            ProductImage.product_id == product.id,
+            ProductImage.is_primary == True
+        ).first()
+        
+        if not primary_image:
+            any_image = db.query(ProductImage).filter(
+                ProductImage.product_id == product.id
+            ).order_by(ProductImage.sort_order.asc()).first()
+            product_image = any_image.image_url if any_image else None
+        else:
+            product_image = primary_image.image_url
+        
+        items_with_details.append(OrderItemResponse(
+            id=item.id,
+            product_id=item.product_id,
+            product_variant_id=item.product_variant_id,
+            quantity=item.quantity,
+            seller_unit_price=float(item.seller_unit_price),
+            customer_unit_price=float(item.customer_unit_price),
+            commission_unit_rate=float(item.commission_unit_rate),
+            commission_unit_amount=float(item.commission_unit_amount),
+            total_seller_amount=float(item.total_seller_amount),
+            total_customer_amount=float(item.total_customer_amount),
+            total_commission_amount=float(item.total_commission_amount),
+            tax_rate=float(item.tax_rate),
+            tax_unit_amount=float(item.tax_unit_amount),
+            total_tax_amount=float(item.total_tax_amount),
+            final_unit_price=float(item.final_unit_price),
+            total_final_amount=float(item.total_final_amount),
+            product_name=item.product_name,
+            variant_name=variant.variant_name if variant else None,
+            product_image=product_image
+        ))
+    
+    # Parse return images for response
+    return_images_list = json_to_images(order.return_images) if order.return_images else None
+    
+    return OrderResponse(
+        id=order.id,
+        order_number=order.order_number,
+        customer_id=order.customer_id,
+        total_customer_amount=float(order.total_customer_amount),
+        total_seller_amount=float(order.total_seller_amount),
+        total_commission_amount=float(order.total_commission_amount),
+        total_tax_amount=float(order.total_tax_amount),
+        grand_total_amount=float(order.grand_total_amount),
+        status=order.status,
+        payment_status=order.payment_status,
+        delivery_address=order.delivery_address,
+        delivery_city=order.delivery_city,
+        delivery_state=order.delivery_state,
+        delivery_pincode=order.delivery_pincode,
+        phone=order.phone,
+        notes=order.notes,
+        admin_notes=order.admin_notes,
+        seller_notes=order.seller_notes,
+        return_reason=order.return_reason,
+        return_images=return_images_list,
+        return_notes=order.return_notes,
+        return_requested_at=order.return_requested_at,
+        created_at=order.created_at,
+        updated_at=order.updated_at,
+        items=items_with_details
+    )
 
 
 @router.get("/{order_id}/invoice")

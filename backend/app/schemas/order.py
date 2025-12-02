@@ -97,6 +97,7 @@ class OrderResponse(OrderBase):
     admin_notes: Optional[str] = None
     seller_notes: Optional[str] = None
     return_reason: Optional[str] = None
+    return_images: Optional[List[str]] = None  # List of return image URLs
     return_notes: Optional[str] = None
     return_requested_at: Optional[datetime] = None
     refund_amount: Optional[float] = None
@@ -163,6 +164,7 @@ class SellerOrderStatusUpdate(BaseModel):
 
 class ReturnRequest(BaseModel):
     return_reason: str
+    return_images: Optional[List[str]] = None  # List of image URLs
 
 
 class ReturnStatusUpdate(BaseModel):

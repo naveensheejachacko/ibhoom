@@ -22,6 +22,7 @@ interface ProductFormData {
   has_return_policy: boolean;
   return_period_days: number;
   return_policy_description: string;
+  is_newly_arrived: boolean;
 }
 
 interface ProductImage {
@@ -65,7 +66,8 @@ const ProductForm: React.FC = () => {
     images: [],
     has_return_policy: false,
     return_period_days: 7,
-    return_policy_description: ''
+    return_policy_description: '',
+    is_newly_arrived: false
   });
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -163,7 +165,8 @@ const ProductForm: React.FC = () => {
         images: product.images || [],
         has_return_policy: product.has_return_policy !== undefined ? product.has_return_policy : false,
         return_period_days: product.return_period_days || 7,
-        return_policy_description: product.return_policy_description || ''
+        return_policy_description: product.return_policy_description || '',
+        is_newly_arrived: product.is_newly_arrived || false
       });
       
       // Load variants if they exist
@@ -736,6 +739,28 @@ const ProductForm: React.FC = () => {
               </>
             )}
           </div>
+        </div>
+
+        {/* Newly Arrived */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium text-secondary-900">Product Visibility</h3>
+          
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="is_newly_arrived"
+              checked={formData.is_newly_arrived}
+              onChange={(e) => setFormData({ ...formData, is_newly_arrived: e.target.checked })}
+              className="w-4 h-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500"
+            />
+            <label htmlFor="is_newly_arrived" className="text-sm font-medium text-secondary-700">
+              Mark as Newly Arrived
+            </label>
+          </div>
+          <p className="text-xs text-secondary-600 ml-7">
+            This product will appear in the "Newly Arrived" section for customers. 
+            Note: Admin can also mark this during approval.
+          </p>
         </div>
 
         {/* Product Images */}

@@ -119,6 +119,7 @@ class ProductBase(BaseModel):
     has_return_policy: bool = False  # Whether product allows returns
     return_period_days: int = 7  # Number of days for return
     return_policy_description: Optional[str] = None  # Details about return policy
+    # Note: is_newly_arrived is NOT in ProductBase - only admins can set it during approval
     
     @validator('seller_price')
     def validate_seller_price(cls, v):
@@ -158,6 +159,7 @@ class ProductUpdate(BaseModel):
     has_return_policy: Optional[bool] = None
     return_period_days: Optional[int] = None
     return_policy_description: Optional[str] = None
+    is_newly_arrived: Optional[bool] = None  # Mark product as newly arrived
     
     @validator('seller_price')
     def validate_seller_price(cls, v):
@@ -196,6 +198,7 @@ class ProductResponse(BaseModel):
     has_return_policy: bool = False
     return_period_days: int = 7
     return_policy_description: Optional[str] = None
+    is_newly_arrived: bool = False
     created_at: datetime
     updated_at: datetime
     images: List[ProductImageResponse] = []
@@ -220,6 +223,7 @@ class ProductListResponse(BaseModel):
     commission_rate: float
     stock_quantity: int
     status: ProductStatus
+    is_newly_arrived: bool = False
     created_at: datetime
     images: List[ProductImageResponse] = []
     seller_name: Optional[str] = None
@@ -236,6 +240,7 @@ class ProductApprovalUpdate(BaseModel):
     admin_notes: Optional[str] = None  # This will be stored in rejection_reason field
     commission_rate: Optional[float] = None
     tax_rate: Optional[float] = None
+    is_newly_arrived: Optional[bool] = None  # Mark product as newly arrived
     
     @validator('tax_rate')
     def validate_tax_rate(cls, v):

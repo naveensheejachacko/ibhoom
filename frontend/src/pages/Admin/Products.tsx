@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Eye, Check, X, Search, Filter, Ban, Trash2, AlertTriangle } from 'lucide-react';
+import { Package, Eye, Check, X, Search, Filter, Ban, Trash2, AlertTriangle, Sparkles } from 'lucide-react';
 import { adminApi } from '../../lib/api';
 import Pagination from '../../components/Pagination';
 import { Product } from '../../types/api';
@@ -12,9 +12,11 @@ interface ProductCardProps {
   onBlock: (product: Product) => void;
   onUnblock: (product: Product) => void;
   onDelete: (product: Product) => void;
+  onToggleNewlyArrived?: (product: Product, isNewlyArrived: boolean) => void;
+  isToggling?: boolean;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onApprove, onReject, onView, onBlock, onUnblock, onDelete }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, onApprove, onReject, onView, onBlock, onUnblock, onDelete, onToggleNewlyArrived, isToggling }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
@@ -29,7 +31,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onApprove, onReject,
     <div className="card p-6">
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
-          <h3 className="font-semibold text-secondary-900 mb-2">{product.name}</h3>
+          <div className="flex items-center gap-2 mb-2">
+            <h3 className="font-semibold text-secondary-900">{product.name}</h3>
+            {product.is_newly_arrived && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <Sparkles className="w-3 h-3 mr-1" />
+                Newly Arrived
+              </span>
+            )}
+          </div>
           <p className="text-sm text-secondary-600 mb-2">
             by {product.seller_name || product.seller?.first_name} {product.seller?.last_name || ''} ({product.seller_email || product.seller?.user?.email || ''})
           </p>
@@ -63,7 +73,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onApprove, onReject,
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center space-x-2 flex-wrap">
         <button
           onClick={() => onView(product)}
           className="flex items-center space-x-2 text-primary-600 hover:text-primary-700"
@@ -73,7 +83,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onApprove, onReject,
         </button>
 
         {product.status === 'pending' && (
-          <div className="flex space-x-2">
+          <>
             <button
               onClick={() => onReject(product)}
               className="flex items-center space-x-1 px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
@@ -88,11 +98,25 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onApprove, onReject,
               <Check className="w-4 h-4" />
               <span className="text-sm">Approve</span>
             </button>
-          </div>
+          </>
         )}
 
         {product.status === 'approved' && (
-          <div className="flex space-x-2">
+          <>
+            {onToggleNewlyArrived && (
+              <button
+                onClick={() => onToggleNewlyArrived(product, !product.is_newly_arrived)}
+                disabled={isToggling}
+                className={`flex items-center space-x-1 px-3 py-1 rounded-lg text-sm transition-colors ${
+                  product.is_newly_arrived
+                    ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                } ${isToggling ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <Sparkles className="w-4 h-4" />
+                <span className="text-sm">{product.is_newly_arrived ? 'Remove from New Arrivals' : 'Mark as New Arrival'}</span>
+              </button>
+            )}
             <button
               onClick={() => onBlock(product)}
               className="flex items-center space-x-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors"
@@ -107,11 +131,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onApprove, onReject,
               <Trash2 className="w-4 h-4" />
               <span className="text-sm">Delete</span>
             </button>
-          </div>
+          </>
         )}
 
         {product.status === 'blocked' && (
-          <div className="flex space-x-2">
+          <>
             <button
               onClick={() => onUnblock(product)}
               className="flex items-center space-x-1 px-3 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
@@ -126,7 +150,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onApprove, onReject,
               <Trash2 className="w-4 h-4" />
               <span className="text-sm">Delete</span>
             </button>
-          </div>
+          </>
         )}
       </div>
     </div>
@@ -144,6 +168,7 @@ const Products: React.FC = () => {
   const [actionNotes, setActionNotes] = useState('');
   const [commissionRate, setCommissionRate] = useState(0);
   const [taxRate, setTaxRate] = useState(18);
+  const [isNewlyArrived, setIsNewlyArrived] = useState(false);
   const [modalAction, setModalAction] = useState<'approve' | 'reject' | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -208,6 +233,7 @@ const Products: React.FC = () => {
     setModalAction('approve');
     setCommissionRate(product.commission_rate);
     setTaxRate(product.tax_rate || 18);
+    setIsNewlyArrived(product.is_newly_arrived || false);
     setActionNotes('');
     setShowModal(true);
   };
@@ -230,13 +256,15 @@ const Products: React.FC = () => {
         status,
         admin_notes: actionNotes,
         commission_rate: commissionRate,
-        tax_rate: taxRate
+        tax_rate: taxRate,
+        is_newly_arrived: modalAction === 'approve' ? isNewlyArrived : undefined
       });
       
       setShowModal(false);
       setActionNotes('');
       setCommissionRate(0);
       setTaxRate(18);
+      setIsNewlyArrived(false);
       setSelectedProduct(null);
       setModalAction(null);
       fetchProducts();
@@ -284,6 +312,21 @@ const Products: React.FC = () => {
       } catch (error) {
         console.error('Error unblocking product:', error);
       }
+    }
+  };
+
+  const [togglingNewlyArrived, setTogglingNewlyArrived] = useState<string | null>(null);
+
+  const handleToggleNewlyArrived = async (product: Product, isNewlyArrived: boolean) => {
+    setTogglingNewlyArrived(product.id);
+    try {
+      await adminApi.toggleNewlyArrived(product.id, isNewlyArrived);
+      fetchProducts();
+    } catch (error: any) {
+      console.error('Error toggling newly arrived:', error);
+      alert(error.response?.data?.detail || 'Failed to update newly arrived status');
+    } finally {
+      setTogglingNewlyArrived(null);
     }
   };
 
@@ -370,6 +413,8 @@ const Products: React.FC = () => {
               onBlock={handleBlock}
               onUnblock={handleUnblock}
               onDelete={handleDelete}
+              onToggleNewlyArrived={handleToggleNewlyArrived}
+              isToggling={togglingNewlyArrived === product.id}
             />
           ))}
           </div>
@@ -434,6 +479,23 @@ const Products: React.FC = () => {
                   />
                   <p className="text-xs text-secondary-500 mt-1">
                     Current rate: {selectedProduct.tax_rate || 18}% (Default: 18%)
+                  </p>
+                </div>
+                <div className="mb-4">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={isNewlyArrived}
+                      onChange={(e) => setIsNewlyArrived(e.target.checked)}
+                      className="rounded"
+                    />
+                    <span className="text-sm font-medium text-secondary-700 flex items-center">
+                      <Sparkles className="w-4 h-4 mr-1" />
+                      Mark as Newly Arrived
+                    </span>
+                  </label>
+                  <p className="text-xs text-secondary-500 mt-1 ml-6">
+                    This product will appear in the "Newly Arrived" section for customers
                   </p>
                 </div>
               </>

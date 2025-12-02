@@ -250,6 +250,11 @@ export const adminApi = {
     const response = await api.delete(`/api/v1/admin/products/${id}`);
     return response.data;
   },
+
+  toggleNewlyArrived: async (id: string, isNewlyArrived: boolean) => {
+    const response = await api.put(`/api/v1/admin/products/${id}/toggle-newly-arrived?is_newly_arrived=${isNewlyArrived}`);
+    return response.data;
+  },
   
   // Users
   getUsers: async (params?: any) => {

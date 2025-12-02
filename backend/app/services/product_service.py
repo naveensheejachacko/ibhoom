@@ -90,7 +90,8 @@ def create_product(db: Session, product: ProductCreate, seller_id: str) -> Produ
         meta_title=product.meta_title,
         meta_description=product.meta_description,
         status=ProductStatus.PENDING,
-        tax_rate=default_tax_rate
+        tax_rate=default_tax_rate,
+        is_newly_arrived=False  # Always False on creation - only admin can set during approval
     )
     
     db.add(db_product)
@@ -258,6 +259,10 @@ def update_product(db: Session, product_id: str, product_update: ProductUpdate, 
     
     update_data = product_update.dict(exclude_unset=True)
     
+    # Prevent sellers from setting is_newly_arrived (admin only)
+    if seller_id and "is_newly_arrived" in update_data:
+        raise ValueError("Sellers cannot mark products as newly arrived. Only admins can set this during approval.")
+    
     # Handle slug regeneration if name changed
     if "name" in update_data:
         base_slug = generate_slug(update_data["name"])
@@ -283,8 +288,13 @@ def update_product(db: Session, product_id: str, product_update: ProductUpdate, 
         update_data["customer_price"] = commission_calc.customer_price
     
     # Reset status to pending if product details changed (except for admin updates)
+    # Don't reset status for metadata-only updates like tags, meta fields
+    # Note: is_newly_arrived is admin-only, so it's not in metadata_fields for sellers
+    metadata_fields = {"tags", "meta_title", "meta_description", "has_return_policy", "return_period_days", "return_policy_description"}
     if seller_id and any(key in update_data for key in ["name", "description", "category_id", "seller_price"]):
-        update_data["status"] = ProductStatus.PENDING
+        # Only reset if non-metadata fields changed
+        if not all(key in metadata_fields for key in update_data.keys()):
+            update_data["status"] = ProductStatus.PENDING
     
     update_data["updated_at"] = datetime.utcnow()
     
@@ -306,6 +316,10 @@ def approve_product(db: Session, product_id: str, approval: ProductApprovalUpdat
     db_product.status = approval.status
     db_product.rejection_reason = approval.admin_notes
     db_product.updated_at = datetime.utcnow()
+    
+    # Update is_newly_arrived if provided
+    if approval.is_newly_arrived is not None:
+        db_product.is_newly_arrived = approval.is_newly_arrived
     
     # Ensure tax rate is set during approval
     tax_rate_value = approval.tax_rate

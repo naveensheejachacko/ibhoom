@@ -136,6 +136,7 @@ async def get_all_products(
             "commission_rate": float(product.commission_rate),
             "stock_quantity": product.stock_quantity,
             "status": product.status,
+            "is_newly_arrived": product.is_newly_arrived,
             "created_at": product.created_at,
             "images": product.images,
             "seller_name": seller_name,
@@ -166,20 +167,18 @@ async def get_newly_arrived_products(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_customer_user)
 ):
-    """Get newly arrived products (Customer only) - Products added in last 7 days"""
+    """Get newly arrived products (Customer only) - Products marked as newly arrived by sellers"""
     # Calculate skip from page if not provided
     if skip is None:
         skip = (page - 1) * limit
     
-    from datetime import datetime, timedelta
-    seven_days_ago = datetime.utcnow() - timedelta(days=7)
-    
     # Query products with eager loading of seller and user relationships
+    # Filter by is_newly_arrived flag set by sellers
     query = db.query(Product).options(
         joinedload(Product.seller).joinedload(Seller.user)
     ).filter(
         Product.status == ProductStatus.APPROVED,
-        Product.created_at >= seven_days_ago
+        Product.is_newly_arrived == True
     )
     
     # Get total count before pagination
@@ -212,6 +211,7 @@ async def get_newly_arrived_products(
             "commission_rate": float(product.commission_rate),
             "stock_quantity": product.stock_quantity,
             "status": product.status,
+            "is_newly_arrived": product.is_newly_arrived,
             "created_at": product.created_at,
             "images": product.images,
             "seller_name": seller_name,
@@ -323,6 +323,7 @@ async def get_products_by_category(
             "commission_rate": float(product.commission_rate),
             "stock_quantity": product.stock_quantity,
             "status": product.status,
+            "is_newly_arrived": product.is_newly_arrived,
             "created_at": product.created_at,
             "images": product.images,
             "seller_name": seller_name,
@@ -437,6 +438,7 @@ async def get_products_by_seller(
             "commission_rate": float(product.commission_rate),
             "stock_quantity": product.stock_quantity,
             "status": product.status,
+            "is_newly_arrived": product.is_newly_arrived,
             "created_at": product.created_at,
             "images": product.images,
             "seller_name": seller.business_name,
@@ -540,6 +542,7 @@ async def get_product_details(
         "has_return_policy": product.has_return_policy,
         "return_period_days": product.return_period_days,
         "return_policy_description": product.return_policy_description,
+        "is_newly_arrived": product.is_newly_arrived,
         "created_at": product.created_at,
         "updated_at": product.updated_at,
         "images": product.images,

@@ -96,8 +96,10 @@ async def create_order(
                 product_image=product_image
             ))
         
-        # Parse return images for response
-        return_images_list = json_to_images(db_order.return_images) if db_order.return_images else None
+        # Parse return images for response (handle case where column might not exist yet)
+        return_images_list = None
+        if hasattr(db_order, 'return_images') and db_order.return_images:
+            return_images_list = json_to_images(db_order.return_images)
         
         # Return properly constructed response
         return OrderResponse(
@@ -306,8 +308,10 @@ async def get_my_order(
             product_image=product_image
         ))
     
-    # Parse return images for response
-    return_images_list = json_to_images(order.return_images) if order.return_images else None
+    # Parse return images for response (handle case where column might not exist yet)
+    return_images_list = None
+    if hasattr(order, 'return_images') and order.return_images:
+        return_images_list = json_to_images(order.return_images)
     
     # Create order response with enhanced items
     return OrderResponse(
@@ -472,8 +476,10 @@ async def request_return(
             product_image=product_image
         ))
     
-    # Parse return images for response
-    return_images_list = json_to_images(order.return_images) if order.return_images else None
+    # Parse return images for response (handle case where column might not exist yet)
+    return_images_list = None
+    if hasattr(order, 'return_images') and order.return_images:
+        return_images_list = json_to_images(order.return_images)
     
     return OrderResponse(
         id=order.id,

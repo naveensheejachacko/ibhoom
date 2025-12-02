@@ -53,6 +53,7 @@ class Order(Base):
     admin_notes = Column(Text)
     seller_notes = Column(Text)  # Seller's notes (for rejections, etc.)
     return_reason = Column(Text)  # Customer's reason for return
+    return_images = Column(Text, nullable=True)  # JSON array of return image URLs
     return_notes = Column(Text)   # Admin's notes for return processing
     return_requested_at = Column(DateTime)  # When return was requested
     refund_amount = Column(DECIMAL(10, 2))  # Amount refunded

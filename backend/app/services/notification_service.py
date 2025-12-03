@@ -173,9 +173,9 @@ class NotificationService:
                 # Wrap in try-except and ensure it doesn't affect the main transaction
                 try:
                     from ..services.firebase_service import FirebaseService
-                    # Use a fresh session state - rollback any partial state first
+                    # Use a fresh session state - expire all objects to reset state
                     try:
-                        db.rollback()
+                        db.expire_all()
                     except:
                         pass
                     
@@ -194,9 +194,9 @@ class NotificationService:
                         results["admin_fcm_sent"] = True
                         logger.info(f"Firebase notification sent to admin for order {order.order_number}")
                 except Exception as fcm_error:
-                    # Rollback any partial transaction state
+                    # Reset session state if there was an error
                     try:
-                        db.rollback()
+                        db.expire_all()
                     except:
                         pass
                     logger.warning(f"Failed to send Firebase notification to admin: {str(fcm_error)}")
@@ -239,9 +239,9 @@ class NotificationService:
                     # Wrap in try-except and ensure it doesn't affect the main transaction
                     try:
                         from ..services.firebase_service import FirebaseService
-                        # Use a fresh session state - rollback any partial state first
+                        # Use a fresh session state - expire all objects to reset state
                         try:
-                            db.rollback()
+                            db.expire_all()
                         except:
                             pass
                         
@@ -260,9 +260,9 @@ class NotificationService:
                             results["sellers_fcm_sent"][seller_user_id] = True
                             logger.info(f"Firebase notification sent to seller {seller_user_id} for order {order.order_number}")
                     except Exception as fcm_error:
-                        # Rollback any partial transaction state
+                        # Reset session state if there was an error
                         try:
-                            db.rollback()
+                            db.expire_all()
                         except:
                             pass
                         logger.warning(f"Failed to send Firebase notification to seller {seller_user_id}: {str(fcm_error)}")

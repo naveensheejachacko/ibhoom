@@ -195,8 +195,9 @@ def create_order(db: Session, order: OrderCreate, customer_id: str) -> Order:
     except Exception as e:
         # Log error but don't fail order creation
         logger.warning(f"Failed to clear cart for customer {customer_id} after order {order_number}: {str(e)}")
-        # Reset session state to ensure clean state for next operations
+        # Rollback any failed transaction and reset session state
         try:
+            db.rollback()
             db.expire_all()
         except:
             pass
@@ -213,8 +214,9 @@ def create_order(db: Session, order: OrderCreate, customer_id: str) -> Order:
     except Exception as e:
         # Log error but don't fail order creation
         logger.error(f"Failed to send notifications for order {order_number}: {str(e)}")
-        # Reset session state to ensure clean state for next operations
+        # Rollback any failed transaction and reset session state
         try:
+            db.rollback()
             db.expire_all()
         except:
             pass
@@ -227,9 +229,10 @@ def create_order(db: Session, order: OrderCreate, customer_id: str) -> Order:
             joinedload(Order.items)
         ).filter(Order.id == order_id).first()
     except Exception as query_error:
-        # If query fails due to transaction state, reset and try again
-        logger.warning(f"First query attempt failed: {query_error}, resetting session and retrying...")
-        db.expire_all()
+        # If query fails due to transaction state, rollback and try again
+        logger.warning(f"First query attempt failed: {query_error}, rolling back and retrying...")
+        db.rollback()  # Rollback any failed transaction
+        db.expire_all()  # Clear session state
         db_order = db.query(Order).options(
             joinedload(Order.items)
         ).filter(Order.id == order_id).first()

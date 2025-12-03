@@ -39,9 +39,10 @@ async def create_order(
                 joinedload(Order.items).joinedload(OrderItem.variant)
             ).filter(Order.id == db_order.id).first()
         except Exception as reload_error:
-            # If reload fails due to transaction issues, reset session and try again
-            logger.warning(f"First reload attempt failed: {reload_error}, resetting session and retrying...")
-            db.expire_all()
+            # If reload fails due to transaction issues, rollback and try again
+            logger.warning(f"First reload attempt failed: {reload_error}, rolling back and retrying...")
+            db.rollback()  # Rollback any failed transaction
+            db.expire_all()  # Clear session state
             db_order = db.query(Order).options(
                 joinedload(Order.items).joinedload(OrderItem.product),
                 joinedload(Order.items).joinedload(OrderItem.variant)

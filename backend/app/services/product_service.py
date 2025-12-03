@@ -91,6 +91,9 @@ def create_product(db: Session, product: ProductCreate, seller_id: str) -> Produ
         meta_description=product.meta_description,
         status=ProductStatus.PENDING,
         tax_rate=default_tax_rate,
+        has_return_policy=product.has_return_policy,  # Set return policy from request
+        return_period_days=product.return_period_days,  # Set return period from request
+        return_policy_description=product.return_policy_description,  # Set return policy description from request
         is_newly_arrived=False  # Always False on creation - only admin can set during approval
     )
     

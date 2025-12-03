@@ -180,18 +180,24 @@ def create_order(db: Session, order: OrderCreate, customer_id: str) -> Order:
     order_id = db_order.id
     order_number = db_order.order_number
     
+    # Expire all objects to reset session state after commit
+    # This ensures clean state for subsequent operations
+    db.expire_all()
+    
     # Clear customer's cart after successful order creation
     # Use a separate try-except to ensure it doesn't affect the main transaction
     try:
         from ..services.cart_service import clear_cart
         cleared_count = clear_cart(db, customer_id)
         logger.info(f"Cleared {cleared_count} items from cart for customer {customer_id} after order {order_number}")
+        # Reset session state after cart clearing
+        db.expire_all()
     except Exception as e:
         # Log error but don't fail order creation
         logger.warning(f"Failed to clear cart for customer {customer_id} after order {order_number}: {str(e)}")
-        # Rollback any partial cart clearing, but order is already committed
+        # Reset session state to ensure clean state for next operations
         try:
-            db.rollback()
+            db.expire_all()
         except:
             pass
     
@@ -202,21 +208,31 @@ def create_order(db: Session, order: OrderCreate, customer_id: str) -> Order:
         notification_results = NotificationService.notify_order_placed(db, db_order)
         if notification_results.get("errors"):
             logger.warning(f"Some notifications failed for order {order_number}: {notification_results['errors']}")
+        # Reset session state after notifications
+        db.expire_all()
     except Exception as e:
         # Log error but don't fail order creation
         logger.error(f"Failed to send notifications for order {order_number}: {str(e)}")
-        # Ensure transaction is rolled back if notification caused issues
+        # Reset session state to ensure clean state for next operations
         try:
-            db.rollback()
+            db.expire_all()
         except:
             pass
     
     # Reload order with all relationships in a fresh query to avoid transaction issues
     # This ensures we have a clean session state
     from sqlalchemy.orm import joinedload
-    db_order = db.query(Order).options(
-        joinedload(Order.items)
-    ).filter(Order.id == order_id).first()
+    try:
+        db_order = db.query(Order).options(
+            joinedload(Order.items)
+        ).filter(Order.id == order_id).first()
+    except Exception as query_error:
+        # If query fails due to transaction state, reset and try again
+        logger.warning(f"First query attempt failed: {query_error}, resetting session and retrying...")
+        db.expire_all()
+        db_order = db.query(Order).options(
+            joinedload(Order.items)
+        ).filter(Order.id == order_id).first()
     
     if not db_order:
         # If reload fails, raise error - order was created but we can't retrieve it

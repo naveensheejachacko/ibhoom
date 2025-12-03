@@ -31,21 +31,11 @@ async def create_order(
         db_order = order_service.create_order(db, order, current_user.id)
         
         # Reload order with all relationships for response serialization
-        # Use a fresh query to ensure clean transaction state
-        # If previous query failed due to transaction issues, this will work
-        try:
-            db_order = db.query(Order).options(
-                joinedload(Order.items).joinedload(OrderItem.product),
-                joinedload(Order.items).joinedload(OrderItem.variant)
-            ).filter(Order.id == db_order.id).first()
-        except Exception as reload_error:
-            # If reload fails due to transaction issues, reset session and try again
-            logger.warning(f"First reload attempt failed: {reload_error}, resetting session and retrying...")
-            db.expire_all()
-            db_order = db.query(Order).options(
-                joinedload(Order.items).joinedload(OrderItem.product),
-                joinedload(Order.items).joinedload(OrderItem.variant)
-            ).filter(Order.id == db_order.id).first()
+        # The order_service already ensures clean transaction state
+        db_order = db.query(Order).options(
+            joinedload(Order.items).joinedload(OrderItem.product),
+            joinedload(Order.items).joinedload(OrderItem.variant)
+        ).filter(Order.id == db_order.id).first()
         
         if not db_order:
             raise HTTPException(

@@ -6,6 +6,7 @@ import SellerLayout from './components/Layout/SellerLayout';
 import Login from './components/Auth/Login';
 import SellerRegistration from './components/Auth/SellerRegistration';
 import AdminRegistration from './components/Auth/AdminRegistration';
+import TermsAndConditions from './pages/TermsAndConditions';
 
 // Admin Pages
 import AdminDashboard from './pages/Admin/Dashboard';
@@ -35,6 +36,7 @@ function App() {
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register/seller" element={<SellerRegistration />} />
+            <Route path="/terms" element={<TermsAndConditions />} />
             
             {/* Private Admin Setup Route - Not linked from anywhere */}
             <Route path="/admin-setup" element={<AdminRegistration />} />

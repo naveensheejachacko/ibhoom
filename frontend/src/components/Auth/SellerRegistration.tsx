@@ -37,6 +37,7 @@ const SellerRegistration: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const navigate = useNavigate();
 
@@ -91,6 +92,11 @@ const SellerRegistration: React.FC = () => {
 
     if (!formData.pincode) {
       setError('Pincode is required');
+      return false;
+    }
+
+    if (!acceptedTerms) {
+      setError('You must accept the Terms and Conditions to register');
       return false;
     }
 
@@ -407,10 +413,32 @@ const SellerRegistration: React.FC = () => {
             </div>
           </div>
 
+          <div className="flex items-start">
+            <div className="flex items-center h-5">
+              <input
+                id="accept-terms"
+                name="accept-terms"
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="w-4 h-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500"
+                required
+              />
+            </div>
+            <div className="ml-3 text-sm">
+              <label htmlFor="accept-terms" className="text-secondary-700">
+                I agree to the{' '}
+                <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-500 underline">
+                  Terms and Conditions
+                </a>
+              </label>
+            </div>
+          </div>
+
           <div>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !acceptedTerms}
               className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Creating Account...' : 'Create Seller Account'}

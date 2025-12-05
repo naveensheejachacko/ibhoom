@@ -303,12 +303,12 @@ async def update_order_status(
                 detail=f"Can only set to processing from pending status"
             )
     
-    # Can set to ready_for_dispatch from processing
+    # Can set to ready_for_dispatch from pending or processing
     elif status_update.status == OrderStatus.READY_FOR_DISPATCH:
-        if current_status != OrderStatus.PROCESSING:
+        if current_status not in [OrderStatus.PENDING, OrderStatus.PROCESSING]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Can only set to ready_for_dispatch from processing status"
+                detail=f"Can only set to ready_for_dispatch from pending or processing status"
             )
     
     # Update order status

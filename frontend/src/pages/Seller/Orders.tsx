@@ -35,7 +35,19 @@ const Orders: React.FC = () => {
         page: currentPage,
         limit: itemsPerPage,
       };
-      if (statusFilter) params.status = statusFilter;
+      if (statusFilter) {
+        // Convert status filter to uppercase with underscores (e.g., "ready for dispatch" -> "READY_FOR_DISPATCH")
+        const statusMap: { [key: string]: string } = {
+          'pending': 'PENDING',
+          'processing': 'PROCESSING',
+          'ready for dispatch': 'READY_FOR_DISPATCH',
+          'dispatched': 'DISPATCHED',
+          'delivered': 'DELIVERED',
+          'cancelled': 'CANCELLED',
+          'rejected': 'REJECTED'
+        };
+        params.status = statusMap[statusFilter.toLowerCase()] || statusFilter.toUpperCase().replace(/\s+/g, '_');
+      }
       if (activeSearchTerm) params.search = activeSearchTerm;
       const data = await sellerApi.getOrders(params);
       // Handle paginated response
@@ -57,8 +69,18 @@ const Orders: React.FC = () => {
 
   const handleStatusUpdate = async (orderId: string, newStatus: string, sellerNotes?: string) => {
     try {
+      // Convert status format: "ready for dispatch" -> "READY_FOR_DISPATCH"
+      const statusMap: { [key: string]: string } = {
+        'pending': 'PENDING',
+        'processing': 'PROCESSING',
+        'ready for dispatch': 'READY_FOR_DISPATCH',
+        'rejected': 'REJECTED',
+        'cancelled': 'CANCELLED'
+      };
+      const normalizedStatus = statusMap[newStatus.toLowerCase()] || newStatus.toUpperCase().replace(/\s+/g, '_');
+      
       await sellerApi.updateOrderStatus(orderId, { 
-        status: newStatus,
+        status: normalizedStatus,
         seller_notes: sellerNotes 
       });
       toast.show('Order status updated successfully', { type: 'success' });
@@ -362,13 +384,19 @@ const Orders: React.FC = () => {
               <div>
                 <h3 className="text-lg font-semibold text-secondary-900 mb-4">Update Status</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {selectedOrder.status === 'pending' ? (
+                  {selectedOrder.status?.toLowerCase() === 'pending' ? (
                     <>
                       <button
                         onClick={() => handleStatusUpdate(selectedOrder.id, 'processing')}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
                       >
                         Accept & Process
+                      </button>
+                      <button
+                        onClick={() => handleStatusUpdate(selectedOrder.id, 'ready for dispatch')}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
+                      >
+                        Ready for Dispatch
                       </button>
                       <button
                         onClick={() => handleStatusUpdate(selectedOrder.id, 'rejected')}
@@ -378,7 +406,7 @@ const Orders: React.FC = () => {
                       </button>
                     </>
                   ) : null}
-                  {selectedOrder.status === 'processing' ? (
+                  {selectedOrder.status?.toLowerCase() === 'processing' ? (
                     <button
                       onClick={() => handleStatusUpdate(selectedOrder.id, 'ready for dispatch')}
                       className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"

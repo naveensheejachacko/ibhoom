@@ -39,7 +39,26 @@ const Orders: React.FC = () => {
         page: currentPage,
         limit: itemsPerPage,
       };
-      if (statusFilter) params.status = statusFilter;
+      if (statusFilter) {
+        // Convert status filter to uppercase with underscores (e.g., "return received" -> "RETURN_RECEIVED")
+        const statusMap: { [key: string]: string } = {
+          'pending': 'PENDING',
+          'rejected': 'REJECTED',
+          'processing': 'PROCESSING',
+          'ready for dispatch': 'READY_FOR_DISPATCH',
+          'dispatched': 'DISPATCHED',
+          'delivered': 'DELIVERED',
+          'cancelled': 'CANCELLED',
+          'return requested': 'RETURN_REQUESTED',
+          'return approved': 'RETURN_APPROVED',
+          'return rejected': 'RETURN_REJECTED',
+          'return picked up': 'RETURN_PICKED_UP',
+          'return received': 'RETURN_RECEIVED',
+          'refund processing': 'REFUND_PROCESSING',
+          'refund completed': 'REFUND_COMPLETED'
+        };
+        params.status = statusMap[statusFilter.toLowerCase()] || statusFilter.toUpperCase().replace(/\s+/g, '_');
+      }
       if (paymentFilter) params.payment_status = paymentFilter;
       if (activeSearchTerm) params.search = activeSearchTerm;
       const data = await adminApi.getOrders(params);

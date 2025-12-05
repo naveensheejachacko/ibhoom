@@ -59,6 +59,9 @@ class OrderListItemResponse(BaseModel):
     total_tax_amount: float
     final_unit_price: float
     total_final_amount: float
+    has_return_policy: Optional[bool] = False  # Whether product allows returns
+    return_period_days: Optional[int] = None  # Return period in days
+    is_return_expired: Optional[bool] = None  # Whether return period has expired (None if not delivered or no return policy)
     
     class Config:
         from_attributes = True

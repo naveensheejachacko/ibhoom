@@ -170,6 +170,14 @@ export interface OrderListItem {
   quantity: number;
   customer_unit_price: number;
   total_customer_amount: number;
+  tax_rate?: number;
+  tax_unit_amount?: number;
+  total_tax_amount?: number;
+  final_unit_price?: number;
+  total_final_amount?: number;
+  has_return_policy?: boolean;  // Whether product allows returns
+  return_period_days?: number;  // Return period in days
+  is_return_expired?: boolean | null;  // Whether return period has expired (null if not delivered or no return policy)
 }
 
 export interface OrderItem {

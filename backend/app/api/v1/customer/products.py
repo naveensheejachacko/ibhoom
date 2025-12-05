@@ -366,15 +366,12 @@ async def get_products_by_seller(
     if skip is None:
         skip = (page - 1) * limit
     
-    # Verify seller exists and is approved
+    # Verify seller exists (no approval check - consistent with general product listing)
     seller = db.query(Seller).options(
         joinedload(Seller.user)
     ).filter(Seller.id == seller_id).first()
     if not seller:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Seller not found")
-    
-    if not seller.is_approved:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Seller not available")
     
     # Get products by seller
     query = db.query(Product).filter(

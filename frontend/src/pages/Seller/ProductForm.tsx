@@ -169,13 +169,23 @@ const ProductForm: React.FC = () => {
       // Load variants if they exist
       if (product.variants && product.variants.length > 0) {
         console.log('✅ Loading variants:', product.variants.length);
-        const loadedVariants = product.variants.map((v: any) => ({
-          variant_name: v.variant_name || '',
-          sku: v.sku || '',
-          seller_price: v.seller_price || 0,
-          stock_quantity: v.stock_quantity || 0,
-          attributes: {}
-        }));
+        const loadedVariants = product.variants.map((v: any) => {
+          // Reconstruct attributes object from variant attributes array
+          const attributesObj: { [key: string]: string } = {};
+          if (v.attributes && Array.isArray(v.attributes)) {
+            v.attributes.forEach((attr: any) => {
+              attributesObj[attr.attribute_id] = attr.attribute_value_id;
+            });
+          }
+          
+          return {
+            variant_name: v.variant_name || '',
+            sku: v.sku || '',
+            seller_price: v.seller_price || 0,
+            stock_quantity: v.stock_quantity || 0,
+            attributes: attributesObj
+          };
+        });
         setVariants(loadedVariants);
       }
     } catch (error) {
@@ -420,13 +430,26 @@ const ProductForm: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const productData = {
-        ...formData,
-        customer_price: calculateCustomerPrice(),
-        tags: JSON.stringify(formData.tags),
-        // If product has variants, set product stock to 0 (it's not used)
-        stock_quantity: variants.length > 0 ? 0 : formData.stock_quantity,
-        variants: variants.map(v => ({
+      if (isEdit) {
+        // For update: send only fields that ProductUpdate schema accepts, including variants
+        const updateData: any = {
+          name: formData.name,
+          description: formData.description,
+          short_description: formData.short_description,
+          sku: formData.sku,
+          category_id: formData.category_id,
+          seller_price: formData.seller_price,
+          stock_quantity: variants.length > 0 ? 0 : formData.stock_quantity,
+          tags: JSON.stringify(formData.tags),
+          meta_title: formData.meta_title,
+          meta_description: formData.meta_description,
+          has_return_policy: formData.has_return_policy,
+          return_period_days: formData.return_period_days,
+          return_policy_description: formData.return_policy_description
+        };
+        
+        // Include variants - send empty array if no variants, or the variants array
+        updateData.variants = variants.length > 0 ? variants.map(v => ({
           variant_name: v.variant_name,
           sku: v.sku,
           seller_price: v.seller_price,
@@ -435,13 +458,30 @@ const ProductForm: React.FC = () => {
             attribute_id: attrId,
             attribute_value_id: v.attributes[attrId]
           }))
-        }))
-      };
-
-      if (isEdit) {
-        await sellerApi.updateProduct(id, productData);
+        })) : [];
+        
+        await sellerApi.updateProduct(id, updateData);
         alert('Product updated successfully!');
       } else {
+        // For create: send all fields including variants
+        const productData = {
+          ...formData,
+          customer_price: calculateCustomerPrice(),
+          tags: JSON.stringify(formData.tags),
+          // If product has variants, set product stock to 0 (it's not used)
+          stock_quantity: variants.length > 0 ? 0 : formData.stock_quantity,
+          variants: variants.map(v => ({
+            variant_name: v.variant_name,
+            sku: v.sku,
+            seller_price: v.seller_price,
+            stock_quantity: v.stock_quantity,
+            attributes: Object.keys(v.attributes || {}).map(attrId => ({
+              attribute_id: attrId,
+              attribute_value_id: v.attributes[attrId]
+            }))
+          }))
+        };
+        
         await sellerApi.createProduct(productData);
         alert('Product created successfully! It will be reviewed by admin.');
       }

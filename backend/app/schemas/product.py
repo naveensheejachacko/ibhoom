@@ -85,8 +85,7 @@ class ProductVariantResponse(BaseModel):
     final_unit_price: Optional[float] = None  # Total unit price (customer_price + tax_amount)
     stock_quantity: int = 0
     is_active: bool = True
-    # Don't include attributes in response to avoid validation issues
-    # attributes: List[ProductVariantAttributeResponse] = []
+    attributes: Optional[List[ProductVariantAttributeResponse]] = []  # Include attributes for seller editing
     
     class Config:
         from_attributes = True
@@ -148,6 +147,8 @@ class ProductCreate(ProductBase):
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    short_description: Optional[str] = None
+    sku: Optional[str] = None
     category_id: Optional[str] = None
     seller_price: Optional[float] = None
     stock_quantity: Optional[int] = None
@@ -160,6 +161,7 @@ class ProductUpdate(BaseModel):
     return_period_days: Optional[int] = None
     return_policy_description: Optional[str] = None
     is_newly_arrived: Optional[bool] = None  # Mark product as newly arrived
+    variants: Optional[List[ProductVariantCreate]] = None  # Optional list of variants for update
     
     @validator('seller_price')
     def validate_seller_price(cls, v):

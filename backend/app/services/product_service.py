@@ -197,8 +197,11 @@ def create_product(db: Session, product: ProductCreate, seller_id: str) -> Produ
 
 
 def get_product(db: Session, product_id: str) -> Optional[Product]:
-    """Get product by ID"""
-    return db.query(Product).filter(Product.id == product_id).first()
+    """Get product by ID with variants and their attributes"""
+    from sqlalchemy.orm import joinedload
+    return db.query(Product).options(
+        joinedload(Product.variants).joinedload(ProductVariant.attributes)
+    ).filter(Product.id == product_id).first()
 
 
 def get_product_by_slug(db: Session, slug: str) -> Optional[Product]:
@@ -289,6 +292,90 @@ def update_product(db: Session, product_id: str, product_update: ProductUpdate, 
         update_data["commission_rate"] = commission_calc.commission_rate
         update_data["commission_amount"] = commission_calc.commission_amount
         update_data["customer_price"] = commission_calc.customer_price
+    
+    # Handle variants update if provided
+    variants_data = update_data.pop("variants", None)
+    if variants_data is not None:
+        # Delete all existing variants and their attributes
+        for existing_variant in db_product.variants:
+            # Delete variant attributes first
+            db.query(ProductVariantAttribute).filter(
+                ProductVariantAttribute.variant_id == existing_variant.id
+            ).delete()
+            # Delete the variant
+            db.delete(existing_variant)
+        
+        # Flush deletions to ensure they're committed before creating new variants
+        db.flush()
+        
+        # Get commission rate for variants (use product's category and commission rate)
+        category_id = update_data.get("category_id", db_product.category_id)
+        base_commission_rate = get_commission_rate(db, category_id, product_id, db_product.seller_price)
+        
+        # Import ProductVariantCreate to convert dicts to models
+        from ..schemas.product import ProductVariantCreate
+        
+        # Create new variants
+        for idx, variant_dict in enumerate(variants_data, 1):
+            # Convert dict to Pydantic model for validation
+            variant_data = ProductVariantCreate(**variant_dict)
+            
+            variant_commission_calc = calculate_commission(variant_data.seller_price, base_commission_rate)
+            
+            # Generate variant SKU if not provided, or ensure uniqueness if provided
+            product_sku = update_data.get("sku", db_product.sku)
+            if variant_data.sku:
+                # Check if SKU already exists for other products (we already deleted variants from this product)
+                variant_sku = variant_data.sku
+                existing_variant_with_sku = db.query(ProductVariant).filter(
+                    ProductVariant.sku == variant_sku
+                ).first()
+                if existing_variant_with_sku:
+                    # SKU exists for another product/variant, generate a new one
+                    base_sku = f"{product_sku}-V{idx:03d}"
+                    variant_sku = base_sku
+                    counter = 1
+                    while db.query(ProductVariant).filter(ProductVariant.sku == variant_sku).first():
+                        variant_sku = f"{base_sku}-{counter}"
+                        counter += 1
+            else:
+                # Generate new SKU
+                base_sku = f"{product_sku}-V{idx:03d}"
+                variant_sku = base_sku
+                counter = 1
+                while db.query(ProductVariant).filter(ProductVariant.sku == variant_sku).first():
+                    variant_sku = f"{base_sku}-{counter}"
+                    counter += 1
+            
+            variant = ProductVariant(
+                id=str(uuid.uuid4()),
+                product_id=db_product.id,
+                variant_name=variant_data.variant_name,
+                sku=variant_sku,
+                seller_price=variant_data.seller_price,
+                commission_rate=variant_commission_calc.commission_rate,
+                commission_amount=variant_commission_calc.commission_amount,
+                customer_price=variant_commission_calc.customer_price,
+                stock_quantity=variant_data.stock_quantity,
+                is_active=True,
+                tax_rate=db_product.tax_rate or Decimal('18.00')
+            )
+            db.add(variant)
+            db.flush()
+            
+            # Add variant attributes
+            for attr_data in variant_data.attributes:
+                variant_attr = ProductVariantAttribute(
+                    id=str(uuid.uuid4()),
+                    variant_id=variant.id,
+                    attribute_id=attr_data.attribute_id,
+                    attribute_value_id=attr_data.attribute_value_id
+                )
+                db.add(variant_attr)
+        
+        # If variants were added/updated, reset status to pending (variants are significant changes)
+        if seller_id:
+            update_data["status"] = ProductStatus.PENDING
     
     # Reset status to pending if product details changed (except for admin updates)
     # Don't reset status for metadata-only updates like tags, meta fields

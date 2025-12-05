@@ -13,7 +13,7 @@ const Orders: React.FC = () => {
   const [activeSearchTerm, setActiveSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('');
-  const [selectedOrder, setSelectedOrder] = useState<OrderListResponse | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [refundAmount, setRefundAmount] = useState<string>('');
@@ -428,9 +428,16 @@ const Orders: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => {
-                            setSelectedOrder(order);
-                            setShowOrderModal(true);
+                          onClick={async () => {
+                            try {
+                              // Fetch full order details to get return_images
+                              const fullOrder = await adminApi.getOrder(order.id);
+                              setSelectedOrder(fullOrder);
+                              setShowOrderModal(true);
+                            } catch (error: any) {
+                              console.error('Error fetching order details:', error);
+                              toast.show('Failed to load order details', { type: 'error' });
+                            }
                           }}
                           className="text-primary-600 hover:text-primary-900 flex items-center gap-1"
                         >
@@ -586,6 +593,23 @@ const Orders: React.FC = () => {
                       <div className="flex flex-col text-sm">
                         <span className="text-secondary-600 mb-1">Return Reason:</span>
                         <span className="font-medium text-secondary-900">{selectedOrder.return_reason}</span>
+                      </div>
+                    )}
+                    {selectedOrder.return_images && selectedOrder.return_images.length > 0 && (
+                      <div className="flex flex-col text-sm">
+                        <span className="text-secondary-600 mb-2">Return Images:</span>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          {selectedOrder.return_images.map((imageUrl: string, index: number) => (
+                            <div key={index} className="relative">
+                              <img
+                                src={imageUrl.startsWith('http') ? imageUrl : `${import.meta.env.VITE_API_URL || ''}/${imageUrl}`}
+                                alt={`Return image ${index + 1}`}
+                                className="w-full h-32 object-cover rounded-lg border border-secondary-200 cursor-pointer hover:opacity-80"
+                                onClick={() => window.open(imageUrl.startsWith('http') ? imageUrl : `${import.meta.env.VITE_API_URL || ''}/${imageUrl}`, '_blank')}
+                              />
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                     {selectedOrder.return_requested_at && (

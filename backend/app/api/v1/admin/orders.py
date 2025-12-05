@@ -12,6 +12,7 @@ from ....schemas.order import (
     OrderResponse, OrderListResponse, OrderListItemResponse, OrderItemResponse,
     OrderStatusUpdate, PaymentStatusUpdate, OrderStats, ReturnStatusUpdate, RefundUpdate
 )
+from ....utils.return_image_service import json_to_images
 from ....schemas.pagination import PaginatedResponse
 from ....services import order_service
 
@@ -339,6 +340,11 @@ async def get_order(
             product_image=product_image
         ))
     
+    # Parse return images for response (handle case where column might not exist yet)
+    return_images_list = None
+    if hasattr(order, 'return_images') and order.return_images:
+        return_images_list = json_to_images(order.return_images)
+    
     # Create order response with enhanced items
     return OrderResponse(
         id=order.id,
@@ -360,7 +366,9 @@ async def get_order(
         admin_notes=order.admin_notes,
         seller_notes=order.seller_notes,
         return_reason=order.return_reason,
+        return_images=return_images_list,
         return_notes=order.return_notes,
+        return_requested_at=order.return_requested_at,
         created_at=order.created_at,
         updated_at=order.updated_at,
         items=items_with_details

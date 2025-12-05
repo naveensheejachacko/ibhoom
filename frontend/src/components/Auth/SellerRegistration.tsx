@@ -428,9 +428,13 @@ const SellerRegistration: React.FC = () => {
             <div className="ml-3 text-sm">
               <label htmlFor="accept-terms" className="text-secondary-700">
                 I agree to the{' '}
-                <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-500 underline">
+                <Link to="/terms" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-500 underline">
                   Terms and Conditions
-                </a>
+                </Link>
+                {' '}and{' '}
+                <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-500 underline">
+                  Privacy Policy
+                </Link>
               </label>
             </div>
           </div>

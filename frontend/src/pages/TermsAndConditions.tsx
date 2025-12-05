@@ -156,7 +156,11 @@ const TermsAndConditions: React.FC = () => {
             <section>
               <h2 className="text-xl font-semibold text-secondary-900 mb-3">11. Privacy</h2>
               <p>
-                Your use of the Platform is also governed by our Privacy Policy. By using the Platform, you consent to the collection and 
+                Your use of the Platform is also governed by our{' '}
+                <Link to="/privacy" className="text-primary-600 hover:text-primary-500 underline">
+                  Privacy Policy
+                </Link>
+                . By using the Platform, you consent to the collection and 
                 use of your information as described in the Privacy Policy.
               </p>
             </section>

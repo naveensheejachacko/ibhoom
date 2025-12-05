@@ -180,8 +180,8 @@ def create_order(db: Session, order: OrderCreate, customer_id: str) -> Order:
     order_id = db_order.id
     order_number = db_order.order_number
     
-    # Expire all objects to reset session state after commit
-    # This ensures clean state for subsequent operations
+    # After commit, close the current transaction to ensure clean state
+    # This prevents "InFailedSqlTransaction" errors from subsequent operations
     db.expire_all()
     
     # Clear customer's cart after successful order creation
@@ -190,14 +190,12 @@ def create_order(db: Session, order: OrderCreate, customer_id: str) -> Order:
         from ..services.cart_service import clear_cart
         cleared_count = clear_cart(db, customer_id)
         logger.info(f"Cleared {cleared_count} items from cart for customer {customer_id} after order {order_number}")
-        # Reset session state after cart clearing
-        db.expire_all()
     except Exception as e:
         # Log error but don't fail order creation
         logger.warning(f"Failed to clear cart for customer {customer_id} after order {order_number}: {str(e)}")
-        # Reset session state to ensure clean state for next operations
+        # Rollback any failed transaction to ensure clean state
         try:
-            db.expire_all()
+            db.rollback()
         except:
             pass
     
@@ -208,31 +206,29 @@ def create_order(db: Session, order: OrderCreate, customer_id: str) -> Order:
         notification_results = NotificationService.notify_order_placed(db, db_order)
         if notification_results.get("errors"):
             logger.warning(f"Some notifications failed for order {order_number}: {notification_results['errors']}")
-        # Reset session state after notifications
-        db.expire_all()
     except Exception as e:
         # Log error but don't fail order creation
         logger.error(f"Failed to send notifications for order {order_number}: {str(e)}")
-        # Reset session state to ensure clean state for next operations
+        # Rollback any failed transaction to ensure clean state
         try:
-            db.expire_all()
+            db.rollback()
         except:
             pass
     
-    # Reload order with all relationships in a fresh query to avoid transaction issues
-    # This ensures we have a clean session state
-    from sqlalchemy.orm import joinedload
+    # Always rollback to close any open transaction before querying
+    # This ensures we start with a fresh transaction and prevents InFailedSqlTransaction errors
+    # Note: This is safe because the order was already committed above
     try:
-        db_order = db.query(Order).options(
-            joinedload(Order.items)
-        ).filter(Order.id == order_id).first()
-    except Exception as query_error:
-        # If query fails due to transaction state, reset and try again
-        logger.warning(f"First query attempt failed: {query_error}, resetting session and retrying...")
-        db.expire_all()
-        db_order = db.query(Order).options(
-            joinedload(Order.items)
-        ).filter(Order.id == order_id).first()
+        db.rollback()
+    except:
+        pass
+    
+    # Reload order with all relationships in a fresh query
+    # The rollback above ensures we have a clean session state
+    from sqlalchemy.orm import joinedload
+    db_order = db.query(Order).options(
+        joinedload(Order.items)
+    ).filter(Order.id == order_id).first()
     
     if not db_order:
         # If reload fails, raise error - order was created but we can't retrieve it

@@ -384,7 +384,7 @@ const Orders: React.FC = () => {
               <div>
                 <h3 className="text-lg font-semibold text-secondary-900 mb-4">Update Status</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {selectedOrder.status === 'pending' ? (
+                  {selectedOrder.status?.toLowerCase() === 'pending' ? (
                     <>
                       <button
                         onClick={() => handleStatusUpdate(selectedOrder.id, 'processing')}
@@ -406,7 +406,7 @@ const Orders: React.FC = () => {
                       </button>
                     </>
                   ) : null}
-                  {selectedOrder.status === 'processing' ? (
+                  {selectedOrder.status?.toLowerCase() === 'processing' ? (
                     <button
                       onClick={() => handleStatusUpdate(selectedOrder.id, 'ready for dispatch')}
                       className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"

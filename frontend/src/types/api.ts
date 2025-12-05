@@ -126,7 +126,9 @@ export interface Order {
   admin_notes?: string;
   seller_notes?: string;
   return_reason?: string;
+  return_images?: string[];  // List of return image URLs
   return_notes?: string;
+  return_requested_at?: string;
   created_at: string;
   updated_at: string;
   items: OrderItem[];

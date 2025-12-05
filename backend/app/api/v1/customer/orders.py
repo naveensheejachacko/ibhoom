@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Form, File, UploadFile
 from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session, joinedload
-from typing import List, Optional
+from typing import List, Optional, Union
 from datetime import datetime
 from pathlib import Path
 import logging
@@ -371,7 +371,7 @@ async def get_my_order(
 async def request_return(
     order_id: str,
     return_reason: str = Form(..., description="Reason for return"),
-    images: Optional[List[UploadFile]] = File(None, description="Optional return images (max 5)"),
+    images: Optional[Union[UploadFile, List[UploadFile]]] = File(None, description="Optional return images (1-5 images, 5MB each)"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_customer_user)
 ):
@@ -431,8 +431,14 @@ async def request_return(
     return_images_json = None
     if images:
         try:
-            # Filter out None values (in case some files are not provided)
-            image_files = [img for img in images if img is not None]
+            # Convert single UploadFile to list if needed
+            if isinstance(images, UploadFile):
+                image_files = [images]
+            elif isinstance(images, list):
+                image_files = [img for img in images if img is not None]
+            else:
+                image_files = []
+            
             if image_files:
                 saved_paths = await save_return_images(image_files, max_files=5)
                 return_images_json = json.dumps(saved_paths)

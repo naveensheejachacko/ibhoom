@@ -190,8 +190,24 @@ async def get_my_orders(
             seller_name = product.seller.business_name if product.seller else None
             
             # Calculate return eligibility and expiration
-            has_return_policy = product.has_return_policy if product else False
-            return_period_days = product.return_period_days if product else None
+            # Ensure product is loaded (should be via joinedload, but verify)
+            if not product:
+                # Fallback: query product if not loaded
+                product = db.query(Product).filter(Product.id == item.product_id).first()
+            
+            # Get return policy values - ensure we're reading actual database values
+            # Access attributes directly from the product object
+            has_return_policy = False
+            return_period_days = None
+            
+            if product:
+                # Explicitly get the values - handle both boolean and None cases
+                has_return_policy = bool(product.has_return_policy) if product.has_return_policy is not None else False
+                return_period_days = int(product.return_period_days) if product.return_period_days is not None else None
+                
+                # Log for debugging - check actual values from database
+                logger.info(f"Order {order.order_number}, Product {product.id} ({product.name}): has_return_policy={has_return_policy} (DB value: {product.has_return_policy}), return_period_days={return_period_days} (DB value: {product.return_period_days})")
+            
             is_return_expired = None
             
             # Only calculate expiration if order is delivered and product has return policy

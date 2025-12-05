@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Search, Eye, Package, CheckCircle, X, Clock } from 'lucide-react';
 import { sellerApi } from '../../lib/api';
 import { useToast } from '../../components/Toast';
+import Pagination from '../../components/Pagination';
 import type { OrderListResponse } from '../../types/api';
 
 const Orders: React.FC = () => {
@@ -9,23 +10,39 @@ const Orders: React.FC = () => {
   const [orders, setOrders] = useState<OrderListResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeSearchTerm, setActiveSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<OrderListResponse | null>(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 20;
 
   useEffect(() => {
     fetchOrders();
-  }, [statusFilter]);
+  }, [statusFilter, currentPage, activeSearchTerm]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, activeSearchTerm]);
 
   const fetchOrders = async () => {
     try {
       setIsLoading(true);
-      const params: any = {};
+      const params: any = {
+        page: currentPage,
+        limit: itemsPerPage,
+      };
       if (statusFilter) params.status = statusFilter;
+      if (activeSearchTerm) params.search = activeSearchTerm;
       const data = await sellerApi.getOrders(params);
       // Handle paginated response
       if (data.items) {
         setOrders(data.items);
+        setTotalPages(data.pages);
+        setTotalItems(data.total);
       } else {
         // Fallback for non-paginated response
         setOrders(Array.isArray(data) ? data : []);
@@ -97,11 +114,10 @@ const Orders: React.FC = () => {
     return status.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.id.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
-  });
+  const handleSearch = () => {
+    setActiveSearchTerm(searchTerm);
+    setCurrentPage(1);
+  };
 
   if (isLoading) {
     return (
@@ -130,6 +146,11 @@ const Orders: React.FC = () => {
                 placeholder="Order number..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearch();
+                  }
+                }}
                 className="w-full pl-10 pr-4 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
@@ -150,12 +171,22 @@ const Orders: React.FC = () => {
               <option value="cancelled">Cancelled</option>
             </select>
           </div>
-          <div className="flex items-end">
+          <div className="flex items-end gap-2">
             <button
-              onClick={fetchOrders}
-              className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              onClick={handleSearch}
+              className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
-              Refresh
+              Search
+            </button>
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setActiveSearchTerm('');
+                setCurrentPage(1);
+              }}
+              className="px-4 py-2 border border-secondary-300 text-secondary-700 rounded-lg hover:bg-secondary-50 transition-colors"
+            >
+              Clear
             </button>
           </div>
         </div>
@@ -177,14 +208,14 @@ const Orders: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-secondary-200">
-              {filteredOrders.length === 0 ? (
+              {orders.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-secondary-500">
                     No orders found
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map((order) => (
+                orders.map((order) => (
                   <tr key={order.id} className="hover:bg-secondary-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-secondary-900">{order.order_number}</div>
@@ -242,6 +273,17 @@ const Orders: React.FC = () => {
             </tbody>
           </table>
         </div>
+        {totalPages > 1 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageChange={(page) => {
+              setCurrentPage(page);
+            }}
+          />
+        )}
       </div>
 
       {/* Order Detail Modal */}

@@ -189,6 +189,21 @@ async def get_my_orders(
             # Get seller name
             seller_name = product.seller.business_name if product.seller else None
             
+            # Calculate return eligibility and expiration
+            has_return_policy = product.has_return_policy if product else False
+            return_period_days = product.return_period_days if product else None
+            is_return_expired = None
+            
+            # Only calculate expiration if order is delivered and product has return policy
+            if order.status == OrderStatus.DELIVERED and has_return_policy and return_period_days:
+                # Use order.updated_at as delivery date (when status was changed to DELIVERED)
+                # Note: This assumes updated_at reflects when order was marked as delivered
+                # If order status changes after delivery, this might not be accurate
+                # For more accuracy, consider adding a delivery_date field to Order model
+                delivery_date = order.updated_at
+                days_since_delivery = (datetime.utcnow() - delivery_date).days
+                is_return_expired = days_since_delivery > return_period_days
+            
             items.append(OrderListItemResponse(
                 id=item.id,
                 product_id=item.product_id,
@@ -204,7 +219,10 @@ async def get_my_orders(
                 tax_unit_amount=float(item.tax_unit_amount),
                 total_tax_amount=float(item.total_tax_amount),
                 final_unit_price=float(item.final_unit_price),
-                total_final_amount=float(item.total_final_amount)
+                total_final_amount=float(item.total_final_amount),
+                has_return_policy=has_return_policy,
+                return_period_days=return_period_days,
+                is_return_expired=is_return_expired
             ))
         
         order_responses.append(OrderListResponse(

@@ -21,6 +21,7 @@ async def get_my_orders(
     limit: int = Query(20, ge=1, le=1000, description="Items per page"),
     skip: Optional[int] = Query(None, ge=0, description="Skip items (alternative to page, deprecated)"),
     status: Optional[OrderStatus] = Query(None),
+    search: Optional[str] = Query(None, description="Search by order number"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_seller_user)
 ):
@@ -44,6 +45,9 @@ async def get_my_orders(
     
     if status:
         query = query.filter(Order.status == status)
+    
+    if search:
+        query = query.filter(Order.order_number.ilike(f"%{search}%"))
     
     # Get total count before pagination
     total = query.count()

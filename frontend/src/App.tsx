@@ -7,6 +7,7 @@ import Login from './components/Auth/Login';
 import SellerRegistration from './components/Auth/SellerRegistration';
 import AdminRegistration from './components/Auth/AdminRegistration';
 import TermsAndConditions from './pages/TermsAndConditions';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 // Admin Pages
 import AdminDashboard from './pages/Admin/Dashboard';
@@ -37,6 +38,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register/seller" element={<SellerRegistration />} />
             <Route path="/terms" element={<TermsAndConditions />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
             
             {/* Private Admin Setup Route - Not linked from anywhere */}
             <Route path="/admin-setup" element={<AdminRegistration />} />

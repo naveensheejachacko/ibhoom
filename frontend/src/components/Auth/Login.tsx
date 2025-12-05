@@ -148,6 +148,10 @@ const Login: React.FC = () => {
               <Link to="/terms" className="text-primary-600 hover:text-primary-500 underline">
                 Terms and Conditions
               </Link>
+              {' '}and{' '}
+              <Link to="/privacy" className="text-primary-600 hover:text-primary-500 underline">
+                Privacy Policy
+              </Link>
             </p>
           </div>
         </form>

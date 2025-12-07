@@ -62,8 +62,10 @@ const RecentProductCard: React.FC<RecentProductProps> = ({ product }) => {
 
 const Dashboard: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
   const [approvedCount, setApprovedCount] = useState(0);
+  const [rejectedCount, setRejectedCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -73,15 +75,19 @@ const Dashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
-      const [productsData, pendingData, approvedData] = await Promise.all([
-        sellerApi.getProducts({ limit: 5 }), // Get recent 5 products
+      const [productsData, totalData, pendingData, approvedData, rejectedData] = await Promise.all([
+        sellerApi.getProducts({ limit: 5 }), // Get recent 5 products for display
+        sellerApi.getTotalCount(),
         sellerApi.getPendingCount(),
         sellerApi.getApprovedCount(),
+        sellerApi.getRejectedCount(),
       ]);
       
       setProducts(productsData.items || productsData);
+      setTotalCount(totalData.count || 0);
       setPendingCount(pendingData.count || 0);
       setApprovedCount(approvedData.count || 0);
+      setRejectedCount(rejectedData.count || 0);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -96,10 +102,6 @@ const Dashboard: React.FC = () => {
       </div>
     );
   }
-
-  const totalProducts = products.length;
-  const draftProducts = products.filter(p => p.status === 'draft').length;
-  const rejectedProducts = products.filter(p => p.status === 'rejected').length;
 
   return (
     <div className="space-y-8">
@@ -128,7 +130,7 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
             title="Total Products"
-            value={totalProducts}
+            value={totalCount}
             icon={Package}
             color="bg-blue-500"
             description="All your products"
@@ -149,7 +151,7 @@ const Dashboard: React.FC = () => {
           />
           <StatCard
             title="Rejected Products"
-            value={rejectedProducts}
+            value={rejectedCount}
             icon={XCircle}
             color="bg-red-500"
             description="Need revision"

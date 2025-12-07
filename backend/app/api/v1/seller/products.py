@@ -168,10 +168,11 @@ async def get_pending_products_count(
     current_user: User = Depends(get_seller_user)
 ):
     """Get count of seller's pending products (Seller only)"""
-    products = product_service.get_products(
-        db, seller_id=current_user.seller.id, status=ProductStatus.PENDING, limit=1000
-    )
-    return {"count": len(products)}
+    count = db.query(Product).filter(
+        Product.seller_id == current_user.seller.id,
+        Product.status == ProductStatus.PENDING
+    ).count()
+    return {"count": count}
 
 
 @router.get("/approved/count")
@@ -180,7 +181,34 @@ async def get_approved_products_count(
     current_user: User = Depends(get_seller_user)
 ):
     """Get count of seller's approved products (Seller only)"""
-    products = product_service.get_products(
-        db, seller_id=current_user.seller.id, status=ProductStatus.APPROVED, limit=1000
-    )
-    return {"count": len(products)} 
+    count = db.query(Product).filter(
+        Product.seller_id == current_user.seller.id,
+        Product.status == ProductStatus.APPROVED
+    ).count()
+    return {"count": count}
+
+
+@router.get("/rejected/count")
+async def get_rejected_products_count(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_seller_user)
+):
+    """Get count of seller's rejected products (Seller only)"""
+    count = db.query(Product).filter(
+        Product.seller_id == current_user.seller.id,
+        Product.status == ProductStatus.REJECTED
+    ).count()
+    return {"count": count}
+
+
+@router.get("/total/count")
+async def get_total_products_count(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_seller_user)
+):
+    """Get total count of seller's products (excluding hidden) (Seller only)"""
+    count = db.query(Product).filter(
+        Product.seller_id == current_user.seller.id,
+        Product.status != ProductStatus.HIDDEN
+    ).count()
+    return {"count": count} 

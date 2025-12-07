@@ -543,6 +543,16 @@ export const sellerApi = {
     const response = await api.get('/api/v1/seller/products/approved/count');
     return response.data;
   },
+  
+  getRejectedCount: async () => {
+    const response = await api.get('/api/v1/seller/products/rejected/count');
+    return response.data;
+  },
+  
+  getTotalCount: async () => {
+    const response = await api.get('/api/v1/seller/products/total/count');
+    return response.data;
+  },
 
   
   // Profile

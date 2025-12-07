@@ -56,6 +56,17 @@ export const getFirebaseMessaging = (): Messaging | null => {
 
   if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
     try {
+      // Register service worker for background notifications
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/firebase-messaging-sw.js')
+          .then((registration) => {
+            console.log('✅ Service Worker registered:', registration.scope);
+          })
+          .catch((error) => {
+            console.error('❌ Service Worker registration failed:', error);
+          });
+      }
+      
       messaging = getMessaging(app);
       return messaging;
     } catch (error) {

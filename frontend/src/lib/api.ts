@@ -504,6 +504,12 @@ export const adminApi = {
     const response = await api.delete(`/api/v1/admin/banners/${id}`);
     return response.data;
   },
+  
+  // Profile
+  updatePassword: async (data: { current_password: string; new_password: string }) => {
+    const response = await api.put('/api/v1/admin/profile/password', data);
+    return response.data;
+  },
 };
 
 // Seller API

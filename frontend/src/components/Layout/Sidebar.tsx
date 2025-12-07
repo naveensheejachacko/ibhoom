@@ -36,7 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
     { icon: UserCheck, label: 'Sellers', path: '/admin/sellers' },
     { icon: Percent, label: 'Commissions', path: '/admin/commissions' },
     { icon: Image, label: 'Banners', path: '/admin/banners' },
-    { icon: Settings, label: 'Settings', path: '/admin/settings' },
+    { icon: User, label: 'Profile', path: '/admin/profile' },
   ];
 
   const sellerNavItems = [

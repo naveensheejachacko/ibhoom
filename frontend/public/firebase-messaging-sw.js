@@ -5,43 +5,68 @@
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
-// Initialize Firebase
-// The Firebase SDK will automatically use the same configuration as your main app
-// Make sure your main app initializes Firebase before this service worker runs
-firebase.initializeApp({
-  // Firebase config is automatically shared from the main app
-  // If you need explicit config, uncomment and add your values:
-  /*
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "123456789012",
-  appId: "1:123456789012:web:abcdef123456"
-  */
+// Initialize Firebase - Service workers need explicit config
+// The config will be passed from the main app via postMessage
+let firebaseInitialized = false;
+
+// Listen for Firebase config from main app
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'FIREBASE_CONFIG' && !firebaseInitialized) {
+    try {
+      firebase.initializeApp(event.data.config);
+      firebaseInitialized = true;
+      console.log('[firebase-messaging-sw.js] Firebase initialized with config from main app');
+    } catch (error) {
+      console.error('[firebase-messaging-sw.js] Failed to initialize Firebase:', error);
+    }
+  }
 });
 
-// Retrieve Firebase Messaging instance
-const messaging = firebase.messaging();
+// Try to initialize with a default/empty config (will be overridden by main app)
+// This prevents errors during service worker registration
+try {
+  if (typeof firebase !== 'undefined' && !firebaseInitialized) {
+    // Initialize with minimal config - the main app will send the real config
+    firebase.initializeApp({
+      projectId: 'ibhoom-1173b', // This should match your project
+    });
+    firebaseInitialized = true;
+  }
+} catch (e) {
+  // Ignore - will be initialized when main app sends config
+  console.log('[firebase-messaging-sw.js] Waiting for Firebase config...');
+}
+
+// Retrieve Firebase Messaging instance (only if initialized)
+let messaging = null;
+if (firebaseInitialized && typeof firebase !== 'undefined') {
+  try {
+    messaging = firebase.messaging();
+  } catch (e) {
+    console.error('[firebase-messaging-sw.js] Failed to get messaging instance:', e);
+  }
+}
 
 // Handle background messages (when app is closed)
-messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw.js] Received background message:', payload);
-  
-  const notificationTitle = payload.notification?.title || 'New Notification';
-  const notificationOptions = {
-    body: payload.notification?.body || '',
-    icon: payload.notification?.image || '/ibhoom-logo.png',
-    badge: '/ibhoom-logo.png',
-    image: payload.notification?.image,
-    data: payload.data || {},
-    tag: payload.data?.notification_id || payload.data?.order_id || 'default',
-    requireInteraction: false,
-    silent: false,
-  };
+if (messaging) {
+  messaging.onBackgroundMessage((payload) => {
+    console.log('[firebase-messaging-sw.js] Received background message:', payload);
+    
+    const notificationTitle = payload.notification?.title || 'New Notification';
+    const notificationOptions = {
+      body: payload.notification?.body || '',
+      icon: payload.notification?.image || '/ibhoom-logo.png',
+      badge: '/ibhoom-logo.png',
+      image: payload.notification?.image,
+      data: payload.data || {},
+      tag: payload.data?.notification_id || payload.data?.order_id || 'default',
+      requireInteraction: false,
+      silent: false,
+    };
 
-  return self.registration.showNotification(notificationTitle, notificationOptions);
-});
+    return self.registration.showNotification(notificationTitle, notificationOptions);
+  });
+}
 
 // Handle notification clicks
 self.addEventListener('notificationclick', (event) => {

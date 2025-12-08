@@ -14,7 +14,10 @@ import {
   User,
   List,
   Image,
-  Archive
+  Archive,
+  FileText,
+  Shield,
+  Mail
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -37,6 +40,9 @@ const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
     { icon: Percent, label: 'Commissions', path: '/admin/commissions' },
     { icon: Image, label: 'Banners', path: '/admin/banners' },
     { icon: User, label: 'Profile', path: '/admin/profile' },
+    { icon: FileText, label: 'Terms & Conditions', path: '/admin/terms' },
+    { icon: Shield, label: 'Privacy Policy', path: '/admin/privacy' },
+    { icon: Mail, label: 'Contact Us', path: '/admin/contact' },
   ];
 
   const sellerNavItems = [
@@ -46,7 +52,9 @@ const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
     { icon: Archive, label: 'Stock Management', path: '/seller/stock' },
     { icon: ShoppingCart, label: 'Orders', path: '/seller/orders' },
     { icon: User, label: 'Profile', path: '/seller/profile' },
-    { icon: Settings, label: 'Settings', path: '/seller/settings' },
+    { icon: FileText, label: 'Terms & Conditions', path: '/seller/terms' },
+    { icon: Shield, label: 'Privacy Policy', path: '/seller/privacy' },
+    { icon: Mail, label: 'Contact Us', path: '/seller/contact' },
   ];
 
   const navItems = userRole === 'admin' ? adminNavItems : sellerNavItems;

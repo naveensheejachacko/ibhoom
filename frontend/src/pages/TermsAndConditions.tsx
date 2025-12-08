@@ -1,18 +1,23 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 const TermsAndConditions: React.FC = () => {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin/');
+
   return (
     <div className="min-h-screen bg-secondary-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        <Link
-          to="/login"
-          className="inline-flex items-center text-primary-600 hover:text-primary-700 mb-6"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Login
-        </Link>
+        {!isAdminRoute && (
+          <Link
+            to="/login"
+            className="inline-flex items-center text-primary-600 hover:text-primary-700 mb-6"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Login
+          </Link>
+        )}
 
         <div className="bg-white rounded-lg shadow-sm p-8">
           <div className="text-center mb-8">
@@ -28,7 +33,7 @@ const TermsAndConditions: React.FC = () => {
             <section>
               <h2 className="text-xl font-semibold text-secondary-900 mb-3">1. Acceptance of Terms</h2>
               <p>
-                By accessing and using the ibhoom marketplace platform ("Platform"), you agree to be bound by these Terms and Conditions ("Terms"). 
+                By accessing and using ibhoom ("Platform"), you agree to be bound by these Terms and Conditions ("Terms"). 
                 If you do not agree to these Terms, please do not use our Platform. These Terms apply to all users, including sellers, customers, 
                 and administrators.
               </p>
@@ -37,7 +42,7 @@ const TermsAndConditions: React.FC = () => {
             <section>
               <h2 className="text-xl font-semibold text-secondary-900 mb-3">2. Platform Description</h2>
               <p>
-                ibhoom is a local vendor marketplace platform that connects sellers with customers. The Platform facilitates transactions between 
+                ibhoom is a platform that connects sellers with customers. The Platform facilitates transactions between 
                 sellers and customers but is not a party to any transaction. We provide the technology and services to enable these transactions.
               </p>
             </section>
@@ -95,7 +100,7 @@ const TermsAndConditions: React.FC = () => {
             <section>
               <h2 className="text-xl font-semibold text-secondary-900 mb-3">6. Commissions and Fees</h2>
               <p>
-                The Platform charges commissions on sales made through the marketplace. Commission rates are set by the Platform administrators 
+                The Platform charges commissions on sales made through ibhoom. Commission rates are set by the Platform administrators 
                 and may vary. Sellers will be notified of applicable commission rates. All fees are non-refundable unless otherwise stated.
               </p>
             </section>
@@ -210,13 +215,24 @@ const TermsAndConditions: React.FC = () => {
             <section>
               <h2 className="text-xl font-semibold text-secondary-900 mb-3">17. Contact Information</h2>
               <p>
-                If you have any questions about these Terms and Conditions, please contact us through the Platform's support channels.
+                If you have any questions about these Terms and Conditions, please contact us at:
               </p>
+              <div className="mt-3 space-y-1">
+                <p>
+                  <strong>Email</strong>:{' '}
+                  <a 
+                    href="mailto:ibhoomstore@gmail.com" 
+                    className="text-primary-600 hover:text-primary-700 underline"
+                  >
+                    ibhoomstore@gmail.com
+                  </a>
+                </p>
+              </div>
             </section>
 
             <section className="pt-6 border-t border-secondary-200">
               <p className="text-sm text-secondary-600">
-                By using the ibhoom marketplace platform, you acknowledge that you have read, understood, and agree to be bound by these 
+                By using ibhoom, you acknowledge that you have read, understood, and agree to be bound by these 
                 Terms and Conditions.
               </p>
             </section>

@@ -8,6 +8,7 @@ import SellerRegistration from './components/Auth/SellerRegistration';
 import AdminRegistration from './components/Auth/AdminRegistration';
 import TermsAndConditions from './pages/TermsAndConditions';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import ContactUs from './pages/ContactUs';
 
 // Admin Pages
 import AdminDashboard from './pages/Admin/Dashboard';
@@ -40,6 +41,7 @@ function App() {
             <Route path="/register/seller" element={<SellerRegistration />} />
             <Route path="/terms" element={<TermsAndConditions />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/contact" element={<ContactUs />} />
             
             {/* Private Admin Setup Route - Not linked from anywhere */}
             <Route path="/admin-setup" element={<AdminRegistration />} />
@@ -61,6 +63,9 @@ function App() {
                       <Route path="commissions" element={<AdminCommissions />} />
                       <Route path="banners" element={<AdminBanners />} />
                       <Route path="profile" element={<AdminProfileSettings />} />
+                      <Route path="terms" element={<TermsAndConditions />} />
+                      <Route path="privacy" element={<PrivacyPolicy />} />
+                      <Route path="contact" element={<ContactUs />} />
                     </Routes>
                   </AdminLayout>
                 </ProtectedRoute>
@@ -81,6 +86,9 @@ function App() {
                       <Route path="stock" element={<StockManagement />} />
                       <Route path="orders" element={<SellerOrders />} />
                       <Route path="profile" element={<ProfileSettings />} />
+                      <Route path="terms" element={<TermsAndConditions />} />
+                      <Route path="privacy" element={<PrivacyPolicy />} />
+                      <Route path="contact" element={<ContactUs />} />
                     </Routes>
                   </SellerLayout>
                 </ProtectedRoute>

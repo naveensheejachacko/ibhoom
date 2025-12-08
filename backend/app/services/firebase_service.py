@@ -33,11 +33,27 @@ def initialize_firebase():
         # Option 1: Use service account JSON file
         if settings.FIREBASE_SERVICE_ACCOUNT_PATH:
             cred_path = Path(settings.FIREBASE_SERVICE_ACCOUNT_PATH)
+            # Resolve relative paths to absolute paths
+            if not cred_path.is_absolute():
+                # If relative, resolve from backend directory
+                # __file__ is at: backend/app/services/firebase_service.py
+                # So parent.parent.parent = backend/
+                backend_dir = Path(__file__).parent.parent.parent
+                cred_path = (backend_dir / cred_path).resolve()
+            else:
+                cred_path = cred_path.resolve()
+            
+            logger.info(f"Attempting to load Firebase credentials from: {cred_path}")
             if cred_path.exists():
-                cred = credentials.Certificate(str(cred_path))
-                _firebase_app = firebase_admin.initialize_app(cred)
-                logger.info("Firebase initialized from service account file")
-                return _firebase_app
+                try:
+                    cred = credentials.Certificate(str(cred_path))
+                    _firebase_app = firebase_admin.initialize_app(cred)
+                    logger.info(f"✅ Firebase initialized successfully from: {cred_path}")
+                    return _firebase_app
+                except Exception as e:
+                    logger.error(f"Failed to initialize Firebase with file {cred_path}: {str(e)}")
+            else:
+                logger.error(f"Firebase service account file not found at: {cred_path}")
         
         # Option 2: Use service account JSON string from environment
         if settings.FIREBASE_SERVICE_ACCOUNT_JSON:

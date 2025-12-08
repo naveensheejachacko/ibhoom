@@ -1,18 +1,23 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 const PrivacyPolicy: React.FC = () => {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin/');
+
   return (
     <div className="min-h-screen bg-secondary-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        <Link
-          to="/login"
-          className="inline-flex items-center text-primary-600 hover:text-primary-700 mb-6"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Login
-        </Link>
+        {!isAdminRoute && (
+          <Link
+            to="/login"
+            className="inline-flex items-center text-primary-600 hover:text-primary-700 mb-6"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Login
+          </Link>
+        )}
 
         <div className="bg-white rounded-lg shadow-sm p-8">
           <div className="text-center mb-8">
@@ -30,7 +35,7 @@ const PrivacyPolicy: React.FC = () => {
               <p>
                 Welcome to ibhoom ("we," "our," or "us"). We are committed to protecting your privacy 
                 and ensuring you have a positive experience on our platform. This Privacy Policy explains how we collect, 
-                use, disclose, and safeguard your information when you use our marketplace platform, including our website, 
+                use, disclose, and safeguard your information when you use ibhoom, including our website, 
                 mobile application, and services (collectively, the "Service").
               </p>
               <p>
@@ -325,13 +330,18 @@ const PrivacyPolicy: React.FC = () => {
               <h2 className="text-xl font-semibold text-secondary-900 mb-3">12. Contact Us</h2>
               <p>If you have any questions, concerns, or requests regarding this Privacy Policy or our privacy practices, please contact us:</p>
               <div className="mt-3 space-y-1">
-                <p><strong>Email</strong>: privacy@ibhoom.com</p>
-                <p><strong>Address</strong>: [Your Business Address]</p>
-                <p><strong>Phone</strong>: [Your Contact Number]</p>
+                <p>
+                  <strong>Email</strong>:{' '}
+                  <a 
+                    href="mailto:ibhoomstore@gmail.com" 
+                    className="text-primary-600 hover:text-primary-700 underline"
+                  >
+                    ibhoomstore@gmail.com
+                  </a>
+                </p>
               </div>
               <p className="mt-3">
-                For data protection inquiries or to exercise your rights, please contact our Data Protection Officer at: 
-                dpo@ibhoom.com
+                For data protection inquiries or to exercise your rights, please contact us at the email address above.
               </p>
             </section>
 

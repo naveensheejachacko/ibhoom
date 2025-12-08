@@ -62,27 +62,38 @@ export const getFirebaseMessaging = (): Messaging | null => {
           .then((registration) => {
             console.log('✅ Service Worker registered:', registration.scope);
             
+            // Function to send config to service worker
+            const sendConfig = (target) => {
+              if (target) {
+                target.postMessage({
+                  type: 'FIREBASE_CONFIG',
+                  config: firebaseConfig
+                });
+                console.log('✅ Firebase config sent to service worker');
+              }
+            };
+            
             // Send Firebase config to service worker
             if (registration.active) {
-              registration.active.postMessage({
-                type: 'FIREBASE_CONFIG',
-                config: firebaseConfig
-              });
+              sendConfig(registration.active);
             } else if (registration.installing) {
               registration.installing.addEventListener('statechange', () => {
                 if (registration.active) {
-                  registration.active.postMessage({
-                    type: 'FIREBASE_CONFIG',
-                    config: firebaseConfig
-                  });
+                  sendConfig(registration.active);
                 }
               });
+              // Also try to send to installing worker
+              sendConfig(registration.installing);
             } else if (registration.waiting) {
-              registration.waiting.postMessage({
-                type: 'FIREBASE_CONFIG',
-                config: firebaseConfig
-              });
+              sendConfig(registration.waiting);
             }
+            
+            // Also listen for controller change (when service worker becomes active)
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+              if (navigator.serviceWorker.controller) {
+                sendConfig(navigator.serviceWorker.controller);
+              }
+            });
           })
           .catch((error) => {
             console.error('❌ Service Worker registration failed:', error);

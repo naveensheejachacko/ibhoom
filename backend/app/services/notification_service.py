@@ -154,7 +154,14 @@ class NotificationService:
         }
         
         try:
-            # Reload order with relationships
+            # Ensure we have a clean transaction state
+            # Rollback any failed transaction first
+            try:
+                db.rollback()
+            except:
+                pass
+            
+            # Reload order with relationships in a fresh query
             order = db.query(Order).options(
                 joinedload(Order.customer),
                 joinedload(Order.items)
@@ -168,44 +175,46 @@ class NotificationService:
             try:
                 admin_notification = NotificationService.notify_admin_new_order(db, order)
                 results["admin_notified"] = True
+                logger.info(f"✅ Admin notification created: {admin_notification.id}")
                 
-                # Send Firebase push notification to admin
-                # Wrap in try-except and ensure it doesn't affect the main transaction
+                # Send Firebase push notification to admin (non-blocking)
+                # Use a separate try-except to ensure DB notification is created even if FCM fails
                 try:
                     from ..services.firebase_service import FirebaseService
-                    # Use a fresh session state - expire all objects to reset state
+                    # Create a new session for FCM to avoid transaction conflicts
+                    from ..core.database import SessionLocal
+                    fcm_db = SessionLocal()
                     try:
-                        db.expire_all()
-                    except:
-                        pass
-                    
-                    fcm_result = FirebaseService.send_to_user(
-                        db=db,
-                        user_id=admin_notification.user_id,
-                        title=admin_notification.title,
-                        body=admin_notification.message,
-                        data={
-                            "type": admin_notification.notification_type.value,
-                            "order_id": str(order.id),
-                            "notification_id": str(admin_notification.id)
-                        }
-                    )
-                    if fcm_result.get("success_count", 0) > 0:
-                        results["admin_fcm_sent"] = True
-                        logger.info(f"Firebase notification sent to admin for order {order.order_number}")
+                        fcm_result = FirebaseService.send_to_user(
+                            db=fcm_db,
+                            user_id=admin_notification.user_id,
+                            title=admin_notification.title,
+                            body=admin_notification.message,
+                            data={
+                                "type": admin_notification.notification_type.value,
+                                "order_id": str(order.id),
+                                "notification_id": str(admin_notification.id)
+                            }
+                        )
+                        if fcm_result.get("success_count", 0) > 0:
+                            results["admin_fcm_sent"] = True
+                            logger.info(f"Firebase notification sent to admin for order {order.order_number}")
+                    finally:
+                        fcm_db.close()
                 except Exception as fcm_error:
-                    # Reset session state if there was an error
-                    try:
-                        db.expire_all()
-                    except:
-                        pass
+                    # Log but don't fail - DB notification is already created
                     logger.warning(f"Failed to send Firebase notification to admin: {str(fcm_error)}")
                     results["errors"].append(f"Admin FCM error: {str(fcm_error)}")
                     
             except Exception as e:
                 error_msg = f"Failed to notify admin: {str(e)}"
-                logger.error(error_msg)
+                logger.error(error_msg, exc_info=True)
                 results["errors"].append(error_msg)
+                # Rollback to clean state
+                try:
+                    db.rollback()
+                except:
+                    pass
             
             # Group order items by seller
             seller_items_map = {}
@@ -234,45 +243,46 @@ class NotificationService:
                         db, order, seller_user_id, seller_items
                     )
                     results["sellers_notified"][seller_user_id] = True
+                    logger.info(f"✅ Seller notification created for {seller_user_id}: {seller_notification.id}")
                     
-                    # Send Firebase push notification to seller
-                    # Wrap in try-except and ensure it doesn't affect the main transaction
+                    # Send Firebase push notification to seller (non-blocking)
+                    # Use a separate session to avoid transaction conflicts
                     try:
                         from ..services.firebase_service import FirebaseService
-                        # Use a fresh session state - expire all objects to reset state
+                        from ..core.database import SessionLocal
+                        fcm_db = SessionLocal()
                         try:
-                            db.expire_all()
-                        except:
-                            pass
-                        
-                        fcm_result = FirebaseService.send_to_user(
-                            db=db,
-                            user_id=seller_user_id,
-                            title=seller_notification.title,
-                            body=seller_notification.message,
-                            data={
-                                "type": seller_notification.notification_type.value,
-                                "order_id": str(order.id),
-                                "notification_id": str(seller_notification.id)
-                            }
-                        )
-                        if fcm_result.get("success_count", 0) > 0:
-                            results["sellers_fcm_sent"][seller_user_id] = True
-                            logger.info(f"Firebase notification sent to seller {seller_user_id} for order {order.order_number}")
+                            fcm_result = FirebaseService.send_to_user(
+                                db=fcm_db,
+                                user_id=seller_user_id,
+                                title=seller_notification.title,
+                                body=seller_notification.message,
+                                data={
+                                    "type": seller_notification.notification_type.value,
+                                    "order_id": str(order.id),
+                                    "notification_id": str(seller_notification.id)
+                                }
+                            )
+                            if fcm_result.get("success_count", 0) > 0:
+                                results["sellers_fcm_sent"][seller_user_id] = True
+                                logger.info(f"Firebase notification sent to seller {seller_user_id} for order {order.order_number}")
+                        finally:
+                            fcm_db.close()
                     except Exception as fcm_error:
-                        # Reset session state if there was an error
-                        try:
-                            db.expire_all()
-                        except:
-                            pass
+                        # Log but don't fail - DB notification is already created
                         logger.warning(f"Failed to send Firebase notification to seller {seller_user_id}: {str(fcm_error)}")
                         results["errors"].append(f"Seller {seller_user_id} FCM error: {str(fcm_error)}")
                         
                 except Exception as e:
                     error_msg = f"Failed to notify seller {seller_user_id}: {str(e)}"
-                    logger.error(error_msg)
+                    logger.error(error_msg, exc_info=True)
                     results["errors"].append(error_msg)
                     results["sellers_notified"][seller_user_id] = False
+                    # Rollback to clean state
+                    try:
+                        db.rollback()
+                    except:
+                        pass
             
         except Exception as e:
             error_msg = f"Error in notify_order_placed: {str(e)}"

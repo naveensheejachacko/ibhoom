@@ -128,8 +128,8 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-5xl max-h-[95vh] overflow-auto">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-semibold text-secondary-900">
@@ -149,7 +149,7 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
           </button>
         </div>
 
-        <div className="relative w-full" style={{ height: '400px', background: '#000' }}>
+        <div className="relative w-full" style={{ height: '600px', background: '#000' }}>
           <Cropper
             image={image}
             crop={crop}

@@ -4,6 +4,7 @@ import { adminApi } from '../../lib/api';
 import Pagination from '../../components/Pagination';
 import { Product } from '../../types/api';
 import DynamicCategorySelector from '../../components/DynamicCategorySelector';
+import ImageCropModal from '../../components/ImageCropModal';
 
 interface ProductCardProps {
   product: Product;
@@ -186,6 +187,11 @@ const Products: React.FC = () => {
   const [editImages, setEditImages] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
+  // Image cropping state
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [pendingImageFile, setPendingImageFile] = useState<{ file: File; name: string } | null>(null);
+  const [pendingImageQueue, setPendingImageQueue] = useState<{ file: File; name: string }[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -376,19 +382,72 @@ const Products: React.FC = () => {
     const files = e.target.files;
     if (!files) return;
 
-    Array.from(files).forEach((file) => {
+    const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+    if (imageFiles.length === 0) return;
+
+    // Process first file
+    const firstFile = imageFiles[0];
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const imageUrl = event.target?.result as string;
+      // Show crop modal for first image
+      setImageToCrop(imageUrl);
+      setPendingImageFile({ file: firstFile, name: firstFile.name });
+      // Queue remaining files
+      if (imageFiles.length > 1) {
+        setPendingImageQueue(imageFiles.slice(1).map(f => ({ file: f, name: f.name })));
+      }
+      setShowCropModal(true);
+    };
+    reader.readAsDataURL(firstFile);
+    
+    // Reset input to allow selecting the same file again
+    e.target.value = '';
+  };
+
+  const processNextImageInQueue = () => {
+    if (pendingImageQueue.length > 0) {
+      const nextImage = pendingImageQueue[0];
       const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        const newImage = {
-          image_url: base64String,
-          alt_text: file.name,
-          sort_order: editImages.length,
-        };
-        setEditImages([...editImages, newImage]);
+      reader.onload = (event) => {
+        const imageUrl = event.target?.result as string;
+        setImageToCrop(imageUrl);
+        setPendingImageFile(nextImage);
+        setPendingImageQueue(prev => prev.slice(1));
+        setShowCropModal(true);
       };
-      reader.readAsDataURL(file);
-    });
+      reader.readAsDataURL(nextImage.file);
+    }
+  };
+
+  const handleCropComplete = (croppedImage: string) => {
+    if (!pendingImageFile) return;
+    
+    const newImage = {
+      image_url: croppedImage,
+      alt_text: pendingImageFile.name,
+      sort_order: editImages.length
+    };
+    
+    setEditImages([...editImages, newImage]);
+    
+    // Reset current crop state
+    setImageToCrop(null);
+    setPendingImageFile(null);
+    setShowCropModal(false);
+    
+    // Process next image in queue if any
+    setTimeout(() => {
+      processNextImageInQueue();
+    }, 100);
+  };
+
+  const handleCropCancel = () => {
+    setImageToCrop(null);
+    setPendingImageFile(null);
+    setShowCropModal(false);
+    // Clear queue on cancel
+    setPendingImageQueue([]);
   };
 
   const handleRemoveImage = (index: number) => {
@@ -1169,6 +1228,20 @@ const Products: React.FC = () => {
             )}
           </div>
         </div>
+      )}
+
+      {/* Image Crop Modal */}
+      {showCropModal && imageToCrop && (
+        <ImageCropModal
+          image={imageToCrop}
+          onClose={handleCropCancel}
+          onCropComplete={handleCropComplete}
+          aspectRatio={1}
+          cropShape="rect"
+          outputWidth={800}
+          outputHeight={800}
+          queueCount={pendingImageQueue.length}
+        />
       )}
     </div>
   );

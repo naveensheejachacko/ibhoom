@@ -185,8 +185,11 @@ const Products: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editFormData, setEditFormData] = useState<any>({});
   const [editImages, setEditImages] = useState<any[]>([]);
+  const [editVariants, setEditVariants] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
+  const [categoryAttributes, setCategoryAttributes] = useState<any[]>([]);
+  const [selectedVariantAttributes, setSelectedVariantAttributes] = useState<{ [attrId: string]: string[] }>({});
   // Image cropping state
   const [showCropModal, setShowCropModal] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
@@ -231,6 +234,30 @@ const Products: React.FC = () => {
       console.error('Error loading categories:', error);
     }
   };
+
+  // Load category attributes when category changes in edit form
+  useEffect(() => {
+    if (editFormData.category_id && showEditModal) {
+      const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
+      const token = localStorage.getItem('token') || '';
+      
+      fetch(`${API_BASE_URL}/api/v1/customer/categories/${editFormData.category_id}/attributes`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+        .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
+        .then(json => {
+          setCategoryAttributes(json.attributes || []);
+        })
+        .catch((err) => {
+          console.error('Failed to load attributes:', err);
+          setCategoryAttributes([]);
+        });
+    } else {
+      setCategoryAttributes([]);
+    }
+  }, [editFormData.category_id, showEditModal]);
 
   const fetchProducts = async () => {
     try {
@@ -371,6 +398,31 @@ const Products: React.FC = () => {
       
       // Initialize images
       setEditImages(Array.isArray(fullProduct.images) ? fullProduct.images : []);
+      
+      // Initialize variants
+      if (fullProduct.variants && Array.isArray(fullProduct.variants)) {
+        const loadedVariants = fullProduct.variants.map((v: any) => {
+          // Reconstruct attributes object from variant attributes array
+          const attributesObj: { [key: string]: string } = {};
+          if (v.attributes && Array.isArray(v.attributes)) {
+            v.attributes.forEach((attr: any) => {
+              attributesObj[attr.attribute_id] = attr.attribute_value_id;
+            });
+          }
+          
+          return {
+            variant_name: v.variant_name || '',
+            sku: v.sku || '',
+            seller_price: v.seller_price || 0,
+            stock_quantity: v.stock_quantity || 0,
+            attributes: attributesObj
+          };
+        });
+        setEditVariants(loadedVariants);
+      } else {
+        setEditVariants([]);
+      }
+      
       setShowEditModal(true);
     } catch (error: any) {
       console.error('Error fetching product for editing:', error);
@@ -454,6 +506,86 @@ const Products: React.FC = () => {
     setEditImages(editImages.filter((_, i) => i !== index));
   };
 
+  const handleVariantAttributeChange = (attrId: string, valueIds: string[]) => {
+    setSelectedVariantAttributes(prev => ({
+      ...prev,
+      [attrId]: valueIds
+    }));
+  };
+
+  // Generate variants based on selected attribute values
+  const generateVariants = () => {
+    const variantAttributes = categoryAttributes.filter(attr => attr.is_variant);
+    
+    if (variantAttributes.length === 0 || Object.keys(selectedVariantAttributes).length === 0) {
+      setEditVariants([]);
+      return;
+    }
+
+    // Get all selected attributes with values
+    const selectedAttrs = variantAttributes
+      .filter(attr => selectedVariantAttributes[attr.attribute_id]?.length > 0)
+      .map(attr => ({
+        id: attr.attribute_id,
+        name: attr.name,
+        values: selectedVariantAttributes[attr.attribute_id].map(valueId => {
+          const value = attr.values.find((v: any) => v.id === valueId);
+          return { id: valueId, value: value?.value || '' };
+        })
+      }));
+
+    if (selectedAttrs.length === 0) {
+      setEditVariants([]);
+      return;
+    }
+
+    // Generate all combinations
+    const generateCombinations = (attrs: typeof selectedAttrs, index: number = 0): any[] => {
+      if (index === attrs.length) {
+        return [{ name: [], attributes: {} }];
+      }
+
+      const currentAttr = attrs[index];
+      const restCombinations = generateCombinations(attrs, index + 1);
+      const result: any[] = [];
+
+      currentAttr.values.forEach(value => {
+        restCombinations.forEach(combo => {
+          result.push({
+            name: [value.value, ...combo.name],
+            attributes: { ...combo.attributes, [currentAttr.id]: value.id }
+          });
+        });
+      });
+
+      return result;
+    };
+
+    const combinations = generateCombinations(selectedAttrs);
+    
+    // Create variant rows
+    const newVariants: any[] = combinations.map(combo => {
+      const variantName = combo.name.join(' / ');
+      return {
+        variant_name: variantName,
+        sku: '',  // Leave empty to auto-generate
+        seller_price: editFormData.seller_price || 0,
+        stock_quantity: 0,
+        attributes: combo.attributes
+      };
+    });
+
+    // Merge with existing variants (avoid duplicates based on variant_name)
+    setEditVariants(prev => {
+      const existingNames = new Set(prev.map(v => v.variant_name));
+      const uniqueNewVariants = newVariants.filter(v => !existingNames.has(v.variant_name));
+      return [...prev, ...uniqueNewVariants];
+    });
+    
+    // Clear selected attributes after generation
+    setSelectedVariantAttributes({});
+  };
+
   const handleSaveEdit = async () => {
     if (!editingProduct) return;
 
@@ -492,12 +624,30 @@ const Products: React.FC = () => {
         }));
       }
 
+      // Handle variants
+      if (editVariants.length > 0) {
+        updateData.variants = editVariants.map((variant) => ({
+          variant_name: variant.variant_name || null,
+          sku: variant.sku || null,
+          seller_price: variant.seller_price,
+          stock_quantity: variant.stock_quantity,
+          attributes: Object.entries(variant.attributes || {}).map(([attribute_id, attribute_value_id]) => ({
+            attribute_id,
+            attribute_value_id: attribute_value_id as string
+          }))
+        }));
+      } else {
+        // If no variants, send empty array to clear existing variants
+        updateData.variants = [];
+      }
+
       await adminApi.updateProduct(editingProduct.id, updateData);
       
       setShowEditModal(false);
       setEditingProduct(null);
       setEditFormData({});
       setEditImages([]);
+      setEditVariants([]);
       fetchProducts();
     } catch (error: any) {
       console.error('Error updating product:', error);
@@ -940,6 +1090,9 @@ const Products: React.FC = () => {
                   setEditingProduct(null);
                   setEditFormData({});
                   setEditImages([]);
+                  setEditVariants([]);
+                  setSelectedVariantAttributes({});
+                  setCategoryAttributes([]);
                 }}
                 className="text-secondary-400 hover:text-secondary-600"
               >
@@ -1184,6 +1337,143 @@ const Products: React.FC = () => {
                         Describe your return policy terms and conditions
                       </p>
                     </div>
+                  </>
+                )}
+              </div>
+
+              {/* Product Variants */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-secondary-900">Product Variants</h3>
+                
+                {/* Variant Attribute Selectors for Generating New Variants */}
+                {categoryAttributes.filter(attr => attr.is_variant).length > 0 && (
+                  <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+                    <p className="text-sm text-secondary-600 mb-2">
+                      Select attribute values to generate new product variants. Variants allow different combinations like colors, sizes, storage options, etc.
+                    </p>
+
+                    {/* Variant Attribute Selectors */}
+                    <div className="space-y-4">
+                      {categoryAttributes
+                        .filter(attr => attr.is_variant)
+                        .map(attr => (
+                          <div key={attr.attribute_id}>
+                            <label className="block text-sm font-medium text-secondary-700 mb-2">
+                              {attr.name} {attr.is_required && <span className="text-red-500">*</span>}
+                            </label>
+                            <div className="flex flex-wrap gap-2">
+                              {attr.values.map((value: any) => {
+                                const isSelected = selectedVariantAttributes[attr.attribute_id]?.includes(value.id);
+                                return (
+                                  <button
+                                    key={value.id}
+                                    type="button"
+                                    onClick={() => {
+                                      const current = selectedVariantAttributes[attr.attribute_id] || [];
+                                      const newValues = isSelected
+                                        ? current.filter(id => id !== value.id)
+                                        : [...current, value.id];
+                                      handleVariantAttributeChange(attr.attribute_id, newValues);
+                                    }}
+                                    className={`px-3 py-2 rounded-lg border-2 transition-colors ${
+                                      isSelected
+                                        ? 'border-primary-500 bg-primary-100 text-primary-800'
+                                        : 'border-secondary-300 bg-white text-secondary-700 hover:border-secondary-400'
+                                    }`}
+                                  >
+                                    {value.value}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={generateVariants}
+                      className="btn-primary mt-4"
+                    >
+                      Generate Variants
+                    </button>
+                  </div>
+                )}
+
+                {/* Variants Table */}
+                {editVariants.length > 0 && (
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-secondary-200">
+                        <thead className="bg-secondary-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-secondary-700 uppercase">
+                              Variant Name
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-secondary-700 uppercase">
+                              SKU
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-secondary-700 uppercase">
+                              Seller Price (₹)
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-secondary-700 uppercase">
+                              Stock
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-secondary-700 uppercase">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-secondary-200">
+                          {editVariants.map((variant, idx) => (
+                            <tr key={idx}>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-secondary-900">
+                                {variant.variant_name || 'Default'}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-secondary-600">
+                                <input
+                                  type="text"
+                                  value={variant.sku}
+                                  onChange={e => setEditVariants(prev => prev.map((v, i) => i === idx ? { ...v, sku: e.target.value } : v))}
+                                  className="input-field w-full"
+                                  placeholder="Auto-generated"
+                                />
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-secondary-600">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={variant.seller_price}
+                                  onChange={e => setEditVariants(prev => prev.map((v, i) => i === idx ? { ...v, seller_price: parseFloat(e.target.value || '0') } : v))}
+                                  className="input-field w-24"
+                                />
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-secondary-600">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={variant.stock_quantity}
+                                  onChange={e => setEditVariants(prev => prev.map((v, i) => i === idx ? { ...v, stock_quantity: parseInt(e.target.value || '0') } : v))}
+                                  className="input-field w-20"
+                                />
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm">
+                                <button
+                                  onClick={() => setEditVariants(prev => prev.filter((_, i) => i !== idx))}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="text-xs text-secondary-500 mt-2">
+                      Note: To modify variant attribute combinations, delete the variant and generate a new one with the desired attributes.
+                    </p>
                   </>
                 )}
               </div>

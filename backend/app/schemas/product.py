@@ -161,6 +161,7 @@ class ProductUpdate(BaseModel):
     return_period_days: Optional[int] = None
     return_policy_description: Optional[str] = None
     is_newly_arrived: Optional[bool] = None  # Mark product as newly arrived
+    images: Optional[List[ProductImageCreate]] = None  # Optional list of images for update
     variants: Optional[List[ProductVariantCreate]] = None  # Optional list of variants for update
     
     @validator('seller_price')

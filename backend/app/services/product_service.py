@@ -253,20 +253,28 @@ def get_products(
     return query.order_by(Product.created_at.desc()).offset(skip).limit(limit).all()
 
 
-def update_product(db: Session, product_id: str, product_update: ProductUpdate, seller_id: Optional[str] = None) -> Optional[Product]:
-    """Update product"""
+def update_product(db: Session, product_id: str, product_update: ProductUpdate, seller_id: Optional[str] = None, is_admin: bool = False) -> Optional[Product]:
+    """Update product
+    
+    Args:
+        db: Database session
+        product_id: Product ID to update
+        product_update: Update data
+        seller_id: Seller ID (required for seller updates, None for admin updates)
+        is_admin: Whether the update is from an admin (allows editing any product)
+    """
     db_product = db.query(Product).filter(Product.id == product_id).first()
     if not db_product:
         return None
     
-    # If seller_id is provided, ensure the seller owns the product
-    if seller_id and db_product.seller_id != seller_id:
+    # If seller_id is provided, ensure the seller owns the product (unless admin)
+    if seller_id and not is_admin and db_product.seller_id != seller_id:
         raise ValueError("Not authorized to update this product")
     
     update_data = product_update.dict(exclude_unset=True)
     
     # Prevent sellers from setting is_newly_arrived (admin only)
-    if seller_id and "is_newly_arrived" in update_data:
+    if seller_id and not is_admin and "is_newly_arrived" in update_data:
         raise ValueError("Sellers cannot mark products as newly arrived. Only admins can set this during approval.")
     
     # Handle slug regeneration if name changed
@@ -292,6 +300,69 @@ def update_product(db: Session, product_id: str, product_update: ProductUpdate, 
         update_data["commission_rate"] = commission_calc.commission_rate
         update_data["commission_amount"] = commission_calc.commission_amount
         update_data["customer_price"] = commission_calc.customer_price
+    
+    # Handle images update if provided
+    images_data = update_data.pop("images", None)
+    if images_data is not None:
+        # Delete all existing product images (not variant images)
+        db.query(ProductImage).filter(
+            ProductImage.product_id == db_product.id,
+            ProductImage.variant_id.is_(None)
+        ).delete()
+        
+        # Flush deletions
+        db.flush()
+        
+        # Add new images
+        from ..core.config import settings
+        from ..utils.cloudinary_service import upload_base64_image
+        from ..schemas.product import ProductImageCreate
+        
+        for img_dict in images_data:
+            # Convert dict to Pydantic model for validation
+            img_data = ProductImageCreate(**img_dict)
+            image_url = img_data.image_url
+            
+            # If image_url is a base64 string, upload to Cloudinary
+            if image_url:
+                # Check if Cloudinary is configured
+                if not settings.CLOUDINARY_URL:
+                    print("⚠️  WARNING: CLOUDINARY_URL not set! Images will be stored as base64 in database.")
+                # Check if it's a base64 image (starts with data:image or is a long base64 string)
+                elif image_url.startswith('data:image') or (len(image_url) > 100 and not image_url.startswith('http')):
+                    try:
+                        print(f"📤 Uploading image to Cloudinary for product {db_product.id}...")
+                        result = upload_base64_image(
+                            base64_string=image_url,
+                            folder=f"products/{db_product.seller_id}"
+                        )
+                        image_url = result["image_url"]
+                        print(f"✅ Image uploaded successfully: {image_url[:50]}...")
+                    except ValueError as e:
+                        error_msg = str(e)
+                        print(f"❌ ERROR: {error_msg}")
+                        raise ValueError(error_msg)
+                    except Exception as e:
+                        error_msg = f"Unexpected error uploading image: {str(e)}"
+                        print(f"❌ ERROR: {error_msg}")
+                        raise ValueError(error_msg)
+                # If it's already a Cloudinary URL, use it as is
+                elif "cloudinary.com" in image_url:
+                    print(f"✅ Using existing Cloudinary URL: {image_url[:50]}...")
+                    image_url = image_url
+                # If it's already an HTTP URL (not Cloudinary), use it as is
+                elif image_url.startswith('http'):
+                    print(f"ℹ️  Using existing HTTP URL: {image_url[:50]}...")
+                    image_url = image_url
+            
+            image = ProductImage(
+                id=str(uuid.uuid4()),
+                product_id=db_product.id,
+                image_url=image_url,
+                alt_text=img_data.alt_text,
+                sort_order=img_data.sort_order
+            )
+            db.add(image)
     
     # Handle variants update if provided
     variants_data = update_data.pop("variants", None)
@@ -374,14 +445,15 @@ def update_product(db: Session, product_id: str, product_update: ProductUpdate, 
                 db.add(variant_attr)
         
         # If variants were added/updated, reset status to pending (variants are significant changes)
-        if seller_id:
+        # Only reset for seller updates, not admin updates
+        if seller_id and not is_admin:
             update_data["status"] = ProductStatus.PENDING
     
     # Reset status to pending if product details changed (except for admin updates)
     # Don't reset status for metadata-only updates like tags, meta fields
     # Note: is_newly_arrived is admin-only, so it's not in metadata_fields for sellers
     metadata_fields = {"tags", "meta_title", "meta_description", "has_return_policy", "return_period_days", "return_policy_description"}
-    if seller_id and any(key in update_data for key in ["name", "description", "category_id", "seller_price"]):
+    if seller_id and not is_admin and any(key in update_data for key in ["name", "description", "category_id", "seller_price"]):
         # Only reset if non-metadata fields changed
         if not all(key in metadata_fields for key in update_data.keys()):
             update_data["status"] = ProductStatus.PENDING

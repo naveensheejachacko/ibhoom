@@ -236,6 +236,11 @@ export const adminApi = {
     return response.data;
   },
   
+  updateProduct: async (id: string, data: any) => {
+    const response = await api.put(`/api/v1/admin/products/${id}`, data);
+    return response.data;
+  },
+  
   approveProduct: async (id: string, data: any) => {
     const response = await api.put(`/api/v1/admin/products/${id}/approve`, data);
     return response.data;

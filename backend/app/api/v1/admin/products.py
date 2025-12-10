@@ -6,7 +6,7 @@ from ....core.database import get_db
 from ....core.dependencies import get_admin_user
 from ....models.user import User
 from ....models.product import ProductStatus
-from ....schemas.product import ProductResponse, ProductListResponse, ProductApprovalUpdate, ProductFilters
+from ....schemas.product import ProductResponse, ProductListResponse, ProductApprovalUpdate, ProductFilters, ProductUpdate
 from ....schemas.pagination import PaginatedResponse
 from ....models.product import Product
 from ....services import product_service
@@ -251,4 +251,27 @@ async def get_product_by_slug(
     product = product_service.get_product_by_slug(db, slug)
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
-    return product 
+    return product
+
+
+@router.put("/{product_id}", response_model=ProductResponse)
+async def update_product(
+    product_id: str,
+    product_update: ProductUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_admin_user)
+):
+    """Update product (Admin only) - Can edit any product including images, before or after approval"""
+    try:
+        updated_product = product_service.update_product(
+            db, 
+            product_id, 
+            product_update, 
+            seller_id=None, 
+            is_admin=True
+        )
+        if not updated_product:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+        return updated_product
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) 

@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Eye, Check, X, Search, Filter, Ban, Trash2, AlertTriangle, Sparkles } from 'lucide-react';
+import { Package, Eye, Check, X, Search, Filter, Ban, Trash2, AlertTriangle, Sparkles, Edit, Upload } from 'lucide-react';
 import { adminApi } from '../../lib/api';
 import Pagination from '../../components/Pagination';
 import { Product } from '../../types/api';
+import DynamicCategorySelector from '../../components/DynamicCategorySelector';
 
 interface ProductCardProps {
   product: Product;
   onApprove: (product: Product) => void;
   onReject: (product: Product) => void;
   onView: (product: Product) => void;
+  onEdit: (product: Product) => void;
   onBlock: (product: Product) => void;
   onUnblock: (product: Product) => void;
   onDelete: (product: Product) => void;
@@ -16,7 +18,7 @@ interface ProductCardProps {
   isToggling?: boolean;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onApprove, onReject, onView, onBlock, onUnblock, onDelete, onToggleNewlyArrived, isToggling }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, onApprove, onReject, onView, onEdit, onBlock, onUnblock, onDelete, onToggleNewlyArrived, isToggling }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
@@ -80,6 +82,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onApprove, onReject,
         >
           <Eye className="w-4 h-4" />
           <span className="text-sm">View Details</span>
+        </button>
+        <button
+          onClick={() => onEdit(product)}
+          className="flex items-center space-x-2 text-blue-600 hover:text-blue-700"
+        >
+          <Edit className="w-4 h-4" />
+          <span className="text-sm">Edit</span>
         </button>
 
         {product.status === 'pending' && (
@@ -171,6 +180,12 @@ const Products: React.FC = () => {
   const [isNewlyArrived, setIsNewlyArrived] = useState(false);
   const [modalAction, setModalAction] = useState<'approve' | 'reject' | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editFormData, setEditFormData] = useState<any>({});
+  const [editImages, setEditImages] = useState<any[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [categories, setCategories] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -187,12 +202,29 @@ const Products: React.FC = () => {
 
   useEffect(() => {
     fetchProducts();
+    loadCategories();
   }, [currentPage, statusFilter, debouncedSearchTerm]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [statusFilter, debouncedSearchTerm]);
+
+  const loadCategories = async () => {
+    try {
+      const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/categories`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setCategories(data);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -284,6 +316,135 @@ const Products: React.FC = () => {
       // Fallback to basic product data
       setSelectedProduct(product);
       setShowDetailsModal(true);
+    }
+  };
+
+  const handleEdit = async (product: Product) => {
+    try {
+      // Fetch full product details for editing
+      const fullProduct = await adminApi.getProduct(product.id);
+      
+      if (!fullProduct) {
+        alert('Product not found');
+        return;
+      }
+      
+      setEditingProduct(fullProduct);
+      
+      // Parse tags safely
+      let tagsString = '';
+      try {
+        if (fullProduct.tags) {
+          const parsedTags = typeof fullProduct.tags === 'string' 
+            ? JSON.parse(fullProduct.tags) 
+            : fullProduct.tags;
+          tagsString = Array.isArray(parsedTags) ? parsedTags.join(', ') : '';
+        }
+      } catch (e) {
+        console.warn('Error parsing tags:', e);
+        tagsString = '';
+      }
+      
+      // Initialize form data
+      setEditFormData({
+        name: fullProduct.name || '',
+        description: fullProduct.description || '',
+        short_description: fullProduct.short_description || '',
+        sku: fullProduct.sku || '',
+        category_id: fullProduct.category_id || '',
+        seller_price: fullProduct.seller_price || 0,
+        stock_quantity: fullProduct.stock_quantity || 0,
+        tags: tagsString,
+        meta_title: fullProduct.meta_title || '',
+        meta_description: fullProduct.meta_description || '',
+        has_return_policy: fullProduct.has_return_policy || false,
+        return_period_days: fullProduct.return_period_days || 7,
+        return_policy_description: fullProduct.return_policy_description || '',
+        is_newly_arrived: fullProduct.is_newly_arrived || false,
+      });
+      
+      // Initialize images
+      setEditImages(Array.isArray(fullProduct.images) ? fullProduct.images : []);
+      setShowEditModal(true);
+    } catch (error: any) {
+      console.error('Error fetching product for editing:', error);
+      alert(error.response?.data?.detail || 'Failed to load product details for editing');
+    }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        const newImage = {
+          image_url: base64String,
+          alt_text: file.name,
+          sort_order: editImages.length,
+        };
+        setEditImages([...editImages, newImage]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setEditImages(editImages.filter((_, i) => i !== index));
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingProduct) return;
+
+    try {
+      setIsSaving(true);
+      
+      // Prepare update data
+      const updateData: any = {
+        name: editFormData.name,
+        description: editFormData.description,
+        short_description: editFormData.short_description,
+        sku: editFormData.sku,
+        category_id: editFormData.category_id,
+        seller_price: parseFloat(editFormData.seller_price),
+        stock_quantity: parseInt(editFormData.stock_quantity),
+        meta_title: editFormData.meta_title,
+        meta_description: editFormData.meta_description,
+        has_return_policy: editFormData.has_return_policy,
+        return_period_days: parseInt(editFormData.return_period_days),
+        return_policy_description: editFormData.return_policy_description,
+        is_newly_arrived: editFormData.is_newly_arrived,
+      };
+
+      // Handle tags
+      if (editFormData.tags) {
+        const tagsArray = editFormData.tags.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag);
+        updateData.tags = JSON.stringify(tagsArray);
+      }
+
+      // Handle images
+      if (editImages.length > 0) {
+        updateData.images = editImages.map((img, index) => ({
+          image_url: img.image_url,
+          alt_text: img.alt_text || `Product image ${index + 1}`,
+          sort_order: index,
+        }));
+      }
+
+      await adminApi.updateProduct(editingProduct.id, updateData);
+      
+      setShowEditModal(false);
+      setEditingProduct(null);
+      setEditFormData({});
+      setEditImages([]);
+      fetchProducts();
+    } catch (error: any) {
+      console.error('Error updating product:', error);
+      alert(error.response?.data?.detail || 'Failed to update product');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -410,6 +571,7 @@ const Products: React.FC = () => {
               onApprove={handleApprove}
               onReject={handleReject}
               onView={handleView}
+              onEdit={handleEdit}
               onBlock={handleBlock}
               onUnblock={handleUnblock}
               onDelete={handleDelete}
@@ -701,6 +863,310 @@ const Products: React.FC = () => {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Product Modal */}
+      {showEditModal && editingProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg p-6 w-full max-w-4xl my-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-secondary-900">
+                Edit Product
+              </h3>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingProduct(null);
+                  setEditFormData({});
+                  setEditImages([]);
+                }}
+                className="text-secondary-400 hover:text-secondary-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {categories.length === 0 ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                <span className="ml-3 text-secondary-600">Loading categories...</span>
+              </div>
+            ) : (
+            <div className="space-y-4">
+              {/* Basic Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    Product Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.name || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                    className="input-field"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    SKU
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.sku || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, sku: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <DynamicCategorySelector
+                    categories={categories}
+                    selectedCategoryId={editFormData.category_id || ''}
+                    onCategorySelect={(categoryId) => setEditFormData({ ...editFormData, category_id: categoryId })}
+                    error={!editFormData.category_id ? 'Please select a category.' : undefined}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    Seller Price (₹) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={editFormData.seller_price || 0}
+                    onChange={(e) => setEditFormData({ ...editFormData, seller_price: e.target.value })}
+                    className="input-field"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    Stock Quantity *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editFormData.stock_quantity || 0}
+                    onChange={(e) => setEditFormData({ ...editFormData, stock_quantity: e.target.value })}
+                    className="input-field"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  Short Description
+                </label>
+                <input
+                  type="text"
+                  value={editFormData.short_description || ''}
+                  onChange={(e) => setEditFormData({ ...editFormData, short_description: e.target.value })}
+                  className="input-field"
+                  placeholder="Brief description (max 500 characters)"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  Description *
+                </label>
+                <textarea
+                  value={editFormData.description || ''}
+                  onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                  className="input-field h-32 resize-none"
+                  required
+                />
+              </div>
+
+              {/* Images */}
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  Product Images
+                </label>
+                <div className="border-2 border-dashed border-secondary-300 rounded-lg p-4 mb-4">
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    id="edit-image-upload"
+                  />
+                  <label
+                    htmlFor="edit-image-upload"
+                    className="cursor-pointer flex items-center space-x-2 text-secondary-600 hover:text-secondary-700"
+                  >
+                    <Upload className="w-5 h-5" />
+                    <span>Add Images</span>
+                  </label>
+                </div>
+                {editImages.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {editImages.map((img, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={img.image_url}
+                          alt={img.alt_text || `Image ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg border"
+                        />
+                        <button
+                          onClick={() => handleRemoveImage(index)}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                        <input
+                          type="text"
+                          value={img.alt_text || ''}
+                          onChange={(e) => {
+                            const updated = [...editImages];
+                            updated[index].alt_text = e.target.value;
+                            setEditImages(updated);
+                          }}
+                          placeholder="Alt text"
+                          className="mt-1 input-field text-xs"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Tags */}
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  Tags (comma-separated)
+                </label>
+                <input
+                  type="text"
+                  value={editFormData.tags || ''}
+                  onChange={(e) => setEditFormData({ ...editFormData, tags: e.target.value })}
+                  className="input-field"
+                  placeholder="tag1, tag2, tag3"
+                />
+              </div>
+
+              {/* SEO */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    Meta Title
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.meta_title || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, meta_title: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    Meta Description
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.meta_description || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, meta_description: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+              </div>
+
+              {/* Return Policy */}
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={editFormData.has_return_policy || false}
+                    onChange={(e) => setEditFormData({ ...editFormData, has_return_policy: e.target.checked })}
+                    className="rounded"
+                  />
+                  <label className="text-sm font-medium text-secondary-700">
+                    Allow returns for this product
+                  </label>
+                </div>
+                {editFormData.has_return_policy && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-secondary-700 mb-2">
+                        Return Period (Days) <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={editFormData.return_period_days || 7}
+                        onChange={(e) => setEditFormData({ ...editFormData, return_period_days: parseInt(e.target.value) })}
+                        className="input-field"
+                        required={editFormData.has_return_policy}
+                      >
+                        <option value="7">7 Days</option>
+                        <option value="14">14 Days</option>
+                        <option value="30">30 Days</option>
+                        <option value="60">60 Days</option>
+                        <option value="90">90 Days</option>
+                      </select>
+                      <p className="text-xs text-secondary-600 mt-1">
+                        Customers can return within this period after delivery
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-secondary-700 mb-2">
+                        Return Policy Description
+                      </label>
+                      <textarea
+                        value={editFormData.return_policy_description || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, return_policy_description: e.target.value })}
+                        className="input-field h-24 resize-none"
+                        placeholder="e.g., Easy 30-day returns. Items must be in original condition with tags attached."
+                      />
+                      <p className="text-xs text-secondary-600 mt-1">
+                        Describe your return policy terms and conditions
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Newly Arrived */}
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={editFormData.is_newly_arrived || false}
+                  onChange={(e) => setEditFormData({ ...editFormData, is_newly_arrived: e.target.checked })}
+                  className="rounded"
+                />
+                <label className="text-sm font-medium text-secondary-700 flex items-center">
+                  <Sparkles className="w-4 h-4 mr-1" />
+                  Mark as Newly Arrived
+                </label>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex space-x-3 pt-4 border-t">
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingProduct(null);
+                    setEditFormData({});
+                    setEditImages([]);
+                  }}
+                  className="flex-1 btn-secondary"
+                  disabled={isSaving}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  className="flex-1 btn-primary"
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+            )}
           </div>
         </div>
       )}

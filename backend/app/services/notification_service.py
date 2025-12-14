@@ -58,21 +58,21 @@ class NotificationService:
         return notification
     
     @staticmethod
-    def notify_admin_new_order(db: Session, order: Order) -> Notification:
+    def notify_admin_new_order(db: Session, order: Order) -> List[Notification]:
         """
-        Create notification for admin when a new order is placed.
+        Create notifications for all admin users when a new order is placed.
         
         Args:
             db: Database session
             order: The order that was placed
             
         Returns:
-            Created notification
+            List of created notifications (one for each admin)
         """
-        # Get admin user
-        admin = db.query(User).filter(User.role == UserRole.ADMIN).first()
-        if not admin:
-            raise ValueError("Admin user not found")
+        # Get all admin users
+        admins = db.query(User).filter(User.role == UserRole.ADMIN).all()
+        if not admins:
+            raise ValueError("No admin users found")
         
         # Count items
         item_count = len(order.items)
@@ -86,14 +86,20 @@ class NotificationService:
         title = f"New Order: {order.order_number}"
         message = f"New order received from {customer_name}. Total: ₹{order.grand_total_amount:.2f} ({items_text})"
         
-        return NotificationService.create_notification(
-            db=db,
-            user_id=admin.id,
-            notification_type=NotificationType.NEW_ORDER,
-            title=title,
-            message=message,
-            order_id=order.id
-        )
+        # Create notification for each admin
+        notifications = []
+        for admin in admins:
+            notification = NotificationService.create_notification(
+                db=db,
+                user_id=admin.id,
+                notification_type=NotificationType.NEW_ORDER,
+                title=title,
+                message=message,
+                order_id=order.id
+            )
+            notifications.append(notification)
+        
+        return notifications
     
     @staticmethod
     def notify_seller_new_order(
@@ -171,40 +177,41 @@ class NotificationService:
                 results["errors"].append("Order not found")
                 return results
             
-            # Notify admin
+            # Notify all admins
             try:
-                admin_notification = NotificationService.notify_admin_new_order(db, order)
-                results["admin_notified"] = True
-                logger.info(f"✅ Admin notification created: {admin_notification.id}")
+                admin_notifications = NotificationService.notify_admin_new_order(db, order)
+                results["admin_notified"] = len(admin_notifications) > 0
+                logger.info(f"✅ Admin notifications created: {len(admin_notifications)} admin(s) notified")
                 
-                # Send Firebase push notification to admin (non-blocking)
+                # Send Firebase push notification to each admin (non-blocking)
                 # Use a separate try-except to ensure DB notification is created even if FCM fails
-                try:
-                    from ..services.firebase_service import FirebaseService
-                    # Create a new session for FCM to avoid transaction conflicts
-                    from ..core.database import SessionLocal
-                    fcm_db = SessionLocal()
+                for admin_notification in admin_notifications:
                     try:
-                        fcm_result = FirebaseService.send_to_user(
-                            db=fcm_db,
-                            user_id=admin_notification.user_id,
-                            title=admin_notification.title,
-                            body=admin_notification.message,
-                            data={
-                                "type": admin_notification.notification_type.value,
-                                "order_id": str(order.id),
-                                "notification_id": str(admin_notification.id)
-                            }
-                        )
-                        if fcm_result.get("success_count", 0) > 0:
-                            results["admin_fcm_sent"] = True
-                            logger.info(f"Firebase notification sent to admin for order {order.order_number}")
-                    finally:
-                        fcm_db.close()
-                except Exception as fcm_error:
-                    # Log but don't fail - DB notification is already created
-                    logger.warning(f"Failed to send Firebase notification to admin: {str(fcm_error)}")
-                    results["errors"].append(f"Admin FCM error: {str(fcm_error)}")
+                        from ..services.firebase_service import FirebaseService
+                        # Create a new session for FCM to avoid transaction conflicts
+                        from ..core.database import SessionLocal
+                        fcm_db = SessionLocal()
+                        try:
+                            fcm_result = FirebaseService.send_to_user(
+                                db=fcm_db,
+                                user_id=admin_notification.user_id,
+                                title=admin_notification.title,
+                                body=admin_notification.message,
+                                data={
+                                    "type": admin_notification.notification_type.value,
+                                    "order_id": str(order.id),
+                                    "notification_id": str(admin_notification.id)
+                                }
+                            )
+                            if fcm_result.get("success_count", 0) > 0:
+                                results["admin_fcm_sent"] = True
+                                logger.info(f"Firebase notification sent to admin {admin_notification.user_id} for order {order.order_number}")
+                        finally:
+                            fcm_db.close()
+                    except Exception as fcm_error:
+                        # Log but don't fail - DB notification is already created
+                        logger.warning(f"Failed to send Firebase notification to admin {admin_notification.user_id}: {str(fcm_error)}")
+                        results["errors"].append(f"Admin {admin_notification.user_id} FCM error: {str(fcm_error)}")
                     
             except Exception as e:
                 error_msg = f"Failed to notify admin: {str(e)}"

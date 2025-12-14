@@ -429,8 +429,72 @@ const ProductForm: React.FC = () => {
     setError('');
     setIsSubmitting(true);
 
+    // Validate price field - check both formData and the actual input value
+    if (variants.length === 0) {
+      // No variants - check main product price
+      const priceInput = document.getElementById('seller_price') as HTMLInputElement;
+      const priceValue = priceInput?.value?.trim() || '';
+      const priceNum = Number(formData.seller_price) || 0;
+      
+      // Check if price is empty, 0, negative, or invalid
+      // Also check if the string value is empty or just "0"
+      const isInvalid = !priceValue || 
+                       priceValue === '' || 
+                       priceValue === '0' || 
+                       priceValue === '0.00' ||
+                       priceNum <= 0 || 
+                       isNaN(priceNum) ||
+                       !isFinite(priceNum);
+      
+      if (isInvalid) {
+        alert('Please enter a valid price for your product. The price must be greater than 0.');
+        setIsSubmitting(false);
+        if (priceInput) {
+          priceInput.focus();
+          priceInput.select();
+        }
+        return;
+      }
+    } else {
+      // Has variants - check all variant prices
+      const invalidVariants = variants.filter(v => {
+        const price = v.seller_price || 0;
+        return !price || price <= 0 || isNaN(price);
+      });
+      if (invalidVariants.length > 0) {
+        alert('Please enter a valid price for all variants. All prices must be greater than 0.');
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
     try {
       if (isEdit) {
+        // Final validation before sending - double check seller_price
+        if (variants.length === 0) {
+          const priceInput = document.getElementById('seller_price') as HTMLInputElement;
+          const priceValue = priceInput?.value?.trim() || '';
+          const finalPrice = Number(formData.seller_price) || 0;
+          
+          const isInvalid = !priceValue || 
+                           priceValue === '' || 
+                           priceValue === '0' || 
+                           priceValue === '0.00' ||
+                           finalPrice <= 0 || 
+                           isNaN(finalPrice) ||
+                           !isFinite(finalPrice);
+          
+          if (isInvalid) {
+            alert('Please enter a valid price for your product. The price must be greater than 0.');
+            setIsSubmitting(false);
+            if (priceInput) {
+              priceInput.focus();
+              priceInput.select();
+            }
+            return;
+          }
+        }
+        
         // For update: send only fields that ProductUpdate schema accepts, including variants
         const updateData: any = {
           name: formData.name,
@@ -449,20 +513,67 @@ const ProductForm: React.FC = () => {
         };
         
         // Include variants - send empty array if no variants, or the variants array
-        updateData.variants = variants.length > 0 ? variants.map(v => ({
-          variant_name: v.variant_name,
-          sku: v.sku,
-          seller_price: v.seller_price,
-          stock_quantity: v.stock_quantity,
-          attributes: Object.keys(v.attributes || {}).map(attrId => ({
-            attribute_id: attrId,
-            attribute_value_id: v.attributes[attrId]
-          }))
-        })) : [];
+        if (variants.length > 0) {
+          // Validate variant prices before sending
+          const invalidVariants = variants.filter(v => !v.seller_price || v.seller_price <= 0);
+          if (invalidVariants.length > 0) {
+            alert('Please enter a valid price for all variants. All prices must be greater than 0.');
+            setIsSubmitting(false);
+            return;
+          }
+          
+          updateData.variants = variants.map(v => ({
+            variant_name: v.variant_name,
+            sku: v.sku,
+            seller_price: v.seller_price,
+            stock_quantity: v.stock_quantity,
+            attributes: Object.keys(v.attributes || {}).map(attrId => ({
+              attribute_id: attrId,
+              attribute_value_id: v.attributes[attrId]
+            }))
+          }));
+        } else {
+          updateData.variants = [];
+        }
         
         await sellerApi.updateProduct(id, updateData);
         alert('Product updated successfully!');
       } else {
+        // Final validation before sending - double check seller_price
+        if (variants.length === 0) {
+          const priceInput = document.getElementById('seller_price') as HTMLInputElement;
+          const priceValue = priceInput?.value?.trim() || '';
+          const finalPrice = Number(formData.seller_price) || 0;
+          
+          const isInvalid = !priceValue || 
+                           priceValue === '' || 
+                           priceValue === '0' || 
+                           priceValue === '0.00' ||
+                           finalPrice <= 0 || 
+                           isNaN(finalPrice) ||
+                           !isFinite(finalPrice);
+          
+          if (isInvalid) {
+            alert('Please enter a valid price for your product. The price must be greater than 0.');
+            setIsSubmitting(false);
+            if (priceInput) {
+              priceInput.focus();
+              priceInput.select();
+            }
+            return;
+          }
+        }
+        
+        // Validate variant prices if they exist
+        if (variants.length > 0) {
+          const invalidVariants = variants.filter(v => !v.seller_price || v.seller_price <= 0);
+          if (invalidVariants.length > 0) {
+            alert('Please enter a valid price for all variants. All prices must be greater than 0.');
+            setIsSubmitting(false);
+            return;
+          }
+        }
+        
         // For create: send all fields including variants
         const productData = {
           ...formData,
@@ -488,7 +599,54 @@ const ProductForm: React.FC = () => {
       
       navigate('/seller/products');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to save product. Please try again.');
+      const errorMessage = err.response?.data?.detail || 'Failed to save product. Please try again.';
+      
+      // Check if it's a validation error for seller_price
+      if (err.response?.data?.detail) {
+        const detail = err.response.data.detail;
+        
+        // Handle array of validation errors (Pydantic format)
+        if (Array.isArray(detail)) {
+          const priceError = detail.find((e: any) => {
+            // Check if location array includes 'seller_price'
+            if (Array.isArray(e.loc)) {
+              return e.loc.includes('seller_price');
+            }
+            // Also check message for seller price errors
+            if (e.msg && typeof e.msg === 'string') {
+              return e.msg.toLowerCase().includes('seller price') || 
+                     e.msg.toLowerCase().includes('price must be positive');
+            }
+            return false;
+          });
+          
+          if (priceError) {
+            alert('Please enter a valid price for your product. The price must be greater than 0.');
+            setIsSubmitting(false);
+            const priceInput = document.getElementById('seller_price') as HTMLInputElement;
+            if (priceInput) {
+              priceInput.focus();
+              priceInput.select();
+            }
+            setError(priceError.msg || 'Invalid price value');
+            return;
+          }
+        }
+        
+        // Handle string error message
+        if (typeof detail === 'string' && detail.toLowerCase().includes('seller price')) {
+          alert('Please enter a valid price for your product. The price must be greater than 0.');
+          setIsSubmitting(false);
+          const priceInput = document.getElementById('seller_price') as HTMLInputElement;
+          if (priceInput) {
+            priceInput.focus();
+          }
+          setError(detail);
+          return;
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
